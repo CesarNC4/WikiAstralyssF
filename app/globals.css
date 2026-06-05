@@ -1,26 +1,177 @@
 @import "tailwindcss";
 
+/*
+  Astralys — Design System (§7)
+  Referencia: Genshin Impact (fantasy isekai, dorados) + cosmos/nebulosa.
+  Dark mode único. Tokens expuestos a Tailwind v4 vía @theme.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Fondos cósmicos (de más profundo a más cercano) */
+  --bg-void: #0a0a14;
+  --bg-deep: #12121f;
+  --bg-surface: #1a1a2e;
+  --bg-elevated: #252540;
+  --bg-overlay: rgba(10, 10, 20, 0.7);
+
+  /* Marca */
+  --primary: #7b5cff;
+  --primary-glow: #9d7bff;
+  --secondary: #2dd4bf;
+  --accent: #ffd66b;
+  --accent-warm: #ff8c5a;
+
+  /* Texto */
+  --text-primary: #f5f3ff;
+  --text-secondary: #b8b5d1;
+  --text-muted: #7a7895;
+
+  /* Bordes */
+  --border: #2e2e4a;
+  --border-glow: #5b4b9e;
+
+  /* Semánticos */
+  --success: #4ade80;
+  --error: #f87171;
+  --warning: #fbbf24;
+  --info: #60a5fa;
+
+  /* Rareza / rango (rampa fija) */
+  --rarity-comun: #9ca3af;
+  --rarity-raro: #60a5fa;
+  --rarity-epico: #7b5cff;
+  --rarity-legendario: #ffd66b;
+  --rarity-mitico: #ff8c5a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Colores → utilidades Tailwind (bg-void, text-accent, border-glow, etc.) */
+  --color-void: var(--bg-void);
+  --color-deep: var(--bg-deep);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+
+  --color-primary: var(--primary);
+  --color-primary-glow: var(--primary-glow);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-accent-warm: var(--accent-warm);
+
+  --color-fg: var(--text-primary);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-muted: var(--text-muted);
+
+  --color-border-base: var(--border);
+  --color-border-glow: var(--border-glow);
+
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --color-rarity-comun: var(--rarity-comun);
+  --color-rarity-raro: var(--rarity-raro);
+  --color-rarity-epico: var(--rarity-epico);
+  --color-rarity-legendario: var(--rarity-legendario);
+  --color-rarity-mitico: var(--rarity-mitico);
+
+  /* Tipografía (§7.2) — variables inyectadas por next/font */
+  --font-display: var(--font-cinzel);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+
+  /* Sombras / glows cósmicos */
+  --shadow-glow-primary: 0 0 24px -4px rgba(123, 92, 255, 0.55);
+  --shadow-glow-accent: 0 0 24px -4px rgba(255, 214, 107, 0.5);
+
+  /* Animaciones */
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 3s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  /* Nebulosa de fondo sutil y fija */
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(123, 92, 255, 0.12), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(45, 212, 191, 0.08), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 10% 90%, rgba(255, 140, 90, 0.06), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* Tipografía display para títulos */
+.font-display {
+  font-family: var(--font-display), serif;
+  letter-spacing: 0.01em;
+}
+
+/* Scrollbar temático */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb {
+  background: var(--border-glow);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* Selección de texto */
+::selection {
+  background: rgba(123, 92, 255, 0.4);
+  color: var(--text-primary);
+}
+
+/* Utilidad: gradiente de texto épico */
+.text-gradient-cosmic {
+  background: linear-gradient(120deg, var(--accent) 0%, var(--primary-glow) 50%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
+  background-size: 1000px 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Respeta reduced motion (§6.4) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

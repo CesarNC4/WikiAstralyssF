@@ -1,0 +1,81 @@
+import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
+import { estadoPublicacion } from "./enums";
+
+/** Dominio Lore: conceptos, magia, páginas de lore, misiones, timeline. */
+
+export const conceptos = pgTable("conceptos", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre").notNull(),
+  categoria: varchar("categoria"),
+  descripcion: text("descripcion"),
+  contenido: text("contenido"),
+  imagenUrl: varchar("imagen_url"),
+  orden: integer("orden"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+});
+
+export const magiaFundamentos = pgTable("magia_fundamentos", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre").notNull(),
+  categoria: varchar("categoria"),
+  subcategoria: varchar("subcategoria"),
+  descripcion: text("descripcion"),
+  contenido: text("contenido"),
+  imagenUrl: varchar("imagen_url"),
+  orden: integer("orden"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+});
+
+export const paginasLore = pgTable("paginas_lore", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug").notNull(),
+  titulo: varchar("titulo"),
+  subtitulo: varchar("subtitulo"),
+  introduccion: text("introduccion"),
+  imagenUrl: varchar("imagen_url"),
+  bannerUrl: varchar("banner_url"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+});
+
+/** Secciones ordenadas y extensibles de una página de lore (§1, problema 2). */
+export const paginaSecciones = pgTable("pagina_secciones", {
+  id: serial("id").primaryKey(),
+  paginaId: integer("pagina_id").notNull(),
+  orden: integer("orden").notNull().default(0),
+  titulo: varchar("titulo"),
+  contenido: text("contenido"),
+  tipo: varchar("tipo").notNull().default("texto"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("publicado"),
+});
+
+export const misiones = pgTable("misiones", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre").notNull(),
+  tipo: varchar("tipo"),
+  nivelRiesgo: varchar("nivel_riesgo"),
+  estado: varchar("estado"),
+  rangoMinimo: varchar("rango_minimo"),
+  descripcion: text("descripcion"),
+  objetivo: text("objetivo"),
+  recompensa: text("recompensa"),
+  ubicacion: varchar("ubicacion"),
+  fechaLore: varchar("fecha_lore"),
+  personajeId: integer("personaje_id"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+});
+
+export const timelineEventos = pgTable("timeline_eventos", {
+  id: serial("id").primaryKey(),
+  fechaLore: varchar("fecha_lore").notNull(),
+  titulo: varchar("titulo").notNull(),
+  descripcion: text("descripcion"),
+  importancia: varchar("importancia"),
+  categoria: varchar("categoria"),
+  capituloId: integer("capitulo_id"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+});

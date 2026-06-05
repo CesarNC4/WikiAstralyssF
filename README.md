@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Astralys — Wiki de fantasía
 
-## Getting Started
+Wiki del mundo de **Astralys**, construida sobre la [arquitectura](./astralys-arquitectura.md).
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Drizzle ORM · Supabase · Framer Motion · Zustand.
 
-First, run the development server:
+## Puesta en marcha
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. **Instala dependencias** (ya hecho si tienes `node_modules`):
+   ```bash
+   npm install
+   ```
+
+2. **Configura el entorno.** `.env.local` ya tiene la URL y la clave pública de tu
+   proyecto Supabase `wikiastralys`. **Falta la contraseña de la base de datos**
+   (es un secreto que no se puede leer por API):
+
+   - Ve a *Supabase → Project Settings → Database → Connection string*.
+   - Sustituye `[TU-DB-PASSWORD]` en `DATABASE_URL` y `DIRECT_URL`.
+
+   Sin esto, las páginas cargan pero salen vacías (las queries fallan de forma
+   controlada con `.catch`).
+
+3. **Arranca en desarrollo:**
+   ```bash
+   npm run dev
+   ```
+   Abre http://localhost:3000
+
+## Scripts
+
+| Script | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run db:pull` | Introspecciona la DB a Drizzle (requiere `DIRECT_URL`) |
+| `npm run db:studio` | Drizzle Studio |
+
+## Estructura
+
+```
+app/(public)/     wiki pública (índices + fichas + timeline + mapa)
+app/(admin)/      panel del autor (login + dashboard), protegido por proxy.ts
+components/        UI (entity, fichas, layout, player, search, motion, viz)
+db/               Drizzle schema (por dominio), client, relations
+lib/queries/      capa de acceso a datos (server-only, filtra visibilidad)
+lib/actions/      Server Actions (auth, búsqueda)
+lib/entities.ts   registro central de secciones (nav, índices, búsqueda)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Estado actual
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Design system cósmico (tokens Tailwind v4, fuentes Cinzel/Inter/JetBrains).
+- Capa Drizzle completa (54 tablas) + queries con filtro de visibilidad.
+- Navegación adaptativa (top nav desktop + bottom nav móvil + drawer).
+- Búsqueda global ⌘K (ILIKE multi-tabla).
+- Reproductor de música global persistente (Zustand + `<audio>` + embeds).
+- Índices de las 13 secciones + fichas (personaje con tabs; nación, organización,
+  familia con árbol; genéricas para el resto) + lore por slug.
+- Timeline vertical, mapa de naciones, páginas de error temáticas.
+- SEO (metadata dinámica, sitemap, robots), ISR + revalidación.
+- Admin con Supabase Auth (login email/password, proxy de protección, dashboard).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Pendiente (roadmap §19)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Saneamiento de schema (§1): enum `estado_publicacion`, `media_assets`,
+  `pagina_secciones`, FTS materializado — migraciones **no aplicadas aún** para no
+  tocar tus datos reales.
+- Admin CRUD por entidad + Zod + preview con draft mode (§13).
+- Webhook Discord + push PWA (§14, §15) · subida a Cloudinary · `next-pwa`.
+- Visualizaciones avanzadas: React Flow, D3, Leaflet (§10).

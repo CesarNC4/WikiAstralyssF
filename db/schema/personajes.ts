@@ -1,0 +1,142 @@
+import {
+  pgTable,
+  serial,
+  integer,
+  varchar,
+  text,
+  boolean,
+  doublePrecision,
+  timestamp,
+} from "drizzle-orm/pg-core";
+import { estadoPublicacion } from "./enums";
+
+/**
+ * Dominio Personajes (modelado contra el schema vivo actual).
+ * La nullabilidad real de muchas columnas de texto es laxa; se modelan
+ * como opcionales para que el render trate los NULL con seguridad.
+ */
+
+export const personajes = pgTable("personajes", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre").notNull(),
+  surname: varchar("surname"),
+  titulo: varchar("titulo"),
+  subtitulo: varchar("subtitulo"),
+  edad: varchar("edad"),
+  genero: varchar("genero"),
+  altura: doublePrecision("altura"),
+  ocupacion: varchar("ocupacion"),
+  rangoAventurero: varchar("rango_aventurero"),
+  lugarNacimiento: varchar("lugar_nacimiento"),
+  historia: text("historia"),
+  familia: varchar("familia"),
+  rasgosPersonalidad: text("rasgos_personalidad"),
+  motivacion: text("motivacion"),
+  miedos: text("miedos"),
+  filosofia: varchar("filosofia"),
+  gustos: text("gustos"),
+  disgustos: text("disgustos"),
+  tipoMagiaPrincipal: varchar("tipo_magia_principal"),
+  magiaSecundaria: varchar("magia_secundaria"),
+  nivelDeConsciencia: varchar("nivel_de_consciencia"),
+  circuitoForte: varchar("circuito_forte"),
+  essentia: varchar("essentia"),
+  zenithra: varchar("zenithra"),
+  bendicion: varchar("bendicion"),
+  segundoDespertar: varchar("segundo_despertar"),
+  debilidades: text("debilidades"),
+  imagenUrl: varchar("imagen_url"),
+  bannerUrl: varchar("banner_url"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  esInvocado: boolean("es_invocado").default(false),
+  tipoInvocacion: varchar("tipo_invocacion"),
+});
+
+export const estadisticas = pgTable("estadisticas", {
+  idEstadistica: serial("id_estadistica").primaryKey(),
+  personajeId: integer("personaje_id"),
+  fuerza: integer("fuerza"),
+  destreza: integer("destreza"),
+  constitucion: integer("constitucion"),
+  inteligencia: integer("inteligencia"),
+  sabiduria: integer("sabiduria"),
+  carisma: integer("carisma"),
+  mpMax: integer("mp_max"),
+  ataqueFisico: integer("ataque_fisico"),
+  ataqueMagico: integer("ataque_magico"),
+  defensaFisica: integer("defensa_fisica"),
+  defensaMagica: integer("defensa_magica"),
+  velocidad: integer("velocidad"),
+  capacidadDeReaccion: integer("capacidad_de_reaccion"),
+  rangoCuerpoACuerpo: varchar("rango_cuerpo_a_cuerpo"),
+  rangoDistancia: varchar("rango_distancia"),
+  danoMagico: varchar("daño_magico"),
+  defensa: varchar("defensa"),
+  apoyo: varchar("apoyo"),
+  movilidad: varchar("movilidad"),
+  controlDeMasas: varchar("control_de_masas"),
+  precisionVal: integer("precision_val"),
+});
+
+export const habilidades = pgTable("habilidades", {
+  idHabilidad: serial("id_habilidad").primaryKey(),
+  personajeId: integer("personaje_id"),
+  categoria: varchar("categoria").notNull(),
+  nombre: varchar("nombre"),
+  descripcion: text("descripcion"),
+  tipo: varchar("tipo"),
+  magiaFundamentoId: integer("magia_fundamento_id"),
+});
+
+export const relaciones = pgTable("relaciones", {
+  idRr: serial("id_rr").primaryKey(),
+  personajeId: integer("personaje_id"),
+  // Relación personaje↔personaje vía FK; `nombreExterno` sólo para entidades sin ficha (§1).
+  personajeRelacionadoId: integer("personaje_relacionado_id"),
+  nombreExterno: varchar("nombre_externo"),
+  tipoRelacion: varchar("tipo_relacion"),
+  descripcion: text("descripcion"),
+  subtipoRelacion: varchar("subtipo_relacion"),
+});
+
+export const eventosPersonaje = pgTable("eventos_personaje", {
+  idEvento: serial("id_evento").primaryKey(),
+  personajeId: integer("personaje_id").notNull(),
+  fecha: varchar("fecha"),
+  titulo: varchar("titulo").notNull(),
+  descripcion: text("descripcion"),
+});
+
+export const personajeNarrativa = pgTable("personaje_narrativa", {
+  id: serial("id").primaryKey(),
+  personajeId: integer("personaje_id"),
+  estadoNarrativo: varchar("estado_narrativo"),
+  tipoArco: varchar("tipo_arco"),
+  desarrolloArco: text("desarrollo_arco"),
+  destinoFinal: text("destino_final"),
+  actoClaveId: integer("acto_clave_id"),
+  capituloClaveId: integer("capitulo_clave_id"),
+  secretosPendientes: text("secretos_pendientes"),
+  revelacionIdentidad: text("revelacion_identidad"),
+  relacionesOcultas: text("relaciones_ocultas"),
+  notasAutor: text("notas_autor"),
+  porcentajeEscrito: integer("porcentaje_escrito"),
+});
+
+export const equipamiento = pgTable("equipamiento", {
+  idArma: serial("id_arma").primaryKey(),
+  personajeId: integer("personaje_id"),
+  nombre: varchar("nombre"),
+  tipo: varchar("tipo"),
+  descripcion: text("descripcion"),
+  poderEspecial: text("poder_especial"),
+});
+
+export const objetosImportantes = pgTable("objetos_importantes", {
+  idObjeto: serial("id_objeto").primaryKey(),
+  descripcion: text("descripcion"),
+  nombre: varchar("nombre"),
+  tipo: varchar("tipo"),
+  personajeId: integer("personaje_id"),
+});

@@ -1,0 +1,71 @@
+import {
+  Users,
+  Globe2,
+  Building2,
+  Network,
+  Rabbit,
+  PawPrint,
+  Gem,
+  Lightbulb,
+  Sparkles,
+  ScrollText,
+  Swords,
+  Clock,
+  Map,
+  Search,
+  Menu,
+  Home,
+  X,
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  Music,
+  ChevronRight,
+  ChevronLeft,
+  Compass,
+  Star,
+  type LucideIcon,
+} from "lucide-react";
+
+const REGISTRY: Record<string, LucideIcon> = {
+  Users,
+  Globe2,
+  Building2,
+  Network,
+  Rabbit,
+  PawPrint,
+  Gem,
+  Lightbulb,
+  Sparkles,
+  ScrollText,
+  Swords,
+  Clock,
+  Map,
+  Search,
+  Menu,
+  Home,
+  X,
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  Music,
+  ChevronRight,
+  ChevronLeft,
+  Compass,
+  Star,
+};
+
+export function Icon({
+  name,
+  className,
+  size = 20,
+}: {
+  name: string;
+  className?: string;
+  size?: number;
+}) {
+  const Cmp = REGISTRY[name] ?? Sparkles;
+  return <Cmp className={className} size={size} aria-hidden />;
+}
