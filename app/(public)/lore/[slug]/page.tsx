@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { FichaShell, ProseBlock } from "@/components/fichas/FichaShell";
+import { LorePageBody } from "@/components/fichas/LorePageBody";
 import { getPaginaLore, getPaginaLoreConSecciones, getLoreSlugs } from "@/lib/queries/fichas";
 
 export const revalidate = 3600;
@@ -25,28 +25,5 @@ export default async function LorePage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const data = await getPaginaLoreConSecciones(slug).catch(() => null);
   if (!data) notFound();
-  const { pagina: p, secciones } = data;
-
-  return (
-    <FichaShell
-      banner={p.bannerUrl}
-      imagen={p.imagenUrl}
-      titulo={p.titulo ?? slug}
-      subtitulo={p.subtitulo}
-      nombre={p.titulo ?? slug}
-      backHref="/lore"
-      backLabel="Lore"
-    >
-      {p.introduccion && (
-        <p className="mb-8 border-l-2 border-primary pl-4 text-lg italic leading-relaxed text-fg-secondary">
-          {p.introduccion}
-        </p>
-      )}
-      {secciones.map((sec) => (
-        <ProseBlock key={sec.id} title={sec.titulo ?? "Sección"}>
-          {sec.contenido}
-        </ProseBlock>
-      ))}
-    </FichaShell>
-  );
+  return <LorePageBody pagina={data.pagina} secciones={data.secciones} />;
 }

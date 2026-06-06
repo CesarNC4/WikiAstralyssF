@@ -1,12 +1,13 @@
 import "server-only";
-import { and, eq, asc } from "drizzle-orm";
+import { and, eq, asc, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 
 /** Ficha completa de personaje con todas sus relaciones (§5.2). */
 export async function getPersonajeFicha(id: number) {
   return db.query.personajes.findFirst({
-    where: (p, { eq, and }) => and(eq(p.id, id), eq(p.estadoPublicacion, "publicado")),
+    where: (p, { eq, and, isNull }) =>
+      and(eq(p.id, id), eq(p.estadoPublicacion, "publicado"), isNull(p.eliminadoEn)),
     with: {
       estadisticas: true,
       habilidades: true,
@@ -37,6 +38,38 @@ export async function getPersonajeFicha(id: number) {
 
 export type PersonajeFicha = NonNullable<Awaited<ReturnType<typeof getPersonajeFicha>>>;
 
+/** Igual que getPersonajeFicha pero SIN filtro de publicación (para preview del admin). */
+export async function getPersonajePreview(id: number) {
+  return db.query.personajes.findFirst({
+    where: (p, { eq, and, isNull }) => and(eq(p.id, id), isNull(p.eliminadoEn)),
+    with: {
+      estadisticas: true,
+      habilidades: true,
+      eventos: true,
+      narrativa: true,
+      equipamiento: true,
+      objetos: true,
+      relaciones: {
+        with: {
+          relacionado: {
+            columns: { id: true, nombre: true, surname: true, imagenUrl: true, titulo: true },
+          },
+        },
+      },
+      canciones: { with: { cancion: true } },
+      naciones: {
+        with: { nacion: { columns: { id: true, nombre: true, subtitulo: true, imagenUrl: true } } },
+      },
+      razas: {
+        with: { raza: { columns: { id: true, nombre: true, subtitulo: true, imagenUrl: true } } },
+      },
+      organizaciones: {
+        with: { organizacion: { columns: { id: true, nombre: true, subtitulo: true, imagenUrl: true } } },
+      },
+    },
+  });
+}
+
 /** Personajes asociados a una nación (para la ficha de nación). */
 export async function getPersonajesDeNacion(nacionId: number) {
   return db
@@ -49,7 +82,13 @@ export async function getPersonajesDeNacion(nacionId: number) {
     })
     .from(s.personajeNacion)
     .innerJoin(s.personajes, eq(s.personajeNacion.personajeId, s.personajes.id))
-    .where(and(eq(s.personajeNacion.nacionId, nacionId), eq(s.personajes.estadoPublicacion, "publicado")))
+    .where(
+      and(
+        eq(s.personajeNacion.nacionId, nacionId),
+        eq(s.personajes.estadoPublicacion, "publicado"),
+        isNull(s.personajes.eliminadoEn),
+      ),
+    )
     .limit(24);
 }
 
@@ -62,37 +101,37 @@ async function firstVisible<T extends { id: unknown }>(
 
 export async function getNacion(id: number) {
   return firstVisible(
-    db.select().from(s.naciones).where(and(eq(s.naciones.id, id), eq(s.naciones.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.naciones).where(and(eq(s.naciones.id, id), eq(s.naciones.estadoPublicacion, "publicado"), isNull(s.naciones.eliminadoEn))).limit(1),
   );
 }
 export async function getRaza(id: number) {
   return firstVisible(
-    db.select().from(s.razas).where(and(eq(s.razas.id, id), eq(s.razas.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.razas).where(and(eq(s.razas.id, id), eq(s.razas.estadoPublicacion, "publicado"), isNull(s.razas.eliminadoEn))).limit(1),
   );
 }
 export async function getBestia(id: number) {
   return firstVisible(
-    db.select().from(s.bestias).where(and(eq(s.bestias.id, id), eq(s.bestias.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.bestias).where(and(eq(s.bestias.id, id), eq(s.bestias.estadoPublicacion, "publicado"), isNull(s.bestias.eliminadoEn))).limit(1),
   );
 }
 export async function getMineral(id: number) {
   return firstVisible(
-    db.select().from(s.minerales).where(and(eq(s.minerales.id, id), eq(s.minerales.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.minerales).where(and(eq(s.minerales.id, id), eq(s.minerales.estadoPublicacion, "publicado"), isNull(s.minerales.eliminadoEn))).limit(1),
   );
 }
 export async function getConcepto(id: number) {
   return firstVisible(
-    db.select().from(s.conceptos).where(and(eq(s.conceptos.id, id), eq(s.conceptos.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.conceptos).where(and(eq(s.conceptos.id, id), eq(s.conceptos.estadoPublicacion, "publicado"), isNull(s.conceptos.eliminadoEn))).limit(1),
   );
 }
 export async function getMagia(id: number) {
   return firstVisible(
-    db.select().from(s.magiaFundamentos).where(and(eq(s.magiaFundamentos.id, id), eq(s.magiaFundamentos.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.magiaFundamentos).where(and(eq(s.magiaFundamentos.id, id), eq(s.magiaFundamentos.estadoPublicacion, "publicado"), isNull(s.magiaFundamentos.eliminadoEn))).limit(1),
   );
 }
 export async function getMision(id: number) {
   return firstVisible(
-    db.select().from(s.misiones).where(and(eq(s.misiones.id, id), eq(s.misiones.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.misiones).where(and(eq(s.misiones.id, id), eq(s.misiones.estadoPublicacion, "publicado"), isNull(s.misiones.eliminadoEn))).limit(1),
   );
 }
 export async function getPaginaLore(slug: string) {
@@ -208,7 +247,10 @@ export async function getVisibleIds(
     magia: s.magiaFundamentos,
     misiones: s.misiones,
   }[key];
-  const rows = await db.select({ id: table.id }).from(table).where(eq(table.estadoPublicacion, "publicado"));
+  const rows = await db
+    .select({ id: table.id })
+    .from(table)
+    .where(and(eq(table.estadoPublicacion, "publicado"), isNull(table.eliminadoEn)));
   return rows.map((r) => r.id);
 }
 

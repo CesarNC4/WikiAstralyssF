@@ -2,6 +2,7 @@ import Link from "next/link";
 import { EntityImage } from "@/components/media/EntityImage";
 import { Icon } from "@/components/Icon";
 import { FadeIn } from "@/components/motion/Motion";
+import { Markdown } from "@/components/markdown/Markdown";
 import type { FichaField } from "@/lib/types";
 
 /** Cabecera común de ficha (§5.2): banner + avatar + título + badges. */
@@ -61,13 +62,17 @@ export function FichaShell({
   );
 }
 
-/** Bloque de prosa largo con título. */
+/** Bloque de prosa largo con título. Si recibe un string, lo renderiza como markdown. */
 export function ProseBlock({ title, children }: { title: string; children?: React.ReactNode }) {
   if (!children) return null;
   return (
     <section className="mb-6">
       <h2 className="mb-2 font-display text-xl text-accent">{title}</h2>
-      <div className="whitespace-pre-line leading-relaxed text-fg-secondary">{children}</div>
+      {typeof children === "string" ? (
+        <Markdown source={children} className="leading-relaxed text-fg-secondary" />
+      ) : (
+        <div className="whitespace-pre-line leading-relaxed text-fg-secondary">{children}</div>
+      )}
     </section>
   );
 }

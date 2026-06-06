@@ -20,6 +20,7 @@ import { magiaFundamentos } from "./schema/lore";
 import {
   canciones,
   personajeCancion,
+  mediaAssets,
 } from "./schema/media";
 import {
   personajeNacion,
@@ -57,6 +58,16 @@ export const personajesRelations = relations(personajes, ({ one, many }) => ({
   naciones: many(personajeNacion),
   razas: many(personajeRaza),
   organizaciones: many(personajeOrganizacion),
+  imagenAsset: one(mediaAssets, {
+    fields: [personajes.imagenAssetId],
+    references: [mediaAssets.id],
+    relationName: "personaje_imagen",
+  }),
+  bannerAsset: one(mediaAssets, {
+    fields: [personajes.bannerAssetId],
+    references: [mediaAssets.id],
+    relationName: "personaje_banner",
+  }),
 }));
 
 export const estadisticasRelations = relations(estadisticas, ({ one }) => ({

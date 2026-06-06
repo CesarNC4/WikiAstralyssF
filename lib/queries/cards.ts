@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, asc, sql } from "drizzle-orm";
+import { and, eq, asc, isNull, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import type { EntityKey } from "@/lib/entities";
@@ -23,7 +23,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
           badge: s.personajes.rangoAventurero,
         })
         .from(s.personajes)
-        .where(eq(s.personajes.estadoPublicacion, "publicado"))
+        .where(and(eq(s.personajes.estadoPublicacion, "publicado"), isNull(s.personajes.eliminadoEn)))
         .orderBy(asc(s.personajes.nombre));
       return rows.map((r) => ({
         id: r.id,
@@ -38,7 +38,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.naciones.id, titulo: s.naciones.nombre, subtitulo: s.naciones.subtitulo, imagenUrl: s.naciones.imagenUrl })
         .from(s.naciones)
-        .where(eq(s.naciones.estadoPublicacion, "publicado"))
+        .where(and(eq(s.naciones.estadoPublicacion, "publicado"), isNull(s.naciones.eliminadoEn)))
         .orderBy(asc(s.naciones.nombre));
       return rows.map((r) => ({ ...r, href: `/naciones/${r.id}` }));
     }
@@ -62,7 +62,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.razas.id, titulo: s.razas.nombre, subtitulo: s.razas.subtitulo, imagenUrl: s.razas.imagenUrl, badge: s.razas.clasificacion })
         .from(s.razas)
-        .where(eq(s.razas.estadoPublicacion, "publicado"))
+        .where(and(eq(s.razas.estadoPublicacion, "publicado"), isNull(s.razas.eliminadoEn)))
         .orderBy(asc(s.razas.nombre));
       return rows.map((r) => ({ ...r, href: `/razas/${r.id}` }));
     }
@@ -70,7 +70,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.bestias.id, titulo: s.bestias.nombre, subtitulo: s.bestias.subtitulo, imagenUrl: s.bestias.imagenUrl, badge: s.bestias.nivelAmenaza })
         .from(s.bestias)
-        .where(eq(s.bestias.estadoPublicacion, "publicado"))
+        .where(and(eq(s.bestias.estadoPublicacion, "publicado"), isNull(s.bestias.eliminadoEn)))
         .orderBy(asc(s.bestias.nombre));
       return rows.map((r) => ({ ...r, href: `/bestias/${r.id}`, badge: r.badge ? `Amenaza ${r.badge}` : null }));
     }
@@ -78,7 +78,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.minerales.id, titulo: s.minerales.nombre, subtitulo: s.minerales.tipo, imagenUrl: s.minerales.imagenUrl, badge: s.minerales.rareza })
         .from(s.minerales)
-        .where(eq(s.minerales.estadoPublicacion, "publicado"))
+        .where(and(eq(s.minerales.estadoPublicacion, "publicado"), isNull(s.minerales.eliminadoEn)))
         .orderBy(asc(s.minerales.nombre));
       return rows.map((r) => ({ ...r, href: `/minerales/${r.id}` }));
     }
@@ -86,7 +86,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.conceptos.id, titulo: s.conceptos.nombre, subtitulo: s.conceptos.categoria, imagenUrl: s.conceptos.imagenUrl })
         .from(s.conceptos)
-        .where(eq(s.conceptos.estadoPublicacion, "publicado"))
+        .where(and(eq(s.conceptos.estadoPublicacion, "publicado"), isNull(s.conceptos.eliminadoEn)))
         .orderBy(asc(s.conceptos.orden), asc(s.conceptos.nombre));
       return rows.map((r) => ({ ...r, href: `/conceptos/${r.id}` }));
     }
@@ -94,7 +94,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.magiaFundamentos.id, titulo: s.magiaFundamentos.nombre, subtitulo: s.magiaFundamentos.categoria, imagenUrl: s.magiaFundamentos.imagenUrl })
         .from(s.magiaFundamentos)
-        .where(eq(s.magiaFundamentos.estadoPublicacion, "publicado"))
+        .where(and(eq(s.magiaFundamentos.estadoPublicacion, "publicado"), isNull(s.magiaFundamentos.eliminadoEn)))
         .orderBy(asc(s.magiaFundamentos.orden), asc(s.magiaFundamentos.nombre));
       return rows.map((r) => ({ ...r, href: `/magia/${r.id}` }));
     }
@@ -116,7 +116,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.misiones.id, titulo: s.misiones.nombre, subtitulo: s.misiones.tipo, badge: s.misiones.nivelRiesgo, estado: s.misiones.estado })
         .from(s.misiones)
-        .where(eq(s.misiones.estadoPublicacion, "publicado"))
+        .where(and(eq(s.misiones.estadoPublicacion, "publicado"), isNull(s.misiones.eliminadoEn)))
         .orderBy(asc(s.misiones.nombre));
       return rows.map((r) => ({
         id: r.id,

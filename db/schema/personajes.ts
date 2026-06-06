@@ -47,10 +47,15 @@ export const personajes = pgTable("personajes", {
   debilidades: text("debilidades"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
+  imagenAssetId: integer("imagen_asset_id"),
+  bannerAssetId: integer("banner_asset_id"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
   esInvocado: boolean("es_invocado").default(false),
   tipoInvocacion: varchar("tipo_invocacion"),
+  creadoEn: timestamp("creado_en", { mode: "date" }).notNull().defaultNow(),
+  actualizadoEn: timestamp("actualizado_en", { mode: "date" }).notNull().defaultNow(),
+  eliminadoEn: timestamp("eliminado_en", { mode: "date" }),
 });
 
 export const estadisticas = pgTable("estadisticas", {

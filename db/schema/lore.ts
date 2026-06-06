@@ -1,9 +1,11 @@
 import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
 import { estadoPublicacion } from "./enums";
+import { auditColumns } from "./_audit";
 
 /** Dominio Lore: conceptos, magia, páginas de lore, misiones, timeline. */
 
 export const conceptos = pgTable("conceptos", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   categoria: varchar("categoria"),
@@ -16,6 +18,7 @@ export const conceptos = pgTable("conceptos", {
 });
 
 export const magiaFundamentos = pgTable("magia_fundamentos", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   categoria: varchar("categoria"),
@@ -29,6 +32,7 @@ export const magiaFundamentos = pgTable("magia_fundamentos", {
 });
 
 export const paginasLore = pgTable("paginas_lore", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   slug: varchar("slug").notNull(),
   titulo: varchar("titulo"),
@@ -52,6 +56,7 @@ export const paginaSecciones = pgTable("pagina_secciones", {
 });
 
 export const misiones = pgTable("misiones", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   tipo: varchar("tipo"),
@@ -64,11 +69,14 @@ export const misiones = pgTable("misiones", {
   ubicacion: varchar("ubicacion"),
   fechaLore: varchar("fecha_lore"),
   personajeId: integer("personaje_id"),
+  encarganteNombre: varchar("encargante_nombre"),
+  imagenUrl: varchar("imagen_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
 });
 
 export const timelineEventos = pgTable("timeline_eventos", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   fechaLore: varchar("fecha_lore").notNull(),
   titulo: varchar("titulo").notNull(),
@@ -76,6 +84,7 @@ export const timelineEventos = pgTable("timeline_eventos", {
   importancia: varchar("importancia"),
   categoria: varchar("categoria"),
   capituloId: integer("capitulo_id"),
+  orden: integer("orden").notNull().default(0),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
 });

@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, asc } from "drizzle-orm";
+import { and, eq, asc, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 
@@ -15,8 +15,8 @@ export async function getTimeline() {
       categoria: s.timelineEventos.categoria,
     })
     .from(s.timelineEventos)
-    .where(eq(s.timelineEventos.estadoPublicacion, "publicado"))
-    .orderBy(asc(s.timelineEventos.id));
+    .where(and(eq(s.timelineEventos.estadoPublicacion, "publicado"), isNull(s.timelineEventos.eliminadoEn)))
+    .orderBy(asc(s.timelineEventos.orden), asc(s.timelineEventos.id));
 }
 
 /** Naciones para el mapa (§10.1). */

@@ -17,6 +17,12 @@ export default async function AdminDashboard() {
           <span className="font-display text-xl text-gradient-cosmic">Astralys · Admin</span>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/admin/personajes"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-void hover:scale-[1.02]"
+          >
+            Gestionar personajes →
+          </Link>
           <Link href="/" className="text-sm text-fg-muted hover:text-fg">
             Ver wiki ↗
           </Link>

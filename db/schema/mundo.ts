@@ -1,9 +1,11 @@
 import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
 import { estadoPublicacion } from "./enums";
+import { auditColumns } from "./_audit";
 
 /** Dominio Mundo: naciones, razas, organizaciones, familias, bestias, minerales, gremio, etc. */
 
 export const naciones = pgTable("naciones", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   subtitulo: varchar("subtitulo"),
@@ -25,6 +27,7 @@ export const naciones = pgTable("naciones", {
 });
 
 export const razas = pgTable("razas", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   clasificacion: varchar("clasificacion"),
@@ -42,6 +45,7 @@ export const razas = pgTable("razas", {
 });
 
 export const organizaciones = pgTable("organizaciones", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   tipo: varchar("tipo"),
@@ -65,6 +69,7 @@ export const organizaciones = pgTable("organizaciones", {
 });
 
 export const familias = pgTable("familias", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   apellido: varchar("apellido"),
@@ -85,6 +90,7 @@ export const familias = pgTable("familias", {
 });
 
 export const bestias = pgTable("bestias", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   subtitulo: varchar("subtitulo"),
@@ -101,6 +107,7 @@ export const bestias = pgTable("bestias", {
 });
 
 export const minerales = pgTable("minerales", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   rareza: varchar("rareza"),

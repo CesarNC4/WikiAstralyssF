@@ -23,6 +23,18 @@ export function cldOptimize(url: string | null | undefined): string | null {
   return url.replace("/upload/", "/upload/f_auto,q_auto/");
 }
 
+/** Convierte un texto en slug url-safe (minúsculas, sin acentos, guiones). */
+export function slugify(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /** Inicial(es) para avatares de fallback. */
 export function initials(name: string | null | undefined): string {
   if (!name) return "?";
