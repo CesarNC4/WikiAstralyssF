@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getVisibleIds, getLoreSlugs } from "@/lib/queries/fichas";
+import { getVisibleRegionIds, getVisibleLocacionIds } from "@/lib/queries/mapa";
 import { ENTITY_LIST } from "@/lib/entities";
 
 const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -41,6 +42,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const slug of slugs) {
     dynamic.push({ url: `${base}/lore/${slug}`, changeFrequency: "monthly", priority: 0.5 });
   }
+
+  const [regionIds, locacionIds] = await Promise.all([
+    getVisibleRegionIds().catch(() => []),
+    getVisibleLocacionIds().catch(() => []),
+  ]);
+  for (const id of regionIds) dynamic.push({ url: `${base}/regiones/${id}`, changeFrequency: "monthly", priority: 0.4 });
+  for (const id of locacionIds) dynamic.push({ url: `${base}/locaciones/${id}`, changeFrequency: "monthly", priority: 0.4 });
 
   return [...staticRoutes, ...dynamic];
 }

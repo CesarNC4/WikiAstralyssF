@@ -90,6 +90,16 @@ const OG: Record<string, OgCfg> = {
     cols: { nombre: true, tipo: true, imagenUrl: true },
     name: (r) => String(r.nombre ?? ""), sub: (r) => str(r.tipo),
   },
+  regiones: {
+    accessor: "regiones", tipo: "Región", acento: "#2dd4bf",
+    cols: { nombre: true, subtitulo: true, imagenUrl: true },
+    name: (r) => String(r.nombre ?? ""), sub: (r) => str(r.subtitulo),
+  },
+  locaciones: {
+    accessor: "locaciones", tipo: "Locación", acento: "#2dd4bf",
+    cols: { nombre: true, subtitulo: true, imagenUrl: true },
+    name: (r) => String(r.nombre ?? ""), sub: (r) => str(r.subtitulo),
+  },
 };
 
 /** OG de una ficha por id (entidades con id numérico). */

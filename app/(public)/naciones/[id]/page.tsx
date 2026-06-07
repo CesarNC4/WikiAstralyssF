@@ -5,6 +5,7 @@ import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShe
 import { EntityImage } from "@/components/media/EntityImage";
 import { Badge } from "@/components/entity/Badge";
 import { getNacion, getPersonajesDeNacion, getVisibleIds } from "@/lib/queries/fichas";
+import { getRegionesDeNacion } from "@/lib/queries/mapa";
 
 export const revalidate = 3600;
 
@@ -29,6 +30,7 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
   const n = await getNacion(Number(id)).catch(() => null);
   if (!n) notFound();
   const personajes = await getPersonajesDeNacion(n.id).catch(() => []);
+  const regiones = await getRegionesDeNacion(n.id).catch(() => []);
 
   return (
     <FichaShell
@@ -67,6 +69,25 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
           { label: "Estado actual", value: n.estadoActual },
         ]}
       />
+
+      {regiones.length > 0 && (
+        <section className="mt-4">
+          <h2 className="mb-3 font-display text-xl text-accent">Regiones</h2>
+          <div className="flex flex-wrap gap-3">
+            {regiones.map((r) => (
+              <Link key={r.id} href={`/regiones/${r.id}`} className="flex items-center gap-2 rounded-xl border border-border-base bg-surface/40 p-2 pr-4 hover:border-border-glow">
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg">
+                  <EntityImage src={r.imagenUrl} alt={r.nombre} name={r.nombre} sizes="36px" />
+                </div>
+                <div>
+                  <p className="text-sm text-fg">{r.nombre}</p>
+                  {r.subtitulo && <p className="text-xs text-fg-muted">{r.subtitulo}</p>}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {personajes.length > 0 && (
         <section className="mt-4">

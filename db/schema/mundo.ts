@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, text, timestamp, doublePrecision, jsonb } from "drizzle-orm/pg-core";
 import { estadoPublicacion } from "./enums";
 import { auditColumns } from "./_audit";
 
@@ -22,6 +22,11 @@ export const naciones = pgTable("naciones", {
   estructura: text("estructura"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
+  // Geometría en el mapa (§10): contorno y centro normalizados 0..1.
+  poligono: jsonb("poligono").$type<[number, number][]>(),
+  centroX: doublePrecision("centro_x"),
+  centroY: doublePrecision("centro_y"),
+  color: varchar("color"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
 });
