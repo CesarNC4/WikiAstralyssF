@@ -31,6 +31,7 @@ export function AdminShell({
             <NavLink href="/admin/familias" icon="Users2" label="Familias" />
             <NavLink href="/admin/gremio" icon="Landmark" label="Gremio" />
             <NavLink href="/admin/lore" icon="ScrollText" label="Lore" />
+            <NavLink href="/admin/mapa" icon="Map" label="Mapa" />
             <div className="my-2 border-t border-border-base" />
             <NavLink href="/" icon="Compass" label="Ver wiki ↗" />
           </nav>
