@@ -11,6 +11,7 @@ export type EntityKey =
   | "naciones"
   | "organizaciones"
   | "familias"
+  | "gremio"
   | "razas"
   | "bestias"
   | "minerales"
@@ -84,6 +85,17 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     group: "mundo",
     tagline: "Linajes y casas que mueven la historia.",
     hasIndex: true,
+  },
+  gremio: {
+    key: "gremio",
+    plural: "Gremio",
+    singular: "Gremio",
+    route: "/gremio",
+    accent: "text-warning",
+    icon: "Landmark",
+    group: "mundo",
+    tagline: "El gremio de aventureros y sus normas.",
+    hasIndex: false,
   },
   razas: {
     key: "razas",
@@ -193,7 +205,7 @@ export const NAV_GROUPS: { id: EntityGroup; label: string; keys: EntityKey[] }[]
   {
     id: "mundo",
     label: "Mundo",
-    keys: ["naciones", "razas", "organizaciones", "familias", "bestias", "minerales"],
+    keys: ["naciones", "razas", "organizaciones", "familias", "gremio", "bestias", "minerales"],
   },
   { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "misiones"] },
   { id: "explorar", label: "Explorar", keys: ["timeline", "mapa"] },

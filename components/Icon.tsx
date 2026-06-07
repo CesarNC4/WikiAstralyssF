@@ -25,6 +25,9 @@ import {
   ChevronLeft,
   Compass,
   Star,
+  Shield,
+  Users2,
+  Landmark,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,6 +58,9 @@ const REGISTRY: Record<string, LucideIcon> = {
   ChevronLeft,
   Compass,
   Star,
+  Shield,
+  Users2,
+  Landmark,
 };
 
 export function Icon({

@@ -20,7 +20,8 @@ export const familiaArbol = pgTable("familia_arbol", {
 export const familiaJerarquia = pgTable("familia_jerarquia", {
   id: serial("id").primaryKey(),
   familiaId: integer("familia_id").notNull(),
-  personajeId: integer("personaje_id").notNull(),
+  personajeId: integer("personaje_id"),
+  nombre: varchar("nombre"),
   tituloNobiliario: varchar("titulo_nobiliario"),
   tituloFamilia: varchar("titulo_familia"),
   faccionId: integer("faccion_id"),
@@ -52,7 +53,8 @@ export const orgRangos = pgTable("org_rangos", {
 export const orgJerarquia = pgTable("org_jerarquia", {
   id: serial("id").primaryKey(),
   organizacionId: integer("organizacion_id").notNull(),
-  personajeId: integer("personaje_id").notNull(),
+  personajeId: integer("personaje_id"),
+  nombre: varchar("nombre"),
   rangoId: integer("rango_id"),
   tituloApodo: varchar("titulo_apodo"),
   faccionId: integer("faccion_id"),
@@ -70,6 +72,7 @@ export const orgHistorial = pgTable("org_historial", {
   destacado: boolean("destacado"),
   motivoDestacado: varchar("motivo_destacado"),
   notas: text("notas"),
+  orden: integer("orden"),
 });
 
 // ── Gremio ───────────────────────────────────────────────
@@ -90,7 +93,8 @@ export const gremioRangos = pgTable("gremio_rangos", {
 export const gremioJerarquia = pgTable("gremio_jerarquia", {
   id: serial("id").primaryKey(),
   gremioId: integer("gremio_id").notNull(),
-  personajeId: integer("personaje_id").notNull(),
+  personajeId: integer("personaje_id"),
+  nombre: varchar("nombre"),
   rangoId: integer("rango_id"),
   tituloApodo: varchar("titulo_apodo"),
   faccionId: integer("faccion_id"),
@@ -108,4 +112,5 @@ export const gremioHistorial = pgTable("gremio_historial", {
   destacado: boolean("destacado"),
   motivoDestacado: varchar("motivo_destacado"),
   notas: text("notas"),
+  orden: integer("orden"),
 });

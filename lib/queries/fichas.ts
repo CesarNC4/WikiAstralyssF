@@ -1,7 +1,8 @@
 import "server-only";
-import { and, eq, asc, isNull } from "drizzle-orm";
+import { and, eq, asc, desc, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 /** Ficha completa de personaje con todas sus relaciones (§5.2). */
 export async function getPersonajeFicha(id: number) {
@@ -130,9 +131,21 @@ export async function getMagia(id: number) {
   );
 }
 export async function getMision(id: number) {
-  return firstVisible(
+  const mision = await firstVisible(
     db.select().from(s.misiones).where(and(eq(s.misiones.id, id), eq(s.misiones.estadoPublicacion, "publicado"), isNull(s.misiones.eliminadoEn))).limit(1),
   );
+  if (!mision) return null;
+  // Encargante: ficha de personaje si la tiene; si no, nombre libre.
+  let encargante: { id: number; nombre: string } | null = null;
+  if (mision.personajeId) {
+    const [p] = await db
+      .select({ id: s.personajes.id, nombre: s.personajes.nombre })
+      .from(s.personajes)
+      .where(and(eq(s.personajes.id, mision.personajeId), isNull(s.personajes.eliminadoEn)))
+      .limit(1);
+    encargante = p ?? null;
+  }
+  return { ...mision, encargante };
 }
 export async function getPaginaLore(slug: string) {
   return firstVisible(
@@ -165,17 +178,17 @@ export async function getOrganizacionFicha(id: number) {
   );
   if (!org) return null;
 
-  const [jerarquia, facciones, historial] = await Promise.all([
+  const [jerRaw, facciones, historial] = await Promise.all([
     db
       .select({
         id: s.orgJerarquia.id,
+        nombreLibre: s.orgJerarquia.nombre,
         tituloApodo: s.orgJerarquia.tituloApodo,
         orden: s.orgJerarquia.orden,
         personajeId: s.personajes.id,
         personajeNombre: s.personajes.nombre,
         personajeImg: s.personajes.imagenUrl,
         rango: s.orgRangos.nombre,
-        rangoPeso: s.orgRangos.peso,
       })
       .from(s.orgJerarquia)
       .leftJoin(s.personajes, eq(s.orgJerarquia.personajeId, s.personajes.id))
@@ -183,8 +196,19 @@ export async function getOrganizacionFicha(id: number) {
       .where(eq(s.orgJerarquia.organizacionId, id))
       .orderBy(asc(s.orgJerarquia.orden)),
     db.select().from(s.orgFacciones).where(eq(s.orgFacciones.organizacionId, id)),
-    db.select().from(s.orgHistorial).where(eq(s.orgHistorial.organizacionId, id)),
+    db.select().from(s.orgHistorial).where(eq(s.orgHistorial.organizacionId, id)).orderBy(asc(s.orgHistorial.orden)),
   ]);
+
+  const jerarquia: FichaJerarquia[] = jerRaw.map((j) => ({
+    id: j.id,
+    nombre: j.personajeNombre ?? j.nombreLibre ?? null,
+    tituloApodo: j.tituloApodo,
+    tituloNobiliario: null,
+    tituloFamilia: null,
+    rango: j.rango,
+    personajeId: j.personajeId,
+    personajeImg: j.personajeImg,
+  }));
 
   return { org, jerarquia, facciones, historial };
 }
@@ -214,6 +238,7 @@ export async function getFamiliaFicha(id: number) {
     db
       .select({
         id: s.familiaJerarquia.id,
+        nombreLibre: s.familiaJerarquia.nombre,
         tituloNobiliario: s.familiaJerarquia.tituloNobiliario,
         tituloFamilia: s.familiaJerarquia.tituloFamilia,
         orden: s.familiaJerarquia.orden,
@@ -228,7 +253,57 @@ export async function getFamiliaFicha(id: number) {
     db.select().from(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, id)),
   ]);
 
-  return { familia, arbol, jerarquia, facciones };
+  const jerarquiaFicha: FichaJerarquia[] = jerarquia.map((j) => ({
+    id: j.id,
+    nombre: j.personajeNombre ?? j.nombreLibre ?? null,
+    tituloApodo: null,
+    tituloNobiliario: j.tituloNobiliario,
+    tituloFamilia: j.tituloFamilia,
+    rango: null,
+    personajeId: j.personajeId,
+    personajeImg: j.personajeImg,
+  }));
+
+  return { familia, arbol, jerarquia: jerarquiaFicha, facciones };
+}
+
+// ── Gremio (singleton, sin estado_publicacion) ───────────
+export async function getGremioFicha() {
+  const [gremio] = await db.select().from(s.gremio).limit(1);
+  if (!gremio) return null;
+  const gid = gremio.id;
+  const [rangos, facciones, jerRaw, historial] = await Promise.all([
+    db.select().from(s.gremioRangos).where(eq(s.gremioRangos.gremioId, gid)).orderBy(desc(s.gremioRangos.peso)),
+    db.select().from(s.gremioFacciones).where(eq(s.gremioFacciones.gremioId, gid)),
+    db
+      .select({
+        id: s.gremioJerarquia.id,
+        nombreLibre: s.gremioJerarquia.nombre,
+        tituloApodo: s.gremioJerarquia.tituloApodo,
+        orden: s.gremioJerarquia.orden,
+        personajeId: s.personajes.id,
+        personajeNombre: s.personajes.nombre,
+        personajeImg: s.personajes.imagenUrl,
+        rango: s.gremioRangos.nombre,
+      })
+      .from(s.gremioJerarquia)
+      .leftJoin(s.personajes, eq(s.gremioJerarquia.personajeId, s.personajes.id))
+      .leftJoin(s.gremioRangos, eq(s.gremioJerarquia.rangoId, s.gremioRangos.id))
+      .where(eq(s.gremioJerarquia.gremioId, gid))
+      .orderBy(asc(s.gremioJerarquia.orden)),
+    db.select().from(s.gremioHistorial).where(eq(s.gremioHistorial.gremioId, gid)).orderBy(asc(s.gremioHistorial.orden)),
+  ]);
+  const jerarquia: FichaJerarquia[] = jerRaw.map((j) => ({
+    id: j.id,
+    nombre: j.personajeNombre ?? j.nombreLibre ?? null,
+    tituloApodo: j.tituloApodo,
+    tituloNobiliario: null,
+    tituloFamilia: null,
+    rango: j.rango,
+    personajeId: j.personajeId,
+    personajeImg: j.personajeImg,
+  }));
+  return { gremio, rangos, facciones, jerarquia, historial };
 }
 
 // ── generateStaticParams helpers (ids visibles) ──────────

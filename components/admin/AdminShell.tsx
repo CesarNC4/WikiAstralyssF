@@ -27,6 +27,9 @@ export function AdminShell({
             {Object.values(ENTIDADES).map((e) => (
               <NavLink key={e.key} href={`/admin/${e.key}`} icon={e.icon} label={e.plural} />
             ))}
+            <NavLink href="/admin/organizaciones" icon="Shield" label="Organizaciones" />
+            <NavLink href="/admin/familias" icon="Users2" label="Familias" />
+            <NavLink href="/admin/gremio" icon="Landmark" label="Gremio" />
             <NavLink href="/admin/lore" icon="ScrollText" label="Lore" />
             <div className="my-2 border-t border-border-base" />
             <NavLink href="/" icon="Compass" label="Ver wiki ↗" />
