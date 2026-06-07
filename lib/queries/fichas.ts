@@ -147,6 +147,39 @@ export async function getMision(id: number) {
   }
   return { ...mision, encargante };
 }
+export async function getLordDemonio(id: number) {
+  return firstVisible(
+    db.select().from(s.lordDemonio).where(and(eq(s.lordDemonio.id, id), eq(s.lordDemonio.estadoPublicacion, "publicado"), isNull(s.lordDemonio.eliminadoEn))).limit(1),
+  );
+}
+
+export async function getArtefacto(id: number) {
+  const artefacto = await firstVisible(
+    db.select().from(s.armasArtefactos).where(and(eq(s.armasArtefactos.id, id), eq(s.armasArtefactos.estadoPublicacion, "publicado"), isNull(s.armasArtefactos.eliminadoEn))).limit(1),
+  );
+  if (!artefacto) return null;
+  // Propietario con ficha si lo tiene; si no, el nombre libre.
+  let propietario: { id: number; nombre: string; imagenUrl: string | null } | null = null;
+  if (artefacto.propietarioId) {
+    const [p] = await db
+      .select({ id: s.personajes.id, nombre: s.personajes.nombre, imagenUrl: s.personajes.imagenUrl })
+      .from(s.personajes)
+      .where(and(eq(s.personajes.id, artefacto.propietarioId), eq(s.personajes.estadoPublicacion, "publicado"), isNull(s.personajes.eliminadoEn)))
+      .limit(1);
+    propietario = p ?? null;
+  }
+  return { ...artefacto, propietario };
+}
+
+/** Todas las monedas publicadas (la economía se muestra en una sola página). */
+export async function getSistemaMonetario() {
+  return db
+    .select()
+    .from(s.sistemaMonetario)
+    .where(and(eq(s.sistemaMonetario.estadoPublicacion, "publicado"), isNull(s.sistemaMonetario.eliminadoEn)))
+    .orderBy(asc(s.sistemaMonetario.nombre));
+}
+
 export async function getPaginaLore(slug: string) {
   return firstVisible(
     db.select().from(s.paginasLore).where(and(eq(s.paginasLore.slug, slug), eq(s.paginasLore.estadoPublicacion, "publicado"))).limit(1),
@@ -316,7 +349,7 @@ export async function getGremioFicha() {
 
 // ── generateStaticParams helpers (ids visibles) ──────────
 export async function getVisibleIds(
-  key: "personajes" | "naciones" | "organizaciones" | "familias" | "razas" | "bestias" | "minerales" | "conceptos" | "magia" | "misiones",
+  key: "personajes" | "naciones" | "organizaciones" | "familias" | "razas" | "bestias" | "minerales" | "conceptos" | "magia" | "misiones" | "demonios" | "artefactos",
 ): Promise<number[]> {
   const table = {
     personajes: s.personajes,
@@ -329,6 +362,8 @@ export async function getVisibleIds(
     conceptos: s.conceptos,
     magia: s.magiaFundamentos,
     misiones: s.misiones,
+    demonios: s.lordDemonio,
+    artefactos: s.armasArtefactos,
   }[key];
   const rows = await db
     .select({ id: table.id })

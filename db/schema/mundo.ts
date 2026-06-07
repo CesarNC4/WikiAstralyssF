@@ -145,6 +145,7 @@ export const gremio = pgTable("gremio", {
 });
 
 export const lordDemonio = pgTable("lord_demonio", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   titulo: varchar("titulo"),
@@ -163,6 +164,7 @@ export const lordDemonio = pgTable("lord_demonio", {
 });
 
 export const armasArtefactos = pgTable("armas_artefactos", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   tipo: varchar("tipo"),
@@ -177,6 +179,7 @@ export const armasArtefactos = pgTable("armas_artefactos", {
 });
 
 export const sistemaMonetario = pgTable("sistema_monetario", {
+  ...auditColumns(),
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   denominacion: varchar("denominacion"),

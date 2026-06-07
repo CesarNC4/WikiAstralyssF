@@ -80,6 +80,16 @@ const OG: Record<string, OgCfg> = {
     cols: { nombre: true, tipo: true, imagenUrl: true },
     name: (r) => String(r.nombre ?? ""), sub: (r) => str(r.tipo),
   },
+  demonios: {
+    accessor: "lordDemonio", tipo: "Lord Demonio", acento: "#f87171",
+    cols: { nombre: true, titulo: true, imagenUrl: true },
+    name: (r) => String(r.nombre ?? ""), sub: (r) => str(r.titulo),
+  },
+  artefactos: {
+    accessor: "armasArtefactos", tipo: "Artefacto", acento: "#ff8c5a",
+    cols: { nombre: true, tipo: true, imagenUrl: true },
+    name: (r) => String(r.nombre ?? ""), sub: (r) => str(r.tipo),
+  },
 };
 
 /** OG de una ficha por id (entidades con id numérico). */

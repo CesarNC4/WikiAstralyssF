@@ -28,6 +28,9 @@ import {
   Shield,
   Users2,
   Landmark,
+  Flame,
+  Sword,
+  Coins,
   type LucideIcon,
 } from "lucide-react";
 
@@ -61,6 +64,9 @@ const REGISTRY: Record<string, LucideIcon> = {
   Shield,
   Users2,
   Landmark,
+  Flame,
+  Sword,
+  Coins,
 };
 
 export function Icon({

@@ -19,6 +19,9 @@ export type EntityKey =
   | "magia"
   | "lore"
   | "misiones"
+  | "demonios"
+  | "artefactos"
+  | "economia"
   | "timeline"
   | "mapa";
 
@@ -174,6 +177,39 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     tagline: "Contratos, encargos y aventuras.",
     hasIndex: true,
   },
+  demonios: {
+    key: "demonios",
+    plural: "Lords Demonio",
+    singular: "Lord Demonio",
+    route: "/demonios",
+    accent: "text-error",
+    icon: "Flame",
+    group: "mundo",
+    tagline: "Señores del caos y la oscuridad.",
+    hasIndex: true,
+  },
+  artefactos: {
+    key: "artefactos",
+    plural: "Artefactos",
+    singular: "Artefacto",
+    route: "/artefactos",
+    accent: "text-accent-warm",
+    icon: "Sword",
+    group: "mundo",
+    tagline: "Armas y reliquias de poder legendario.",
+    hasIndex: true,
+  },
+  economia: {
+    key: "economia",
+    plural: "Economía",
+    singular: "Moneda",
+    route: "/economia",
+    accent: "text-accent",
+    icon: "Coins",
+    group: "lore",
+    tagline: "El sistema monetario de Astralys.",
+    hasIndex: false,
+  },
   timeline: {
     key: "timeline",
     plural: "Cronología",
@@ -205,9 +241,9 @@ export const NAV_GROUPS: { id: EntityGroup; label: string; keys: EntityKey[] }[]
   {
     id: "mundo",
     label: "Mundo",
-    keys: ["naciones", "razas", "organizaciones", "familias", "gremio", "bestias", "minerales"],
+    keys: ["naciones", "razas", "organizaciones", "familias", "gremio", "bestias", "minerales", "demonios", "artefactos"],
   },
-  { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "misiones"] },
+  { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "misiones", "economia"] },
   { id: "explorar", label: "Explorar", keys: ["timeline", "mapa"] },
 ];
 

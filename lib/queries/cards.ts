@@ -127,6 +127,22 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
         badge: r.badge ? `Riesgo ${r.badge}` : null,
       }));
     }
+    case "demonios": {
+      const rows = await db
+        .select({ id: s.lordDemonio.id, titulo: s.lordDemonio.nombre, subtitulo: s.lordDemonio.titulo, imagenUrl: s.lordDemonio.imagenUrl, badge: s.lordDemonio.estado })
+        .from(s.lordDemonio)
+        .where(and(eq(s.lordDemonio.estadoPublicacion, "publicado"), isNull(s.lordDemonio.eliminadoEn)))
+        .orderBy(asc(s.lordDemonio.nombre));
+      return rows.map((r) => ({ ...r, href: `/demonios/${r.id}` }));
+    }
+    case "artefactos": {
+      const rows = await db
+        .select({ id: s.armasArtefactos.id, titulo: s.armasArtefactos.nombre, subtitulo: s.armasArtefactos.tipo, imagenUrl: s.armasArtefactos.imagenUrl, badge: s.armasArtefactos.tipo })
+        .from(s.armasArtefactos)
+        .where(and(eq(s.armasArtefactos.estadoPublicacion, "publicado"), isNull(s.armasArtefactos.eliminadoEn)))
+        .orderBy(asc(s.armasArtefactos.nombre));
+      return rows.map((r) => ({ ...r, href: `/artefactos/${r.id}` }));
+    }
     default:
       return [];
   }

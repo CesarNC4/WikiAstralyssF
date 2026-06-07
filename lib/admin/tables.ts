@@ -12,6 +12,9 @@ export const ENTIDAD_TABLES: Record<string, PgTable> = {
   magia: s.magiaFundamentos,
   misiones: s.misiones,
   timeline: s.timelineEventos,
+  demonios: s.lordDemonio,
+  artefactos: s.armasArtefactos,
+  economia: s.sistemaMonetario,
 };
 
 export function getEntidadTable(key: string): PgTable | undefined {

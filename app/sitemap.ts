@@ -26,6 +26,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "conceptos",
     "magia",
     "misiones",
+    "demonios",
+    "artefactos",
   ] as const;
 
   const dynamic: MetadataRoute.Sitemap = [];
