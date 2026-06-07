@@ -76,8 +76,14 @@ export function EntidadForm({
 
   const submit = () => {
     const payload: Record<string, unknown> = { ...values, estadoPublicacion: estado };
-    if (config.hasImage) payload.imagenUrl = imagen.url;
-    if (config.hasBanner) payload.bannerUrl = banner.url;
+    if (config.hasImage) {
+      payload.imagenUrl = imagen.url;
+      payload.imagenAssetId = imagen.assetId;
+    }
+    if (config.hasBanner) {
+      payload.bannerUrl = banner.url;
+      payload.bannerAssetId = banner.assetId;
+    }
     const fd = new FormData();
     fd.set("entidad", config.key);
     if (id) fd.set("id", String(id));

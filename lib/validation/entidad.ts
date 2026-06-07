@@ -46,7 +46,13 @@ export function buildEntidadSchema(config: EntidadConfig) {
     else if (field.required) shape[field.name] = z.string().trim().min(1, `${field.label} es obligatorio`);
     else shape[field.name] = str;
   }
-  if (config.hasImage) shape.imagenUrl = str;
-  if (config.hasBanner) shape.bannerUrl = str;
+  if (config.hasImage) {
+    shape.imagenUrl = str;
+    shape.imagenAssetId = idField;
+  }
+  if (config.hasBanner) {
+    shape.bannerUrl = str;
+    shape.bannerAssetId = idField;
+  }
   return z.object(shape);
 }

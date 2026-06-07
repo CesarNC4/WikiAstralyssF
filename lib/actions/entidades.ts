@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq, getTableColumns } from "drizzle-orm";
+import { eq, getTableColumns, getTableName, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assertAdmin } from "@/lib/actions/auth";
 import { getEntidadConfig } from "@/lib/admin/fields";
@@ -61,6 +61,14 @@ export async function guardarEntidad(
   }
   const data = parsed.data as Record<string, unknown>;
 
+  // Los asset_id no están declarados en el schema Drizzle de las entidades
+  // genéricas; se extraen y se escriben aparte con SQL directo (la columna ya
+  // existe en la BD). Así media_assets queda enlazado para blurhash/alt futuros.
+  const imagenAssetId = (data.imagenAssetId as number | null | undefined) ?? null;
+  const bannerAssetId = (data.bannerAssetId as number | null | undefined) ?? null;
+  delete data.imagenAssetId;
+  delete data.bannerAssetId;
+
   const idRaw = formData.get("id");
   const id = idRaw ? Number(idRaw) : null;
   const created = !id;
@@ -90,6 +98,21 @@ export async function guardarEntidad(
   } catch (e) {
     console.error("[guardarEntidad]", key, e);
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
+  }
+
+  // Enlace de assets (columna ya provisionada en BD; ver backfill-media).
+  // Solo se escribe si hay asset nuevo, o se limpia si se quitó la imagen
+  // (url null); así una edición que no toca la imagen no desenlaza el asset.
+  try {
+    const tn = getTableName(table);
+    if (config.hasImage && (imagenAssetId != null || data.imagenUrl == null)) {
+      await db.execute(sql`update ${sql.identifier(tn)} set imagen_asset_id = ${imagenAssetId} where id = ${savedId}`);
+    }
+    if (config.hasBanner && (bannerAssetId != null || data.bannerUrl == null)) {
+      await db.execute(sql`update ${sql.identifier(tn)} set banner_asset_id = ${bannerAssetId} where id = ${savedId}`);
+    }
+  } catch (e) {
+    console.error("[guardarEntidad] asset link", key, e);
   }
 
   revalidar(config.route, savedId);
