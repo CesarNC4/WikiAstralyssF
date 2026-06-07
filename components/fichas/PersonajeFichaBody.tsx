@@ -207,6 +207,8 @@ export function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
       nombre={p.nombre}
       backHref="/personajes"
       backLabel="Personajes"
+      galeriaTipo="personajes"
+      galeriaId={p.id}
       badges={
         <>
           {p.rangoAventurero && <Badge tone="primary">{p.rangoAventurero}</Badge>}

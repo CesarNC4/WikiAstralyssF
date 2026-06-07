@@ -8,6 +8,7 @@ import type { EstadoPublicacion } from "@/db/schema/enums";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection, Repeater, MultiPicker } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
+import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import {
   Field,
   TextInput,
@@ -375,6 +376,11 @@ export function PersonajeForm({
           <ImageField label="Banner" value={banner} onChange={wrapSetter(setBanner)} alt={f.nombre} aspect="aspect-video" />
         </div>
       </AccordionSection>
+
+      {/* Galería (solo al editar) */}
+      {inicial?.id && (
+        <GaleriaEditor entidadTipo="personajes" entidadId={inicial.id} revalidar={`/personajes/${inicial.id}`} alt={f.nombre} />
+      )}
 
       {/* Barra de acciones fija */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">

@@ -34,6 +34,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       nombre={x.nombre}
       backHref="/artefactos"
       backLabel="Artefactos"
+      galeriaTipo="artefactos"
+      galeriaId={x.id}
       badges={<>{x.tipo && <Badge tone="accent">{x.tipo}</Badge>}</>}
     >
       <FieldGrid fields={[{ label: "Tipo", value: x.tipo }]} />

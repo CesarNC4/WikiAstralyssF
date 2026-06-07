@@ -32,6 +32,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       nombre={x.nombre}
       backHref="/demonios"
       backLabel="Lords Demonio"
+      galeriaTipo="demonios"
+      galeriaId={x.id}
       badges={
         <>
           {x.dominio && <Badge tone="amenaza">{x.dominio}</Badge>}

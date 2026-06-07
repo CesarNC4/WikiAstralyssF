@@ -8,6 +8,7 @@ import type { EstadoPublicacion } from "@/db/schema/enums";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
+import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { Field, TextInput, NumberInput, Combobox, MarkdownField, ReferenceField } from "@/components/admin/fields";
 
 type Referencias = Partial<Record<RefTarget, OpcionRef[]>>;
@@ -143,6 +144,11 @@ export function EntidadForm({
             )}
           </div>
         </AccordionSection>
+      )}
+
+      {/* Galería (solo al editar: necesita un id de entidad existente) */}
+      {id && config.hasImage && (
+        <GaleriaEditor entidadTipo={config.key} entidadId={id} revalidar={`${config.route}/${id}`} alt={values[config.nameField]} />
       )}
 
       {/* Barra de acciones */}

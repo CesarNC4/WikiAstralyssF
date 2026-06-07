@@ -3,10 +3,12 @@ import { EntityImage } from "@/components/media/EntityImage";
 import { Icon } from "@/components/Icon";
 import { FadeIn } from "@/components/motion/Motion";
 import { Markdown } from "@/components/markdown/Markdown";
+import { Galeria } from "@/components/fichas/Galeria";
+import { getGaleria } from "@/lib/queries/galeria";
 import type { FichaField } from "@/lib/types";
 
 /** Cabecera común de ficha (§5.2): banner + avatar + título + badges. */
-export function FichaShell({
+export async function FichaShell({
   banner,
   imagen,
   titulo,
@@ -15,6 +17,8 @@ export function FichaShell({
   badges,
   backHref,
   backLabel,
+  galeriaTipo,
+  galeriaId,
   children,
 }: {
   banner?: string | null;
@@ -25,8 +29,13 @@ export function FichaShell({
   badges?: React.ReactNode;
   backHref: string;
   backLabel: string;
+  /** Si se indican, se renderiza la galería (entidad_media) de esta entidad. */
+  galeriaTipo?: string;
+  galeriaId?: number;
   children: React.ReactNode;
 }) {
+  const galeria =
+    galeriaTipo && galeriaId ? await getGaleria(galeriaTipo, galeriaId).catch(() => []) : [];
   return (
     <div>
       {/* Banner */}
@@ -56,7 +65,10 @@ export function FichaShell({
           </FadeIn>
         </div>
 
-        <div className="py-8">{children}</div>
+        <div className="py-8">
+          {children}
+          {galeria.length > 0 && <Galeria images={galeria} />}
+        </div>
       </div>
     </div>
   );

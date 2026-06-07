@@ -39,6 +39,8 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
       nombre={n.nombre}
       backHref="/naciones"
       backLabel="Naciones"
+      galeriaTipo="naciones"
+      galeriaId={n.id}
       badges={
         <>
           {n.elementoFundamental && <Badge tone="secondary">{n.elementoFundamental}</Badge>}
