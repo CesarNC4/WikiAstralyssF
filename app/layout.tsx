@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: SITE_NAME,
     description: SITE_DESC,
   },
-  icons: { icon: "/favicon.ico" },
+  // Los iconos los aportan app/icon.tsx y app/apple-icon.tsx (generados).
 };
 
 export const viewport: Viewport = {
