@@ -76,12 +76,13 @@ export interface OrgPayload {
   historial: HistorialRow[];
 }
 
-/** Payload de familia (sin rangos ni historial; con árbol). */
+/** Payload de familia (con rangos y árbol; sin historial). */
 export interface FamiliaPayload {
   campos: Record<string, string | null>;
   imagenUrl: string | null;
   bannerUrl: string | null;
   estadoPublicacion: Estado;
+  rangos: RangoRow[];
   facciones: FaccionRow[];
   jerarquia: JerarquiaRow[];
   arbol: ArbolRow[];

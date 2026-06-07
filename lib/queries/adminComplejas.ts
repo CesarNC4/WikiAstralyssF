@@ -129,13 +129,16 @@ export async function getFamiliaParaEditar(id: number) {
     .limit(1);
   if (!familia) return null;
 
-  const [faccionesRaw, jerRaw, arbolRaw] = await Promise.all([
+  const [rangosRaw, faccionesRaw, jerRaw, arbolRaw] = await Promise.all([
+    db.select().from(s.familiaRangos).where(eq(s.familiaRangos.familiaId, id)).orderBy(desc(s.familiaRangos.peso)),
     db.select().from(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, id)).orderBy(asc(s.familiaFacciones.id)),
     db.select().from(s.familiaJerarquia).where(eq(s.familiaJerarquia.familiaId, id)).orderBy(asc(s.familiaJerarquia.orden)),
     db.select().from(s.familiaArbol).where(eq(s.familiaArbol.familiaId, id)).orderBy(asc(s.familiaArbol.generacion), asc(s.familiaArbol.id)),
   ]);
 
+  const rangos = mapRangos(rangosRaw);
   const facciones = mapFacciones(faccionesRaw);
+  const rangoKeyDe = (rid: number | null) => (rid != null ? dbKey(rid) : null);
   const faccionKeyDe = (fid: number | null) => (fid != null ? dbKey(fid) : null);
 
   const jerarquia: JerarquiaRow[] = jerRaw.map((r) => ({
@@ -143,7 +146,7 @@ export async function getFamiliaParaEditar(id: number) {
     id: r.id,
     personajeId: r.personajeId ?? null,
     nombre: r.nombre ?? "",
-    rangoKey: null,
+    rangoKey: rangoKeyDe(r.rangoId),
     faccionKey: faccionKeyDe(r.faccionId),
     tituloApodo: "",
     tituloNobiliario: r.tituloNobiliario ?? "",
@@ -164,7 +167,7 @@ export async function getFamiliaParaEditar(id: number) {
     notas: r.notas ?? "",
   }));
 
-  return { familia, facciones, jerarquia, arbol };
+  return { familia, rangos, facciones, jerarquia, arbol };
 }
 
 // ── Preview (sin filtro de publicado; resuelve nombre libre vs ficha) ───────
@@ -175,6 +178,7 @@ export interface FichaJerarquia {
   tituloNobiliario: string | null;
   tituloFamilia: string | null;
   rango: string | null;
+  rangoPeso: number | null;
   personajeId: number | null;
   personajeImg: string | null;
 }
@@ -193,6 +197,7 @@ export async function getOrgPreview(id: number) {
         personajeNombre: s.personajes.nombre,
         personajeImg: s.personajes.imagenUrl,
         rango: s.orgRangos.nombre,
+        rangoPeso: s.orgRangos.peso,
       })
       .from(s.orgJerarquia)
       .leftJoin(s.personajes, eq(s.orgJerarquia.personajeId, s.personajes.id))
@@ -209,6 +214,7 @@ export async function getOrgPreview(id: number) {
     tituloNobiliario: null,
     tituloFamilia: null,
     rango: j.rango,
+    rangoPeso: j.rangoPeso,
     personajeId: j.personajeId,
     personajeImg: j.personajeImg,
   }));
@@ -230,9 +236,12 @@ export async function getFamiliaPreview(id: number) {
         personajeId: s.personajes.id,
         personajeNombre: s.personajes.nombre,
         personajeImg: s.personajes.imagenUrl,
+        rango: s.familiaRangos.nombre,
+        rangoPeso: s.familiaRangos.peso,
       })
       .from(s.familiaJerarquia)
       .leftJoin(s.personajes, eq(s.familiaJerarquia.personajeId, s.personajes.id))
+      .leftJoin(s.familiaRangos, eq(s.familiaJerarquia.rangoId, s.familiaRangos.id))
       .where(eq(s.familiaJerarquia.familiaId, id))
       .orderBy(asc(s.familiaJerarquia.orden)),
     db.select().from(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, id)).orderBy(asc(s.familiaFacciones.id)),
@@ -243,7 +252,8 @@ export async function getFamiliaPreview(id: number) {
     tituloApodo: null,
     tituloNobiliario: j.tituloNobiliario,
     tituloFamilia: j.tituloFamilia,
-    rango: null,
+    rango: j.rango,
+    rangoPeso: j.rangoPeso,
     personajeId: j.personajeId,
     personajeImg: j.personajeImg,
   }));

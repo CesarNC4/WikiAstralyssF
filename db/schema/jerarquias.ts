@@ -22,6 +22,7 @@ export const familiaJerarquia = pgTable("familia_jerarquia", {
   familiaId: integer("familia_id").notNull(),
   personajeId: integer("personaje_id"),
   nombre: varchar("nombre"),
+  rangoId: integer("rango_id"),
   tituloNobiliario: varchar("titulo_nobiliario"),
   tituloFamilia: varchar("titulo_familia"),
   faccionId: integer("faccion_id"),
@@ -33,6 +34,13 @@ export const familiaFacciones = pgTable("familia_facciones", {
   familiaId: integer("familia_id").notNull(),
   nombre: varchar("nombre").notNull(),
   color: varchar("color"),
+});
+
+export const familiaRangos = pgTable("familia_rangos", {
+  id: serial("id").primaryKey(),
+  familiaId: integer("familia_id").notNull(),
+  nombre: varchar("nombre").notNull(),
+  peso: integer("peso"),
 });
 
 // ── Organización ─────────────────────────────────────────

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { Badge } from "@/components/entity/Badge";
+import { JerarquiaSecciones } from "@/components/fichas/JerarquiaSecciones";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 interface FamiliaRow {
@@ -111,19 +112,7 @@ export function FamiliaFichaBody({
         </section>
       )}
 
-      {jerarquia.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-3 font-display text-xl text-accent">Jerarquía</h2>
-          <div className="space-y-2">
-            {jerarquia.map((j) => (
-              <div key={j.id} className="flex items-center justify-between rounded-xl border border-border-base bg-surface/40 p-3">
-                <span className="text-sm text-fg">{j.nombre ?? "—"}</span>
-                <span className="text-xs text-accent">{j.tituloNobiliario ?? j.tituloFamilia}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <JerarquiaSecciones items={jerarquia} variant="familia" />
     </FichaShell>
   );
 }

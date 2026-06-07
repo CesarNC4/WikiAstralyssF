@@ -64,27 +64,26 @@ export function JerarquiaEditor({
               onChange={(v) => patch(i, v)}
             />
 
+            <select
+              value={r.rangoKey ?? ""}
+              onChange={(e) => patch(i, { rangoKey: e.target.value || null })}
+              className={subInp + " w-36"}
+            >
+              <option value="">— Rango —</option>
+              {rangos.map((rg) => (
+                <option key={rg.key} value={rg.key}>
+                  {rg.nombre || "(sin nombre)"}
+                </option>
+              ))}
+            </select>
+
             {variant === "org" ? (
-              <>
-                <select
-                  value={r.rangoKey ?? ""}
-                  onChange={(e) => patch(i, { rangoKey: e.target.value || null })}
-                  className={subInp + " w-36"}
-                >
-                  <option value="">— Rango —</option>
-                  {rangos.map((rg) => (
-                    <option key={rg.key} value={rg.key}>
-                      {rg.nombre || "(sin nombre)"}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  value={r.tituloApodo}
-                  onChange={(e) => patch(i, { tituloApodo: e.target.value })}
-                  placeholder="Título / apodo"
-                  className={subInp + " w-36"}
-                />
-              </>
+              <input
+                value={r.tituloApodo}
+                onChange={(e) => patch(i, { tituloApodo: e.target.value })}
+                placeholder="Título / apodo"
+                className={subInp + " w-36"}
+              />
             ) : (
               <>
                 <input

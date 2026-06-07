@@ -4,11 +4,12 @@ import { useActionState, useEffect, useState, startTransition } from "react";
 import dynamic from "next/dynamic";
 import { guardarFamilia, type ComplejaFormState } from "@/lib/actions/complejas";
 import type { EstadoPublicacion } from "@/db/schema/enums";
-import type { FaccionRow, JerarquiaRow, ArbolRow } from "@/lib/admin/complejas";
+import type { RangoRow, FaccionRow, JerarquiaRow, ArbolRow } from "@/lib/admin/complejas";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { Field, TextInput, MarkdownField, Combobox } from "@/components/admin/fields";
+import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
 import type { Opcion } from "@/components/admin/blocks/shared";
@@ -23,6 +24,7 @@ const v = (x: unknown) => (x == null ? "" : String(x));
 
 export interface FamiliaInicial {
   familia: Record<string, unknown>;
+  rangos: RangoRow[];
   facciones: FaccionRow[];
   jerarquia: JerarquiaRow[];
   arbol: ArbolRow[];
@@ -69,6 +71,7 @@ export function FamiliaForm({
   const [banner, setBanner] = useState<ImageValue>({ assetId: null, url: v(f?.bannerUrl) || null });
   const [estado, setEstado] = useState<EstadoPublicacion>((f?.estadoPublicacion as EstadoPublicacion) ?? "borrador");
 
+  const [rangos, setRangos] = useState<RangoRow[]>(inicial?.rangos ?? []);
   const [facciones, setFacciones] = useState<FaccionRow[]>(inicial?.facciones ?? []);
   const [jerarquia, setJerarquia] = useState<JerarquiaRow[]>(inicial?.jerarquia ?? []);
   const [arbol, setArbol] = useState<ArbolRow[]>(inicial?.arbol ?? []);
@@ -95,7 +98,7 @@ export function FamiliaForm({
       imagenUrl: imagen.url,
       bannerUrl: banner.url,
       estadoPublicacion: estado,
-      facciones, jerarquia, arbol,
+      rangos, facciones, jerarquia, arbol,
     };
     const fd = new FormData();
     if (id) fd.set("id", String(id));
@@ -124,11 +127,14 @@ export function FamiliaForm({
         </div>
       </AccordionSection>
 
+      <AccordionSection title="Rangos" subtitle={`${rangos.length}`}>
+        <RangosEditor rows={rangos} onChange={wrap(setRangos)} />
+      </AccordionSection>
       <AccordionSection title="Facciones" subtitle={`${facciones.length}`}>
         <FaccionesEditor rows={facciones} onChange={wrap(setFacciones)} />
       </AccordionSection>
       <AccordionSection title="Jerarquía" subtitle={`${jerarquia.length} miembros`}>
-        <JerarquiaEditor rows={jerarquia} onChange={wrap(setJerarquia)} variant="familia" rangos={[]} facciones={facciones} personajes={personajes} />
+        <JerarquiaEditor rows={jerarquia} onChange={wrap(setJerarquia)} variant="familia" rangos={rangos} facciones={facciones} personajes={personajes} />
       </AccordionSection>
       <AccordionSection title="Árbol genealógico" subtitle={`${arbol.length} personas`} defaultOpen>
         <ArbolEditor rows={arbol} onChange={wrap(setArbol)} personajes={personajes} estadoOptions={catalogos.arbol_estado ?? []} />

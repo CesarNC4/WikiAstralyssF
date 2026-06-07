@@ -189,6 +189,7 @@ export async function getOrganizacionFicha(id: number) {
         personajeNombre: s.personajes.nombre,
         personajeImg: s.personajes.imagenUrl,
         rango: s.orgRangos.nombre,
+        rangoPeso: s.orgRangos.peso,
       })
       .from(s.orgJerarquia)
       .leftJoin(s.personajes, eq(s.orgJerarquia.personajeId, s.personajes.id))
@@ -206,6 +207,7 @@ export async function getOrganizacionFicha(id: number) {
     tituloNobiliario: null,
     tituloFamilia: null,
     rango: j.rango,
+    rangoPeso: j.rangoPeso,
     personajeId: j.personajeId,
     personajeImg: j.personajeImg,
   }));
@@ -245,9 +247,12 @@ export async function getFamiliaFicha(id: number) {
         personajeId: s.personajes.id,
         personajeNombre: s.personajes.nombre,
         personajeImg: s.personajes.imagenUrl,
+        rango: s.familiaRangos.nombre,
+        rangoPeso: s.familiaRangos.peso,
       })
       .from(s.familiaJerarquia)
       .leftJoin(s.personajes, eq(s.familiaJerarquia.personajeId, s.personajes.id))
+      .leftJoin(s.familiaRangos, eq(s.familiaJerarquia.rangoId, s.familiaRangos.id))
       .where(eq(s.familiaJerarquia.familiaId, id))
       .orderBy(asc(s.familiaJerarquia.orden)),
     db.select().from(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, id)),
@@ -259,7 +264,8 @@ export async function getFamiliaFicha(id: number) {
     tituloApodo: null,
     tituloNobiliario: j.tituloNobiliario,
     tituloFamilia: j.tituloFamilia,
-    rango: null,
+    rango: j.rango,
+    rangoPeso: j.rangoPeso,
     personajeId: j.personajeId,
     personajeImg: j.personajeImg,
   }));
@@ -285,6 +291,7 @@ export async function getGremioFicha() {
         personajeNombre: s.personajes.nombre,
         personajeImg: s.personajes.imagenUrl,
         rango: s.gremioRangos.nombre,
+        rangoPeso: s.gremioRangos.peso,
       })
       .from(s.gremioJerarquia)
       .leftJoin(s.personajes, eq(s.gremioJerarquia.personajeId, s.personajes.id))
@@ -300,6 +307,7 @@ export async function getGremioFicha() {
     tituloNobiliario: null,
     tituloFamilia: null,
     rango: j.rango,
+    rangoPeso: j.rangoPeso,
     personajeId: j.personajeId,
     personajeImg: j.personajeImg,
   }));

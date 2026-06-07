@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { Badge } from "@/components/entity/Badge";
-import { EntityImage } from "@/components/media/EntityImage";
+import { JerarquiaSecciones } from "@/components/fichas/JerarquiaSecciones";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 interface OrgRow {
@@ -88,29 +87,7 @@ export function OrgFichaBody({
         </section>
       )}
 
-      {jerarquia.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-3 font-display text-xl text-accent">Jerarquía</h2>
-          <div className="space-y-2">
-            {jerarquia.map((j) => (
-              <div key={j.id} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3">
-                {j.personajeId ? (
-                  <Link href={`/personajes/${j.personajeId}`} className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg">
-                    <EntityImage src={j.personajeImg} alt={j.nombre ?? ""} name={j.nombre} sizes="44px" />
-                  </Link>
-                ) : (
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-deep text-fg-muted">?</div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-fg">{j.nombre ?? j.tituloApodo ?? "—"}</p>
-                  {j.tituloApodo && j.nombre && <p className="text-xs text-fg-muted">«{j.tituloApodo}»</p>}
-                </div>
-                {j.rango && <Badge tone="primary">{j.rango}</Badge>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <JerarquiaSecciones items={jerarquia} variant="org" />
 
       {historial.length > 0 && (
         <section className="mb-6">

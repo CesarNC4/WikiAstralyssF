@@ -201,6 +201,15 @@ export async function guardarFamilia(
         fid = row.id;
       }
 
+      // Rangos: peso por posición (arriba = mayor). Mapear key → id nuevo.
+      await tx.delete(s.familiaRangos).where(eq(s.familiaRangos.familiaId, fid));
+      const rangoMap = new Map<string, number>();
+      const rangos = data.rangos.filter((r) => r.nombre.trim());
+      for (let i = 0; i < rangos.length; i++) {
+        const [ins] = await tx.insert(s.familiaRangos).values({ familiaId: fid, nombre: rangos[i].nombre.trim(), peso: rangos.length - i }).returning({ id: s.familiaRangos.id });
+        rangoMap.set(rangos[i].key, ins.id);
+      }
+
       // Facciones.
       await tx.delete(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, fid));
       const faccionMap = new Map<string, number>();
@@ -209,7 +218,7 @@ export async function guardarFamilia(
         faccionMap.set(f.key, ins.id);
       }
 
-      // Jerarquía (títulos nobiliario/familia).
+      // Jerarquía (rango + títulos nobiliario/familia).
       await tx.delete(s.familiaJerarquia).where(eq(s.familiaJerarquia.familiaId, fid));
       const jer = data.jerarquia.filter((j) => j.personajeId != null || j.nombre.trim());
       if (jer.length) {
@@ -218,6 +227,7 @@ export async function guardarFamilia(
             familiaId: fid,
             personajeId: j.personajeId,
             nombre: j.personajeId == null ? nz(j.nombre) : null,
+            rangoId: j.rangoKey ? rangoMap.get(j.rangoKey) ?? null : null,
             tituloNobiliario: nz(j.tituloNobiliario),
             tituloFamilia: nz(j.tituloFamilia),
             faccionId: j.faccionKey ? faccionMap.get(j.faccionKey) ?? null : null,
@@ -427,6 +437,7 @@ export async function eliminarFamiliaDefinitivo(id: number): Promise<void> {
   await db.transaction(async (tx) => {
     await tx.delete(s.familiaJerarquia).where(eq(s.familiaJerarquia.familiaId, id));
     await tx.delete(s.familiaArbol).where(eq(s.familiaArbol.familiaId, id));
+    await tx.delete(s.familiaRangos).where(eq(s.familiaRangos.familiaId, id));
     await tx.delete(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, id));
     await tx.delete(s.familias).where(eq(s.familias.id, id));
   });
