@@ -54,6 +54,8 @@ export function MapaEditor({ data }: { data: MapaAdmin }) {
   const [sel, setSel] = useState<Sel | null>(null);
   const [map, setMap] = useState<LeafletMap | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const [capas, setCapas] = useState({ nac: true, reg: true, loc: true });
 
   // ── Captura de geometría dibujada con geoman ──
   const onMap = useCallback((m: LeafletMap) => {
@@ -72,6 +74,7 @@ export function MapaEditor({ data }: { data: MapaAdmin }) {
           setSel((s) => (s ? { ...s, punto: latLngToNorm(ll.lat, ll.lng) } : s));
         }
         m.removeLayer(layer); // la geometría se re-renderiza desde el estado
+        setDrawing(false);
         toast("Geometría capturada. Recuerda Guardar.", "success");
       });
       return m;
@@ -80,6 +83,7 @@ export function MapaEditor({ data }: { data: MapaAdmin }) {
 
   const dibujar = (modo: "Polygon" | "Marker") => {
     if (!map) return;
+    setDrawing(true);
     map.pm.enableDraw(modo, { snappable: true, continueDrawing: false });
   };
 
@@ -150,13 +154,13 @@ export function MapaEditor({ data }: { data: MapaAdmin }) {
         <MapContainer crs={CRS.Simple} bounds={MAPA_BOUNDS} maxBounds={MAPA_BOUNDS} minZoom={-2} maxZoom={2} attributionControl={false} style={{ height: "min(72vh, 700px)", width: "100%", background: "#0a0a14" }}>
           <MapBridge onReady={onMap} />
           <ImageOverlay url={MAPA_IMG} bounds={MAPA_BOUNDS} />
-          {naciones.filter((n) => n.poligono && n.poligono.length >= 3).map((n) => (
-            <Polygon key={`n${n.id}`} positions={poligonoToLatLngs(n.poligono)} pathOptions={{ color: n.color ?? "#7b5cff", weight: 2, fillOpacity: 0.1 }} eventHandlers={{ click: () => elegir("nacion", n) }}>
+          {capas.nac && naciones.filter((n) => n.poligono && n.poligono.length >= 3).map((n) => (
+            <Polygon key={`n${n.id}`} positions={poligonoToLatLngs(n.poligono)} pathOptions={{ color: n.color ?? "#7b5cff", weight: sel?.kind === "nacion" && sel.id === n.id ? 4 : 2, fillOpacity: 0.06, interactive: !drawing }} eventHandlers={{ click: () => { if (!drawing) elegir("nacion", n); } }}>
               <Tooltip sticky>{n.nombre}</Tooltip>
             </Polygon>
           ))}
-          {regiones.filter((r) => r.poligono && r.poligono.length >= 3).map((r) => (
-            <Polygon key={`r${r.id}`} positions={poligonoToLatLngs(r.poligono)} pathOptions={{ color: r.color ?? "#2dd4bf", weight: 1.5, dashArray: "4", fillOpacity: 0.08 }} eventHandlers={{ click: () => elegir("region", r) }}>
+          {capas.reg && regiones.filter((r) => r.poligono && r.poligono.length >= 3).map((r) => (
+            <Polygon key={`r${r.id}`} positions={poligonoToLatLngs(r.poligono)} pathOptions={{ color: r.color ?? "#2dd4bf", weight: sel?.kind === "region" && sel.id === r.id ? 4 : 1.5, dashArray: "4", fillOpacity: 0.06, interactive: !drawing }} eventHandlers={{ click: () => { if (!drawing) elegir("region", r); } }}>
               <Tooltip sticky>{r.nombre}</Tooltip>
             </Polygon>
           ))}
@@ -164,8 +168,8 @@ export function MapaEditor({ data }: { data: MapaAdmin }) {
           {sel?.poligono && sel.poligono.length >= 3 && (
             <Polygon positions={poligonoToLatLngs(sel.poligono)} pathOptions={{ color: "#ffd66b", weight: 2, fillOpacity: 0.15 }} />
           )}
-          {locaciones.filter((l) => l.x != null && l.y != null).map((l) => (
-            <CircleMarker key={`l${l.id}`} center={normToLatLng([l.x as number, l.y as number])} radius={6} pathOptions={{ color: "#0a0a14", weight: 1.5, fillColor: TIPOS_LOCACION[l.tipo as TipoLocacionKey].color, fillOpacity: 1 }} eventHandlers={{ click: () => elegir("locacion", l) }}>
+          {capas.loc && locaciones.filter((l) => l.x != null && l.y != null).map((l) => (
+            <CircleMarker key={`l${l.id}`} center={normToLatLng([l.x as number, l.y as number])} radius={6} pathOptions={{ color: "#0a0a14", weight: 1.5, fillColor: TIPOS_LOCACION[l.tipo as TipoLocacionKey].color, fillOpacity: 1, interactive: !drawing }} eventHandlers={{ click: () => { if (!drawing) elegir("locacion", l); } }}>
               <Tooltip>{l.nombre}</Tooltip>
             </CircleMarker>
           ))}
@@ -181,6 +185,22 @@ export function MapaEditor({ data }: { data: MapaAdmin }) {
           <button onClick={() => setSel(vacio("region"))} className="rounded-lg bg-primary px-3 py-1.5 text-sm text-void">+ Región</button>
           <button onClick={() => setSel(vacio("locacion"))} className="rounded-lg bg-secondary px-3 py-1.5 text-sm text-void">+ Locación</button>
         </div>
+
+        {/* Capas visibles (para no solaparse al editar) */}
+        <div className="flex flex-wrap gap-2 text-xs">
+          {([["nac", "Naciones"], ["reg", "Regiones"], ["loc", "Locaciones"]] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setCapas((c) => ({ ...c, [k]: !c[k] }))} className={`rounded-full border px-2.5 py-1 ${capas[k] ? "border-border-glow text-fg" : "border-border-base text-fg-muted opacity-50"}`}>
+              {capas[k] ? "👁 " : "🚫 "}{label}
+            </button>
+          ))}
+        </div>
+
+        {drawing && (
+          <div className="flex items-center justify-between rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-accent">
+            <span>Dibujando… clic para añadir vértices, doble clic para cerrar.</span>
+            <button onClick={() => { map?.pm.disableDraw(); setDrawing(false); }} className="underline">Cancelar</button>
+          </div>
+        )}
 
         {!sel ? (
           <div className="rounded-xl border border-dashed border-border-base p-4 text-sm text-fg-muted">
