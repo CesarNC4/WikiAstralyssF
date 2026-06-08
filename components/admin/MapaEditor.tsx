@@ -2,6 +2,7 @@
 
 import "leaflet/dist/leaflet.css";
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+import "./leafletGeomanSetup"; // expone window.L antes de geoman
 import "@geoman-io/leaflet-geoman-free";
 import { useCallback, useEffect, useState } from "react";
 import { MapContainer, ImageOverlay, Polygon, CircleMarker, Tooltip, useMap } from "react-leaflet";
