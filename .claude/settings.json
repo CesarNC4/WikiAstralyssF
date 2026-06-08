@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --env-file=.env.local -e ' *)",
+      "Bash(node --env-file=.env.local scripts/migrate-frente-a-search.mjs)",
+      "Bash(git commit -m '@ *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\('react',p.dependencies.react\\);console.log\\('leaflet',p.dependencies.leaflet\\);console.log\\('react-leaflet',p.dependencies['react-leaflet']\\);console.log\\('geoman',p.dependencies['@geoman-io/leaflet-geoman-free']\\);console.log\\('@types/leaflet',p.devDependencies['@types/leaflet']\\)\")",
+      "Bash(node --env-file=.env.local scripts/migrate-mapa.mjs)",
+      "Bash(grep -v \"severity\\\\|^{$\\\\|^}$\\\\|file:\\\\|line:\\\\|routine:\\\\|code:\\\\|message:\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}
