@@ -57,33 +57,47 @@ export function MapaMundi({ data }: { data: MapaPublico }) {
       >
         <ImageOverlay url={MAPA_IMG} bounds={MAPA_BOUNDS} />
 
-        {/* Naciones */}
+        {/* Naciones — solo contorno; relleno suave al pasar el ratón */}
         {data.naciones
           .filter((n) => n.poligono && n.poligono.length >= 3)
-          .map((n) => (
-            <Polygon
-              key={`nac-${n.id}`}
-              positions={poligonoToLatLngs(n.poligono)}
-              pathOptions={{ color: n.color ?? ACENTO_NACION, weight: 2, fillOpacity: 0.12 }}
-              eventHandlers={{ click: () => router.push(`/naciones/${n.id}`) }}
-            >
-              <Tooltip sticky>{n.nombre}</Tooltip>
-            </Polygon>
-          ))}
+          .map((n) => {
+            const color = n.color ?? ACENTO_NACION;
+            return (
+              <Polygon
+                key={`nac-${n.id}`}
+                positions={poligonoToLatLngs(n.poligono)}
+                pathOptions={{ color, weight: 2, fill: true, fillColor: color, fillOpacity: 0 }}
+                eventHandlers={{
+                  click: () => router.push(`/naciones/${n.id}`),
+                  mouseover: (e) => e.target.setStyle({ fillOpacity: 0.16, weight: 3 }),
+                  mouseout: (e) => e.target.setStyle({ fillOpacity: 0, weight: 2 }),
+                }}
+              >
+                <Tooltip sticky>{n.nombre}</Tooltip>
+              </Polygon>
+            );
+          })}
 
-        {/* Regiones */}
+        {/* Regiones — contorno punteado; relleno suave al pasar el ratón */}
         {data.regiones
           .filter((r) => r.poligono && r.poligono.length >= 3)
-          .map((r) => (
-            <Polygon
-              key={`reg-${r.id}`}
-              positions={poligonoToLatLngs(r.poligono)}
-              pathOptions={{ color: r.color ?? ACENTO_REGION, weight: 1.5, dashArray: "4", fillOpacity: 0.08 }}
-              eventHandlers={{ click: () => router.push(`/regiones/${r.id}`) }}
-            >
-              <Tooltip sticky>{r.nombre}</Tooltip>
-            </Polygon>
-          ))}
+          .map((r) => {
+            const color = r.color ?? ACENTO_REGION;
+            return (
+              <Polygon
+                key={`reg-${r.id}`}
+                positions={poligonoToLatLngs(r.poligono)}
+                pathOptions={{ color, weight: 1.5, dashArray: "4", fill: true, fillColor: color, fillOpacity: 0 }}
+                eventHandlers={{
+                  click: () => router.push(`/regiones/${r.id}`),
+                  mouseover: (e) => e.target.setStyle({ fillOpacity: 0.14, weight: 2.5 }),
+                  mouseout: (e) => e.target.setStyle({ fillOpacity: 0, weight: 1.5 }),
+                }}
+              >
+                <Tooltip sticky>{r.nombre}</Tooltip>
+              </Polygon>
+            );
+          })}
 
         {/* Locaciones */}
         {data.locaciones
