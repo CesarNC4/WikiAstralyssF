@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
+import { notificarNuevaPublicacion } from "@/lib/discord";
 import { loreSchema } from "@/lib/validation/lore";
 import { slugify } from "@/lib/utils";
 
@@ -64,16 +65,19 @@ export async function guardarLore(
   };
 
   let savedId: number;
+  let notificar = false;
   try {
     savedId = await db.transaction(async (tx) => {
       let pid: number;
       if (id) {
         const [existing] = await tx.select({ ppv: s.paginasLore.publicadoPrimeraVezEn }).from(s.paginasLore).where(eq(s.paginasLore.id, id)).limit(1);
-        const publicadoPrimeraVezEn = data.estadoPublicacion === "publicado" && !existing?.ppv ? new Date() : existing?.ppv ?? null;
+        notificar = data.estadoPublicacion === "publicado" && !existing?.ppv;
+        const publicadoPrimeraVezEn = notificar ? new Date() : existing?.ppv ?? null;
         await tx.update(s.paginasLore).set({ ...base, publicadoPrimeraVezEn }).where(eq(s.paginasLore.id, id));
         pid = id;
       } else {
-        const publicadoPrimeraVezEn = data.estadoPublicacion === "publicado" ? new Date() : null;
+        notificar = data.estadoPublicacion === "publicado";
+        const publicadoPrimeraVezEn = notificar ? new Date() : null;
         const [row] = await tx.insert(s.paginasLore).values({ ...base, publicadoPrimeraVezEn }).returning({ id: s.paginasLore.id });
         pid = row.id;
       }
@@ -104,6 +108,15 @@ export async function guardarLore(
   }
 
   revalidar(data.slug, savedId);
+  if (notificar) {
+    await notificarNuevaPublicacion({
+      tipo: "lore",
+      idOrSlug: data.slug,
+      nombre: data.titulo,
+      descripcion: data.subtitulo ?? data.introduccion,
+      imagenUrl: data.imagenUrl,
+    });
+  }
   if (created) redirect(`/admin/lore/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -115,10 +128,31 @@ async function slugDe(id: number): Promise<string> {
 
 export async function cambiarEstadoLore(id: number, estado: "borrador" | "publicado" | "oculto"): Promise<void> {
   await assertAdmin();
-  const [existing] = await db.select({ ppv: s.paginasLore.publicadoPrimeraVezEn }).from(s.paginasLore).where(eq(s.paginasLore.id, id)).limit(1);
-  const publicadoPrimeraVezEn = estado === "publicado" && !existing?.ppv ? new Date() : existing?.ppv ?? null;
+  const [existing] = await db
+    .select({
+      ppv: s.paginasLore.publicadoPrimeraVezEn,
+      slug: s.paginasLore.slug,
+      titulo: s.paginasLore.titulo,
+      subtitulo: s.paginasLore.subtitulo,
+      introduccion: s.paginasLore.introduccion,
+      imagenUrl: s.paginasLore.imagenUrl,
+    })
+    .from(s.paginasLore)
+    .where(eq(s.paginasLore.id, id))
+    .limit(1);
+  const primeraVez = estado === "publicado" && !existing?.ppv;
+  const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
   await db.update(s.paginasLore).set({ estadoPublicacion: estado, publicadoPrimeraVezEn }).where(eq(s.paginasLore.id, id));
-  revalidar(await slugDe(id), id);
+  revalidar(existing?.slug ?? (await slugDe(id)), id);
+  if (primeraVez && existing) {
+    await notificarNuevaPublicacion({
+      tipo: "lore",
+      idOrSlug: existing.slug,
+      nombre: existing.titulo ?? "Nueva página de lore",
+      descripcion: existing.subtitulo ?? existing.introduccion,
+      imagenUrl: existing.imagenUrl,
+    });
+  }
 }
 
 export async function moverLoreAPapelera(id: number): Promise<void> {

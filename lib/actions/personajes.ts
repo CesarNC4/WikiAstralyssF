@@ -6,7 +6,12 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
+import { notificarNuevaPublicacion } from "@/lib/discord";
 import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje";
+
+function nombreCompleto(nombre: string, surname?: string | null): string {
+  return [nombre, surname].filter(Boolean).join(" ").trim();
+}
 
 export interface PersonajeFormState {
   ok: boolean;
@@ -203,8 +208,9 @@ export async function guardarPersonaje(
   const created = !id;
 
   let savedId: number;
+  let notificar = false;
   try {
-    savedId = await db.transaction(async (tx) => {
+    const res = await db.transaction(async (tx) => {
       const base = scalars(data);
 
       if (id) {
@@ -214,31 +220,43 @@ export async function guardarPersonaje(
           .from(s.personajes)
           .where(eq(s.personajes.id, id))
           .limit(1);
-        const publicadoPrimeraVezEn =
-          data.estadoPublicacion === "publicado" && !existing?.ppv ? new Date() : existing?.ppv ?? null;
+        const primeraVez = data.estadoPublicacion === "publicado" && !existing?.ppv;
+        const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
 
         await tx
           .update(s.personajes)
           .set({ ...base, publicadoPrimeraVezEn })
           .where(eq(s.personajes.id, id));
         await guardarHijos(tx, id, data);
-        return id;
+        return { id, notificar: primeraVez };
       }
 
-      const publicadoPrimeraVezEn = data.estadoPublicacion === "publicado" ? new Date() : null;
+      const primeraVez = data.estadoPublicacion === "publicado";
+      const publicadoPrimeraVezEn = primeraVez ? new Date() : null;
       const [row] = await tx
         .insert(s.personajes)
         .values({ ...base, publicadoPrimeraVezEn })
         .returning({ id: s.personajes.id });
       await guardarHijos(tx, row.id, data);
-      return row.id;
+      return { id: row.id, notificar: primeraVez };
     });
+    savedId = res.id;
+    notificar = res.notificar;
   } catch (e) {
     console.error("[guardarPersonaje]", e);
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 
   revalidarPersonaje(savedId);
+  if (notificar) {
+    await notificarNuevaPublicacion({
+      tipo: "personajes",
+      idOrSlug: savedId,
+      nombre: nombreCompleto(data.nombre, data.surname),
+      descripcion: data.subtitulo ?? data.titulo,
+      imagenUrl: data.imagenUrl,
+    });
+  }
   // redirect() lanza NEXT_REDIRECT; debe ir FUERA del try/catch para no atraparlo.
   if (created) redirect(`/admin/personajes/${savedId}/editar`);
   return { ok: true, id: savedId, created: false };
@@ -251,17 +269,33 @@ export async function cambiarEstadoPersonaje(
 ): Promise<void> {
   await assertAdmin();
   const [existing] = await db
-    .select({ ppv: s.personajes.publicadoPrimeraVezEn })
+    .select({
+      ppv: s.personajes.publicadoPrimeraVezEn,
+      nombre: s.personajes.nombre,
+      surname: s.personajes.surname,
+      subtitulo: s.personajes.subtitulo,
+      titulo: s.personajes.titulo,
+      imagenUrl: s.personajes.imagenUrl,
+    })
     .from(s.personajes)
     .where(eq(s.personajes.id, id))
     .limit(1);
-  const publicadoPrimeraVezEn =
-    estado === "publicado" && !existing?.ppv ? new Date() : existing?.ppv ?? null;
+  const primeraVez = estado === "publicado" && !existing?.ppv;
+  const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
   await db
     .update(s.personajes)
     .set({ estadoPublicacion: estado, publicadoPrimeraVezEn })
     .where(eq(s.personajes.id, id));
   revalidarPersonaje(id);
+  if (primeraVez && existing) {
+    await notificarNuevaPublicacion({
+      tipo: "personajes",
+      idOrSlug: id,
+      nombre: nombreCompleto(existing.nombre, existing.surname),
+      descripcion: existing.subtitulo ?? existing.titulo,
+      imagenUrl: existing.imagenUrl,
+    });
+  }
 }
 
 /** Mueve a la papelera (soft-delete). */

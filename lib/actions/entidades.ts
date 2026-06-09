@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { eq, getTableColumns, getTableName, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assertAdmin } from "@/lib/actions/auth";
+import { notificarNuevaPublicacion } from "@/lib/discord";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
@@ -74,6 +75,7 @@ export async function guardarEntidad(
   const created = !id;
 
   let savedId: number;
+  let notificar = false;
   try {
     if (id) {
       const [existing] = await db
@@ -81,13 +83,14 @@ export async function guardarEntidad(
         .from(table)
         .where(eq(c.id, id))
         .limit(1);
-      const publicadoPrimeraVezEn =
-        data.estadoPublicacion === "publicado" && !existing?.ppv ? new Date() : existing?.ppv ?? null;
+      notificar = data.estadoPublicacion === "publicado" && !existing?.ppv;
+      const publicadoPrimeraVezEn = notificar ? new Date() : existing?.ppv ?? null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await db.update(table).set({ ...data, publicadoPrimeraVezEn } as any).where(eq(c.id, id));
       savedId = id;
     } else {
-      const publicadoPrimeraVezEn = data.estadoPublicacion === "publicado" ? new Date() : null;
+      notificar = data.estadoPublicacion === "publicado";
+      const publicadoPrimeraVezEn = notificar ? new Date() : null;
       const [row] = await db
         .insert(table)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,6 +119,15 @@ export async function guardarEntidad(
   }
 
   revalidar(config.route, savedId);
+  if (notificar) {
+    await notificarNuevaPublicacion({
+      tipo: key,
+      idOrSlug: savedId,
+      nombre: String(data[config.nameField] ?? config.singular),
+      descripcion: (data.subtitulo ?? data.descripcion ?? data.titulo) as string | null | undefined,
+      imagenUrl: data.imagenUrl as string | null | undefined,
+    });
+  }
   if (created) redirect(`/admin/${key}/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -127,12 +139,27 @@ export async function cambiarEstadoEntidad(
 ): Promise<void> {
   await assertAdmin();
   const { config, table, c } = resolve(key);
-  const [existing] = await db.select({ ppv: c.publicadoPrimeraVezEn }).from(table).where(eq(c.id, id)).limit(1);
-  const publicadoPrimeraVezEn =
-    estado === "publicado" && !existing?.ppv ? new Date() : existing?.ppv ?? null;
+  // Selecciona, además de ppv, las columnas disponibles para el embed de Discord.
+  const sel: Cols = { ppv: c.publicadoPrimeraVezEn, nombre: c[config.nameField] };
+  if (c.subtitulo) sel.subtitulo = c.subtitulo;
+  if (c.descripcion) sel.descripcion = c.descripcion;
+  if (c.titulo) sel.titulo = c.titulo;
+  if (c.imagenUrl) sel.imagenUrl = c.imagenUrl;
+  const [existing] = await db.select(sel).from(table).where(eq(c.id, id)).limit(1);
+  const primeraVez = estado === "publicado" && !existing?.ppv;
+  const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await db.update(table).set({ estadoPublicacion: estado, publicadoPrimeraVezEn } as any).where(eq(c.id, id));
   revalidar(config.route, id);
+  if (primeraVez && existing) {
+    await notificarNuevaPublicacion({
+      tipo: key,
+      idOrSlug: id,
+      nombre: String(existing.nombre ?? config.singular),
+      descripcion: existing.subtitulo ?? existing.descripcion ?? existing.titulo ?? null,
+      imagenUrl: existing.imagenUrl ?? null,
+    });
+  }
 }
 
 export async function moverEntidadAPapelera(key: string, id: number): Promise<void> {

@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
+import { notificarNuevaPublicacion } from "@/lib/discord";
 import type { OrgPayload, FamiliaPayload, GremioPayload, Estado } from "@/lib/admin/complejas";
 
 export interface ComplejaFormState {
@@ -64,16 +65,19 @@ export async function guardarOrganizacion(
   };
 
   let savedId: number;
+  let notificar = false;
   try {
     savedId = await db.transaction(async (tx) => {
       let oid: number;
       if (id) {
         const [ex] = await tx.select({ ppv: s.organizaciones.publicadoPrimeraVezEn }).from(s.organizaciones).where(eq(s.organizaciones.id, id)).limit(1);
-        const ppv = data.estadoPublicacion === "publicado" && !ex?.ppv ? new Date() : ex?.ppv ?? null;
+        notificar = data.estadoPublicacion === "publicado" && !ex?.ppv;
+        const ppv = notificar ? new Date() : ex?.ppv ?? null;
         await tx.update(s.organizaciones).set({ ...base, publicadoPrimeraVezEn: ppv }).where(eq(s.organizaciones.id, id));
         oid = id;
       } else {
-        const ppv = data.estadoPublicacion === "publicado" ? new Date() : null;
+        notificar = data.estadoPublicacion === "publicado";
+        const ppv = notificar ? new Date() : null;
         const [row] = await tx.insert(s.organizaciones).values({ ...base, publicadoPrimeraVezEn: ppv }).returning({ id: s.organizaciones.id });
         oid = row.id;
       }
@@ -141,6 +145,15 @@ export async function guardarOrganizacion(
   }
 
   revalidarOrg(savedId);
+  if (notificar) {
+    await notificarNuevaPublicacion({
+      tipo: "organizaciones",
+      idOrSlug: savedId,
+      nombre,
+      descripcion: base.subtitulo ?? base.descripcion,
+      imagenUrl: base.imagenUrl,
+    });
+  }
   if (created) redirect(`/admin/organizaciones/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -187,16 +200,19 @@ export async function guardarFamilia(
   };
 
   let savedId: number;
+  let notificar = false;
   try {
     savedId = await db.transaction(async (tx) => {
       let fid: number;
       if (id) {
         const [ex] = await tx.select({ ppv: s.familias.publicadoPrimeraVezEn }).from(s.familias).where(eq(s.familias.id, id)).limit(1);
-        const ppv = data.estadoPublicacion === "publicado" && !ex?.ppv ? new Date() : ex?.ppv ?? null;
+        notificar = data.estadoPublicacion === "publicado" && !ex?.ppv;
+        const ppv = notificar ? new Date() : ex?.ppv ?? null;
         await tx.update(s.familias).set({ ...base, publicadoPrimeraVezEn: ppv }).where(eq(s.familias.id, id));
         fid = id;
       } else {
-        const ppv = data.estadoPublicacion === "publicado" ? new Date() : null;
+        notificar = data.estadoPublicacion === "publicado";
+        const ppv = notificar ? new Date() : null;
         const [row] = await tx.insert(s.familias).values({ ...base, publicadoPrimeraVezEn: ppv }).returning({ id: s.familias.id });
         fid = row.id;
       }
@@ -272,6 +288,15 @@ export async function guardarFamilia(
   }
 
   revalidarFamilia(savedId);
+  if (notificar) {
+    await notificarNuevaPublicacion({
+      tipo: "familias",
+      idOrSlug: savedId,
+      nombre,
+      descripcion: base.subtitulo ?? base.descripcion,
+      imagenUrl: base.imagenUrl,
+    });
+  }
   if (created) redirect(`/admin/familias/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -384,18 +409,58 @@ export async function guardarGremio(
 // ── Estado / papelera (org y familia) ───────────────────────────────────────
 export async function cambiarEstadoOrg(id: number, estado: Estado): Promise<void> {
   await assertAdmin();
-  const [ex] = await db.select({ ppv: s.organizaciones.publicadoPrimeraVezEn }).from(s.organizaciones).where(eq(s.organizaciones.id, id)).limit(1);
-  const ppv = estado === "publicado" && !ex?.ppv ? new Date() : ex?.ppv ?? null;
+  const [ex] = await db
+    .select({
+      ppv: s.organizaciones.publicadoPrimeraVezEn,
+      nombre: s.organizaciones.nombre,
+      subtitulo: s.organizaciones.subtitulo,
+      descripcion: s.organizaciones.descripcion,
+      imagenUrl: s.organizaciones.imagenUrl,
+    })
+    .from(s.organizaciones)
+    .where(eq(s.organizaciones.id, id))
+    .limit(1);
+  const primeraVez = estado === "publicado" && !ex?.ppv;
+  const ppv = primeraVez ? new Date() : ex?.ppv ?? null;
   await db.update(s.organizaciones).set({ estadoPublicacion: estado, publicadoPrimeraVezEn: ppv }).where(eq(s.organizaciones.id, id));
   revalidarOrg(id);
+  if (primeraVez && ex) {
+    await notificarNuevaPublicacion({
+      tipo: "organizaciones",
+      idOrSlug: id,
+      nombre: ex.nombre,
+      descripcion: ex.subtitulo ?? ex.descripcion,
+      imagenUrl: ex.imagenUrl,
+    });
+  }
 }
 
 export async function cambiarEstadoFamilia(id: number, estado: Estado): Promise<void> {
   await assertAdmin();
-  const [ex] = await db.select({ ppv: s.familias.publicadoPrimeraVezEn }).from(s.familias).where(eq(s.familias.id, id)).limit(1);
-  const ppv = estado === "publicado" && !ex?.ppv ? new Date() : ex?.ppv ?? null;
+  const [ex] = await db
+    .select({
+      ppv: s.familias.publicadoPrimeraVezEn,
+      nombre: s.familias.nombre,
+      subtitulo: s.familias.subtitulo,
+      descripcion: s.familias.descripcion,
+      imagenUrl: s.familias.imagenUrl,
+    })
+    .from(s.familias)
+    .where(eq(s.familias.id, id))
+    .limit(1);
+  const primeraVez = estado === "publicado" && !ex?.ppv;
+  const ppv = primeraVez ? new Date() : ex?.ppv ?? null;
   await db.update(s.familias).set({ estadoPublicacion: estado, publicadoPrimeraVezEn: ppv }).where(eq(s.familias.id, id));
   revalidarFamilia(id);
+  if (primeraVez && ex) {
+    await notificarNuevaPublicacion({
+      tipo: "familias",
+      idOrSlug: id,
+      nombre: ex.nombre,
+      descripcion: ex.subtitulo ?? ex.descripcion,
+      imagenUrl: ex.imagenUrl,
+    });
+  }
 }
 
 export async function moverOrgAPapelera(id: number): Promise<void> {

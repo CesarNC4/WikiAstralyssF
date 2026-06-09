@@ -7,7 +7,13 @@
       "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\('react',p.dependencies.react\\);console.log\\('leaflet',p.dependencies.leaflet\\);console.log\\('react-leaflet',p.dependencies['react-leaflet']\\);console.log\\('geoman',p.dependencies['@geoman-io/leaflet-geoman-free']\\);console.log\\('@types/leaflet',p.devDependencies['@types/leaflet']\\)\")",
       "Bash(node --env-file=.env.local scripts/migrate-mapa.mjs)",
       "Bash(grep -v \"severity\\\\|^{$\\\\|^}$\\\\|file:\\\\|line:\\\\|routine:\\\\|code:\\\\|message:\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "PowerShell(Get-ChildItem -Path .\\\\app\\\\\\(public\\) -File | Select-Object Name; Write-Output \"---FICHAS---\"; Get-ChildItem -Path .\\\\components\\\\fichas | Select-Object Name; Write-Output \"---MEDIA COMP---\"; Get-ChildItem -Path .\\\\components\\\\media | Select-Object Name)",
+      "PowerShell($pub = Join-Path \\(Get-Location\\) 'app\\\\\\(public\\)'; Get-ChildItem -Path $pub -File | Select-Object Name; Write-Output \"---LAYOUT COMP---\"; Get-ChildItem -Path .\\\\components\\\\layout | Select-Object Name; Write-Output \"---SEARCH---\"; Get-ChildItem -Path .\\\\components\\\\search | Select-Object Name; Write-Output \"---PLAYER---\"; Get-ChildItem -Path .\\\\components\\\\player | Select-Object Name; Write-Output \"---VIZ---\"; Get-ChildItem -Path .\\\\components\\\\viz | Select-Object Name; Write-Output \"---HOOKS---\"; Get-ChildItem -Path .\\\\hooks | Select-Object Name)",
+      "PowerShell($pkg = Get-Content .\\\\package.json -Raw | ConvertFrom-Json; $pkg.scripts.PSObject.Properties | ForEach-Object { \"$\\($_.Name\\): $\\($_.Value\\)\" })",
+      "PowerShell(npm run typecheck 2>&1)",
+      "PowerShell(npm run lint 2>&1)",
+      "PowerShell(npm run build 2>&1)"
     ]
   }
 }
