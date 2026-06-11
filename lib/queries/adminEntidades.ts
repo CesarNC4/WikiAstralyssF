@@ -6,6 +6,7 @@ import { capitulos } from "@/db/schema/narrativa";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { getEntidadConfig, type EntidadConfig, type RefTarget } from "@/lib/admin/fields";
 import { listPersonajesOpciones } from "@/lib/queries/adminPersonajes";
+import { listMagiaOpciones } from "@/lib/queries/magia";
 import type { EstadoPublicacion } from "@/db/schema/enums";
 
 export interface OpcionRef {
@@ -16,6 +17,7 @@ export interface OpcionRef {
 /** Opciones para un campo de tipo 'reference'. */
 export async function getOpcionesReferencia(target: RefTarget): Promise<OpcionRef[]> {
   if (target === "personajes") return listPersonajesOpciones();
+  if (target === "magia") return listMagiaOpciones();
   if (target === "capitulos") {
     const rows = await db
       .select({ id: capitulos.id, numero: capitulos.numero, titulo: capitulos.titulo })

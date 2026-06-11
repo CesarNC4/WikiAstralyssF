@@ -18,6 +18,13 @@ export interface ComplejaFormState {
 
 const str = (v: unknown): string => (v == null ? "" : String(v));
 const nz = (v: string): string | null => (v.trim() ? v.trim() : null);
+/** Entero 0..100 o null (para niveles de poder). */
+const nivel = (v: unknown): number | null => {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const n = parseInt(s, 10);
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
+};
 
 function parsePayload<T>(formData: FormData): T | null {
   try {
@@ -191,6 +198,9 @@ export async function guardarFamilia(
     poderEconomico: nz(str(data.campos.poderEconomico)),
     poderPolitico: nz(str(data.campos.poderPolitico)),
     poderMilitar: nz(str(data.campos.poderMilitar)),
+    poderEconomicoNivel: nivel(data.campos.poderEconomicoNivel),
+    poderPoliticoNivel: nivel(data.campos.poderPoliticoNivel),
+    poderMilitarNivel: nivel(data.campos.poderMilitarNivel),
     estructuraNucleo: nz(str(data.campos.estructuraNucleo)),
     circuloExtendido: nz(str(data.campos.circuloExtendido)),
     liderazgo: nz(str(data.campos.liderazgo)),

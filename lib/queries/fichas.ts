@@ -93,6 +93,23 @@ export async function getPersonajesDeNacion(nacionId: number) {
     .limit(24);
 }
 
+/** Organizaciones y razas vinculadas a una nación (§ punto 3). */
+export async function getNacionFacciones(nacionId: number) {
+  const [organizaciones, razas] = await Promise.all([
+    db
+      .select({ id: s.organizaciones.id, nombre: s.organizaciones.nombre, imagenUrl: s.organizaciones.imagenUrl, tipo: s.nacionOrganizacion.tipo })
+      .from(s.nacionOrganizacion)
+      .innerJoin(s.organizaciones, eq(s.nacionOrganizacion.organizacionId, s.organizaciones.id))
+      .where(and(eq(s.nacionOrganizacion.nacionId, nacionId), eq(s.organizaciones.estadoPublicacion, "publicado"))),
+    db
+      .select({ id: s.razas.id, nombre: s.razas.nombre, imagenUrl: s.razas.imagenUrl, tipo: s.nacionRaza.tipo })
+      .from(s.nacionRaza)
+      .innerJoin(s.razas, eq(s.nacionRaza.razaId, s.razas.id))
+      .where(and(eq(s.nacionRaza.nacionId, nacionId), eq(s.razas.estadoPublicacion, "publicado"), isNull(s.razas.eliminadoEn))),
+  ]);
+  return { organizaciones, razas };
+}
+
 // ── Getters simples por id (prosa) ───────────────────────
 async function firstVisible<T extends { id: unknown }>(
   rows: Promise<T[]>,

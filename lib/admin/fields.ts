@@ -6,7 +6,7 @@
 
 export type FieldType = "text" | "textarea" | "number" | "combobox" | "checkbox" | "reference";
 
-export type RefTarget = "personajes" | "capitulos";
+export type RefTarget = "personajes" | "capitulos" | "magia";
 
 export interface FieldDef {
   /** Clave de columna en Drizzle (camelCase). */
@@ -91,6 +91,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("clasificacion", "Clasificación", "combobox", "Identidad", { catalogCampo: "raza_clasificacion" }),
+      f("afinidad", "Afinidad", "combobox", "Identidad", { catalogCampo: "raza_afinidad", hint: "Afinidad mágica/elemental para filtrar (Pyro, Hydro…)" }),
       f("subtitulo", "Subtítulo", "text", "Identidad"),
       f("esperanzaVida", "Esperanza de vida", "text", "Datos clave"),
       f("descripcion", "Descripción", "textarea", "Contenido"),
@@ -167,8 +168,19 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasBanner: false,
     hasFicha: true,
     fields: [
-      f("categoria", "Categoría", "combobox", "Identidad", { catalogCampo: "magia_categoria" }),
-      f("subcategoria", "Subcategoría", "combobox", "Identidad", { catalogCampo: "magia_subcategoria" }),
+      f("naturaleza", "Naturaleza", "combobox", "Identidad", {
+        catalogCampo: "magia_naturaleza",
+        hint: "Fundamento · Concepto · Tecnica Avanzada · Hechizo",
+      }),
+      f("tipo", "Tipo / escuela", "combobox", "Identidad", {
+        catalogCampo: "magia_tipo",
+        hint: "Solo hechizos: Elemental, Demoniaca…",
+      }),
+      f("subcategoria", "Elemento", "combobox", "Identidad", {
+        catalogCampo: "magia_variante",
+        hint: "Pyro, Hydro, Cryo, Electro, Geo, Dendro, Vento…",
+      }),
+      f("fundamentoPadreId", "Deriva de (fundamento)", "reference", "Identidad", { refTarget: "magia" }),
       f("orden", "Orden", "number", "Identidad", { hint: "para ordenar el índice" }),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("contenido", "Contenido", "textarea", "Contenido", { rows: 10 }),

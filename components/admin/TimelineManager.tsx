@@ -57,7 +57,7 @@ export function TimelineManager({ eventos, capitulos }: { eventos: TimelineEvent
     startTransition(async () => {
       try {
         const id = await crearEventoRapido();
-        apply([...itemsRef.current, { id, titulo: "Nuevo evento", fechaLore: "—", importancia: null, categoria: null, capituloId: null, estado: "borrador" }]);
+        apply([...itemsRef.current, { id, titulo: "Nuevo evento", fechaLore: "—", era: null, importancia: null, categoria: null, capituloId: null, estado: "borrador" }]);
         toast("Evento creado.", "success");
       } catch { toast("No se pudo crear.", "error"); }
     });
@@ -105,6 +105,13 @@ export function TimelineManager({ eventos, capitulos }: { eventos: TimelineEvent
               defaultValue={ev.fechaLore ?? ""}
               onBlur={(e) => { if (e.target.value !== (ev.fechaLore ?? "")) patch(ev.id, { fechaLore: e.target.value }, () => actualizarEventoInline(ev.id, { fechaLore: e.target.value })); }}
               placeholder="Fecha (lore)"
+              className={inp + " w-32"}
+            />
+            <input
+              defaultValue={ev.era ?? ""}
+              onBlur={(e) => { if (e.target.value !== (ev.era ?? "")) patch(ev.id, { era: e.target.value }, () => actualizarEventoInline(ev.id, { era: e.target.value })); }}
+              placeholder="Era / edad"
+              title="Era para agrupar la cronología"
               className={inp + " w-32"}
             />
             <select

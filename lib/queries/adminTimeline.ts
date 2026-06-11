@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, isNull } from "drizzle-orm";
+import { asc, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import type { EstadoPublicacion } from "@/db/schema/enums";
@@ -8,6 +8,7 @@ export interface TimelineEvento {
   id: number;
   titulo: string;
   fechaLore: string | null;
+  era: string | null;
   importancia: string | null;
   categoria: string | null;
   capituloId: number | null;
@@ -21,6 +22,7 @@ export async function listTimelineEventos(): Promise<TimelineEvento[]> {
       id: s.timelineEventos.id,
       titulo: s.timelineEventos.titulo,
       fechaLore: s.timelineEventos.fechaLore,
+      era: s.timelineEventos.era,
       importancia: s.timelineEventos.importancia,
       categoria: s.timelineEventos.categoria,
       capituloId: s.timelineEventos.capituloId,

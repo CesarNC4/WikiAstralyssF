@@ -28,6 +28,28 @@ const COLOR_DEFECTO = 0x7b5cff;
 /** Entidades sin página individual `/ruta/[id|slug]`: el enlace va al índice/ruta base. */
 const SIN_FICHA_INDIVIDUAL = new Set(["timeline", "economia", "gremio", "mapa"]);
 
+/**
+ * Resuelve a qué canal (webhook) va la notificación de un tipo de entidad.
+ * Cada canal de Discord tiene su propio webhook; el enrutado se hace eligiendo
+ * el webhook correcto por orden de prioridad:
+ *   1. Por entidad exacta:  DISCORD_WEBHOOK_PERSONAJES, DISCORD_WEBHOOK_NACIONES, …
+ *   2. Por grupo temático:  DISCORD_WEBHOOK_GRUPO_MUNDO, DISCORD_WEBHOOK_GRUPO_LORE, …
+ *   3. Fallback global:     DISCORD_WEBHOOK_URL
+ * Devuelve undefined si no hay ninguno configurado (→ no-op silencioso).
+ */
+function resolverWebhook(tipo: string): string | undefined {
+  const porEntidad = process.env[`DISCORD_WEBHOOK_${tipo.toUpperCase()}`]?.trim();
+  if (porEntidad) return porEntidad;
+
+  const grupo = entityByKey(tipo)?.group;
+  if (grupo) {
+    const porGrupo = process.env[`DISCORD_WEBHOOK_GRUPO_${grupo.toUpperCase()}`]?.trim();
+    if (porGrupo) return porGrupo;
+  }
+
+  return process.env.DISCORD_WEBHOOK_URL?.trim();
+}
+
 export interface NuevaPublicacion {
   /** Clave de entidad (EntityKey): "personajes", "naciones", "lore", … */
   tipo: string;
@@ -53,7 +75,7 @@ function recortar(texto: string | null | undefined, max = 280): string | undefin
 }
 
 export async function notificarNuevaPublicacion(p: NuevaPublicacion): Promise<void> {
-  const webhook = process.env.DISCORD_WEBHOOK_URL?.trim();
+  const webhook = resolverWebhook(p.tipo);
   if (!webhook) return;
 
   const meta = entityByKey(p.tipo);

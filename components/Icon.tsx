@@ -31,6 +31,23 @@ import {
   Flame,
   Sword,
   Coins,
+  ArrowRight,
+  MapPin,
+  MapPinned,
+  Circle,
+  Droplet,
+  Snowflake,
+  Zap,
+  Mountain,
+  Leaf,
+  Wind,
+  Atom,
+  Wand2,
+  Filter,
+  Sun,
+  Moon,
+  Activity,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 
@@ -67,17 +84,36 @@ const REGISTRY: Record<string, LucideIcon> = {
   Flame,
   Sword,
   Coins,
+  ArrowRight,
+  MapPin,
+  MapPinned,
+  Circle,
+  Droplet,
+  Snowflake,
+  Zap,
+  Mountain,
+  Leaf,
+  Wind,
+  Atom,
+  Wand2,
+  Filter,
+  Sun,
+  Moon,
+  Activity,
+  Check,
 };
 
 export function Icon({
   name,
   className,
   size = 20,
+  style,
 }: {
   name: string;
   className?: string;
   size?: number;
+  style?: React.CSSProperties;
 }) {
   const Cmp = REGISTRY[name] ?? Sparkles;
-  return <Cmp className={className} size={size} aria-hidden />;
+  return <Cmp className={className} size={size} style={style} aria-hidden />;
 }

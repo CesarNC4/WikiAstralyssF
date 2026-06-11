@@ -61,6 +61,9 @@ export function FamiliaForm({
       apellido: v(f?.apellido),
       subtitulo: v(f?.subtitulo),
       origen: v(f?.origen),
+      poderEconomicoNivel: v(f?.poderEconomicoNivel),
+      poderPoliticoNivel: v(f?.poderPoliticoNivel),
+      poderMilitarNivel: v(f?.poderMilitarNivel),
     };
     for (const x of LARGOS) init[x.k] = v(f?.[x.k]);
     return init;
@@ -80,7 +83,7 @@ export function FamiliaForm({
   const [state, formAction, pending] = useActionState<ComplejaFormState | undefined, FormData>(guardarFamilia, undefined);
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); setDirty(false); }
+    if (state.ok) { toast("Cambios guardados.", "success"); queueMicrotask(() => setDirty(false)); }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -124,6 +127,27 @@ export function FamiliaForm({
               <MarkdownField value={campos[x.k]} onChange={(val) => set(x.k, val)} rows={x.k === "historia" ? 8 : 5} />
             </Field>
           ))}
+          <Field label="Niveles de poder (0–100)" hint="Alimentan el radar de 3 ejes en la ficha pública.">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { k: "poderEconomicoNivel", label: "Económico" },
+                { k: "poderPoliticoNivel", label: "Político" },
+                { k: "poderMilitarNivel", label: "Militar" },
+              ].map((n) => (
+                <label key={n.k} className="block">
+                  <span className="mb-1 block text-xs text-fg-muted">{n.label}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={campos[n.k] ?? ""}
+                    onChange={(e) => set(n.k, e.target.value)}
+                    className="w-full rounded-lg border border-border-base bg-surface px-3 py-2 font-mono text-sm text-fg outline-none focus:border-border-glow"
+                  />
+                </label>
+              ))}
+            </div>
+          </Field>
         </div>
       </AccordionSection>
 

@@ -26,13 +26,14 @@ export async function reordenarTimeline(ids: number[]): Promise<void> {
 /** Edición rápida inline de un evento. */
 export async function actualizarEventoInline(
   id: number,
-  patch: { titulo?: string; fechaLore?: string; estado?: "borrador" | "publicado" | "oculto"; capituloId?: number | null },
+  patch: { titulo?: string; fechaLore?: string; era?: string | null; estado?: "borrador" | "publicado" | "oculto"; capituloId?: number | null },
 ): Promise<void> {
   await assertAdmin();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const set: any = {};
   if (patch.titulo !== undefined) set.titulo = patch.titulo.trim() || "Sin título";
   if (patch.fechaLore !== undefined) set.fechaLore = patch.fechaLore;
+  if (patch.era !== undefined) set.era = patch.era?.trim() || null;
   if (patch.capituloId !== undefined) set.capituloId = patch.capituloId;
   if (patch.estado !== undefined) {
     set.estadoPublicacion = patch.estado;

@@ -13,7 +13,8 @@
       "PowerShell($pkg = Get-Content .\\\\package.json -Raw | ConvertFrom-Json; $pkg.scripts.PSObject.Properties | ForEach-Object { \"$\\($_.Name\\): $\\($_.Value\\)\" })",
       "PowerShell(npm run typecheck 2>&1)",
       "PowerShell(npm run lint 2>&1)",
-      "PowerShell(npm run build 2>&1)"
+      "PowerShell(npm run build 2>&1)",
+      "Bash(node scripts/_test_search.mjs)"
     ]
   }
 }

@@ -2,17 +2,35 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/Icon";
+import { EntityImage } from "@/components/media/EntityImage";
 import { useDebounce } from "@/hooks/useDebounce";
 import { buscarAction } from "@/lib/actions/search";
+import { ENTITIES, ENTITY_LIST, type EntityKey } from "@/lib/entities";
 import type { SearchResult } from "@/lib/types";
+
+/** Orden estable de los grupos de resultados según el catálogo de entidades. */
+const TIPO_ORDER = new Map(ENTITY_LIST.map((e, i) => [e.key, i] as const));
+
+/** Agrupa los resultados por tipo conservando el ranking y asigna un índice plano para la navegación con teclado. */
+function agruparResultados(results: SearchResult[]) {
+  const groups = new Map<EntityKey, { result: SearchResult; flatIndex: number }[]>();
+  results.forEach((result, flatIndex) => {
+    const arr = groups.get(result.tipo) ?? [];
+    arr.push({ result, flatIndex });
+    groups.set(result.tipo, arr);
+  });
+  return [...groups.entries()].sort(
+    (a, b) => (TIPO_ORDER.get(a[0]) ?? 99) - (TIPO_ORDER.get(b[0]) ?? 99),
+  );
+}
 
 interface SearchCtx {
   open: () => void;
@@ -64,33 +82,40 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
 
   useEffect(() => {
     let cancelled = false;
-    if (debounced.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    buscarAction(debounced)
-      .then((r) => {
+    const term = debounced.trim();
+    // Envuelto en async para que las actualizaciones de estado no sean síncronas
+    // dentro del cuerpo del efecto (regla react-hooks/set-state-in-effect).
+    void (async () => {
+      if (term.length < 2) {
+        setResults([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const r = await buscarAction(term);
         if (!cancelled) {
           setResults(r);
           setActive(0);
         }
-      })
-      .finally(() => !cancelled && setLoading(false));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, [debounced]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setQuery("");
-      setResults([]);
-    }
-  }, [isOpen]);
+  const grouped = useMemo(() => agruparResultados(results), [results]);
 
   const go = (r: SearchResult) => {
     router.push(r.href);
+    close();
+  };
+
+  const goAll = () => {
+    if (debounced.trim().length < 2) return;
+    router.push(`/buscar?q=${encodeURIComponent(debounced.trim())}`);
     close();
   };
 
@@ -107,7 +132,12 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence
+      onExitComplete={() => {
+        setQuery("");
+        setResults([]);
+      }}
+    >
       {isOpen && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]"
@@ -147,28 +177,51 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
                   Escribe para buscar personajes, naciones, lore…
                 </p>
               )}
-              {results.map((r, i) => (
-                <button
-                  key={`${r.tipo}-${r.id}`}
-                  onClick={() => go(r)}
-                  onMouseEnter={() => setActive(i)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                    i === active ? "bg-elevated" : "hover:bg-surface"
-                  }`}
-                >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border-base bg-surface text-[10px] uppercase text-fg-muted">
-                    {r.tipoLabel.slice(0, 3)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm text-fg">{r.titulo}</span>
-                    {r.subtitulo && (
-                      <span className="block truncate text-xs text-fg-muted">{r.subtitulo}</span>
-                    )}
-                  </span>
-                  <span className="shrink-0 text-[10px] text-fg-muted">{r.tipoLabel}</span>
-                </button>
-              ))}
+              {grouped.map(([tipo, items]) => {
+                const meta = ENTITIES[tipo];
+                return (
+                  <div key={tipo} className="mb-1">
+                    <div className="flex items-center gap-2 px-3 pb-1 pt-2">
+                      <Icon name={meta?.icon ?? "Circle"} size={13} className={meta?.accent ?? "text-fg-muted"} />
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-fg-muted">
+                        {meta?.plural ?? tipo}
+                      </span>
+                    </div>
+                    {items.map(({ result: r, flatIndex }) => (
+                      <button
+                        key={`${r.tipo}-${r.id}`}
+                        onClick={() => go(r)}
+                        onMouseEnter={() => setActive(flatIndex)}
+                        className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${
+                          flatIndex === active ? "bg-elevated" : "hover:bg-surface"
+                        }`}
+                      >
+                        <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-border-base">
+                          <EntityImage src={r.imagenUrl} alt={r.titulo} name={r.titulo} sizes="36px" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-fg">{r.titulo}</span>
+                          {r.subtitulo && (
+                            <span className="block truncate text-xs text-fg-muted">{r.subtitulo}</span>
+                          )}
+                        </span>
+                        <Icon name="ArrowRight" size={14} className="shrink-0 text-fg-muted opacity-0 transition-opacity group-hover:opacity-100" />
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
+
+            {results.length > 0 && (
+              <button
+                onClick={goAll}
+                className="flex w-full items-center justify-center gap-2 border-t border-border-base py-2.5 text-xs text-fg-muted transition-colors hover:bg-surface hover:text-fg"
+              >
+                Ver todos los resultados de “{debounced.trim()}”
+                <Icon name="ArrowRight" size={13} />
+              </button>
+            )}
           </motion.div>
         </motion.div>
       )}

@@ -8,6 +8,8 @@ export interface EntityCard {
   imagenUrl: string | null;
   href: string;
   badge?: string | null;
+  /** Valores por dimensión de faceta (clave → valor) para el filtrado del índice. */
+  facets?: Record<string, string | null>;
 }
 
 /** Bloque de prosa etiquetado para fichas genéricas (§5.2). */
@@ -24,5 +26,6 @@ export interface SearchResult {
   id: number | string;
   titulo: string;
   subtitulo: string | null;
+  imagenUrl: string | null;
   href: string;
 }

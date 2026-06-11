@@ -22,6 +22,12 @@ export const magiaFundamentos = pgTable("magia_fundamentos", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   categoria: varchar("categoria"),
+  /** Naturaleza conceptual: Fundamento | Tecnica Avanzada | Concepto | Hechizo (§ punto 12). */
+  naturaleza: varchar("naturaleza"),
+  /** Tipo/escuela del hechizo: Elemental | Demoniaca | … (NULL para conceptos del sistema). */
+  tipo: varchar("tipo"),
+  /** Jerarquía opcional: fundamento del que depende un hechizo. */
+  fundamentoPadreId: integer("fundamento_padre_id"),
   subcategoria: varchar("subcategoria"),
   descripcion: text("descripcion"),
   contenido: text("contenido"),
@@ -83,6 +89,8 @@ export const timelineEventos = pgTable("timeline_eventos", {
   descripcion: text("descripcion"),
   importancia: varchar("importancia"),
   categoria: varchar("categoria"),
+  /** Era / edad para agrupar la cronología (§ punto 13). */
+  era: varchar("era"),
   capituloId: integer("capitulo_id"),
   orden: integer("orden").notNull().default(0),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),

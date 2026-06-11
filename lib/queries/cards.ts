@@ -60,19 +60,50 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
     }
     case "razas": {
       const rows = await db
-        .select({ id: s.razas.id, titulo: s.razas.nombre, subtitulo: s.razas.subtitulo, imagenUrl: s.razas.imagenUrl, badge: s.razas.clasificacion })
+        .select({
+          id: s.razas.id,
+          titulo: s.razas.nombre,
+          subtitulo: s.razas.subtitulo,
+          imagenUrl: s.razas.imagenUrl,
+          badge: s.razas.clasificacion,
+          afinidad: s.razas.afinidad,
+          vida: s.razas.esperanzaVida,
+        })
         .from(s.razas)
         .where(and(eq(s.razas.estadoPublicacion, "publicado"), isNull(s.razas.eliminadoEn)))
         .orderBy(asc(s.razas.nombre));
-      return rows.map((r) => ({ ...r, href: `/razas/${r.id}` }));
+      return rows.map((r) => ({
+        id: r.id,
+        titulo: r.titulo,
+        subtitulo: r.subtitulo,
+        imagenUrl: r.imagenUrl,
+        badge: r.badge,
+        href: `/razas/${r.id}`,
+        facets: { clasificacion: r.badge, afinidad: r.afinidad, vida: r.vida },
+      }));
     }
     case "bestias": {
       const rows = await db
-        .select({ id: s.bestias.id, titulo: s.bestias.nombre, subtitulo: s.bestias.subtitulo, imagenUrl: s.bestias.imagenUrl, badge: s.bestias.nivelAmenaza })
+        .select({
+          id: s.bestias.id,
+          titulo: s.bestias.nombre,
+          subtitulo: s.bestias.subtitulo,
+          imagenUrl: s.bestias.imagenUrl,
+          amenaza: s.bestias.nivelAmenaza,
+          habitat: s.bestias.habitat,
+        })
         .from(s.bestias)
         .where(and(eq(s.bestias.estadoPublicacion, "publicado"), isNull(s.bestias.eliminadoEn)))
         .orderBy(asc(s.bestias.nombre));
-      return rows.map((r) => ({ ...r, href: `/bestias/${r.id}`, badge: r.badge ? `Amenaza ${r.badge}` : null }));
+      return rows.map((r) => ({
+        id: r.id,
+        titulo: r.titulo,
+        subtitulo: r.subtitulo,
+        imagenUrl: r.imagenUrl,
+        href: `/bestias/${r.id}`,
+        badge: r.amenaza ? `Amenaza ${r.amenaza}` : null,
+        facets: { amenaza: r.amenaza, habitat: r.habitat },
+      }));
     }
     case "minerales": {
       const rows = await db

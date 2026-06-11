@@ -14,6 +14,8 @@ export type EntityKey =
   | "gremio"
   | "razas"
   | "bestias"
+  | "regiones"
+  | "locaciones"
   | "minerales"
   | "conceptos"
   | "magia"
@@ -121,6 +123,28 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     group: "mundo",
     tagline: "Criaturas y amenazas del mundo salvaje.",
     hasIndex: true,
+  },
+  regiones: {
+    key: "regiones",
+    plural: "Regiones",
+    singular: "Región",
+    route: "/regiones",
+    accent: "text-secondary",
+    icon: "MapPinned",
+    group: "explorar",
+    tagline: "Territorios y dominios dentro de cada nación.",
+    hasIndex: false,
+  },
+  locaciones: {
+    key: "locaciones",
+    plural: "Locaciones",
+    singular: "Locación",
+    route: "/locaciones",
+    accent: "text-accent",
+    icon: "MapPin",
+    group: "explorar",
+    tagline: "Ciudades, mazmorras y lugares del mundo.",
+    hasIndex: false,
   },
   minerales: {
     key: "minerales",
@@ -235,6 +259,30 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
 };
 
 export const ENTITY_LIST = Object.values(ENTITIES);
+
+/** Definición de una dimensión de faceta para el filtrado de un índice (§5.3). */
+export interface FacetDef {
+  /** Clave que debe existir en `EntityCard.facets`. */
+  key: string;
+  /** Etiqueta humana de la dimensión. */
+  label: string;
+}
+
+/**
+ * Facetas de filtrado por sección. Una dimensión solo se muestra si hay valores
+ * presentes en los datos, de modo que aparece automáticamente al poblarla.
+ */
+export const ENTITY_FACETS: Partial<Record<EntityKey, FacetDef[]>> = {
+  razas: [
+    { key: "clasificacion", label: "Clasificación" },
+    { key: "afinidad", label: "Afinidad" },
+    { key: "vida", label: "Esperanza de vida" },
+  ],
+  bestias: [
+    { key: "amenaza", label: "Nivel de amenaza" },
+    { key: "habitat", label: "Hábitat" },
+  ],
+};
 
 export const NAV_GROUPS: { id: EntityGroup; label: string; keys: EntityKey[] }[] = [
   { id: "personajes", label: "Personajes", keys: ["personajes"] },
