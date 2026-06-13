@@ -30,27 +30,17 @@ export default async function EditarPersonajePage({
   const inicial = await getPersonajeParaEditar(pid);
   if (!inicial) notFound();
 
-  const [
-    catalogos,
-    personajesOpts,
-    nacionesOpts,
-    razasOpts,
-    organizacionesOpts,
-    magiaHechizosOpts,
-    timelineOpts,
-    artefactosOpts,
-    familiasOpts,
-  ] = await Promise.all([
-    getCatalogosPersonaje(),
-    listPersonajesOpciones(pid),
-    listNacionesOpciones(),
-    listRazasOpciones(),
-    listOrganizacionesOpciones(),
-    listMagiaHechizosOpciones(),
-    listTimelineOpciones(),
-    listArtefactosOpciones(),
-    listFamiliasDePersonaje(pid),
-  ]);
+  // Carga secuencial a propósito: el pool de conexiones (max 5) sobre el pooler
+  // de Supabase se cuelga si se encolan más consultas en paralelo que conexiones.
+  const catalogos = await getCatalogosPersonaje();
+  const personajesOpts = await listPersonajesOpciones(pid);
+  const nacionesOpts = await listNacionesOpciones();
+  const razasOpts = await listRazasOpciones();
+  const organizacionesOpts = await listOrganizacionesOpciones();
+  const magiaHechizosOpts = await listMagiaHechizosOpciones();
+  const timelineOpts = await listTimelineOpciones();
+  const artefactosOpts = await listArtefactosOpciones();
+  const familiasOpts = await listFamiliasDePersonaje(pid);
 
   const nombre = [inicial.nombre, inicial.surname].filter(Boolean).join(" ");
 

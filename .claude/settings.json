@@ -14,7 +14,13 @@
       "PowerShell(npm run typecheck 2>&1)",
       "PowerShell(npm run lint 2>&1)",
       "PowerShell(npm run build 2>&1)",
-      "Bash(node scripts/_test_search.mjs)"
+      "Bash(node scripts/_test_search.mjs)",
+      "Bash(node -e \"require\\('fs'\\).existsSync\\('.env.local'\\) && console.log\\('env ok'\\)\")",
+      "Bash(NODE_OPTIONS=\"--conditions=react-server --env-file=.env.local\" npx --yes tsx scripts/_smoke-editar.ts 49)",
+      "Bash(NODE_OPTIONS=\"--conditions=react-server\" npx --yes tsx scripts/_smoke-editar.ts 49)",
+      "Bash(NODE_OPTIONS=\"--conditions=react-server\" npx --yes tsx scripts/_smoke.mts 49)",
+      "Bash(npx --yes tsx scripts/_smoke.mts 49)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }
