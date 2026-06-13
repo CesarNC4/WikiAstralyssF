@@ -63,35 +63,65 @@ export const estadisticasSchema = z.object({
   controlDeMasas: str,
 });
 
+/**
+ * Habilidad del PJ: o se enlaza a un hechizo existente del catálogo Magia
+ * (`magiaFundamentoId`), o se crea uno nuevo (`nuevaMagia`) que se guardará en
+ * /magia. `descripcion` es la nota propia del personaje. `nombre`/`tipo` se
+ * copian del hechizo elegido para el render rápido de la ficha.
+ */
 export const habilidadSchema = z.object({
-  idHabilidad: idField.optional(),
-  categoria: z.string().trim().min(1, "La categoría es obligatoria"),
-  nombre: str,
-  descripcion: str,
-  tipo: str,
   magiaFundamentoId: idField,
+  nuevaMagia: z
+    .object({
+      nombre: z.string().trim().min(1, "El nombre de la habilidad es obligatorio"),
+      tipo: str,
+      subcategoria: str,
+    })
+    .nullable()
+    .optional(),
+  categoria: str,
+  nombre: str,
+  tipo: str,
+  descripcion: str,
 });
 
+/**
+ * Evento clave del PJ: vínculo a un evento de la cronología global
+ * (`timelineEventoId`) o creación de uno nuevo (`nuevoEvento`) que se ubica en
+ * la cronología. `nota` es la nota propia del personaje sobre ese evento.
+ */
 export const eventoSchema = z.object({
-  idEvento: idField.optional(),
-  fecha: str,
-  titulo: z.string().trim().min(1, "El título del evento es obligatorio"),
-  descripcion: str,
+  timelineEventoId: idField,
+  nuevoEvento: z
+    .object({
+      fechaLore: z.string().trim().min(1, "La fecha del evento es obligatoria"),
+      titulo: z.string().trim().min(1, "El título del evento es obligatorio"),
+      importancia: str,
+      categoria: str,
+      era: str,
+    })
+    .nullable()
+    .optional(),
+  nota: str,
 });
 
-export const equipamientoSchema = z.object({
-  idArma: idField.optional(),
-  nombre: str,
-  tipo: str,
-  descripcion: str,
-  poderEspecial: str,
-});
-
+/**
+ * Objeto/arma/artefacto del PJ: vínculo al catálogo global Armas y Artefactos
+ * (`armaArtefactoId`) o creación de uno nuevo (`nuevoObjeto`) que aparece en
+ * /artefactos. `nota` es la nota propia del personaje.
+ */
 export const objetoSchema = z.object({
-  idObjeto: idField.optional(),
-  nombre: str,
-  tipo: str,
-  descripcion: str,
+  armaArtefactoId: idField,
+  nuevoObjeto: z
+    .object({
+      nombre: z.string().trim().min(1, "El nombre del objeto es obligatorio"),
+      tipo: str,
+      descripcion: str,
+      poderEspecial: str,
+    })
+    .nullable()
+    .optional(),
+  nota: str,
 });
 
 export const relacionSchema = z.object({
@@ -173,7 +203,6 @@ export const personajeSchema = z.object({
   estadisticas: estadisticasSchema.nullable().optional(),
   habilidades: z.array(habilidadSchema).default([]),
   eventos: z.array(eventoSchema).default([]),
-  equipamiento: z.array(equipamientoSchema).default([]),
   objetos: z.array(objetoSchema).default([]),
   relaciones: z.array(relacionSchema).default([]),
   naciones: z.array(personajeNacionSchema).default([]),

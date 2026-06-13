@@ -14,6 +14,9 @@ export interface CatalogosPersonaje {
   habilidad_tipo: string[];
   tipo_relacion: string[];
   subtipo_relacion: string[];
+  artefacto_tipo: string[];
+  timeline_importancia: string[];
+  timeline_categoria: string[];
 }
 
 /** Carga todos los catálogos que necesita el formulario de personaje. */
@@ -42,5 +45,8 @@ export async function getCatalogosPersonaje(): Promise<CatalogosPersonaje> {
     habilidad_tipo: pick("habilidad_tipo"),
     tipo_relacion: pick("tipo_relacion"),
     subtipo_relacion: pick("subtipo_relacion"),
+    artefacto_tipo: pick("artefacto_tipo"),
+    timeline_importancia: pick("timeline_importancia"),
+    timeline_categoria: pick("timeline_categoria"),
   };
 }

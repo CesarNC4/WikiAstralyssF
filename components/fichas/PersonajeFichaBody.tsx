@@ -13,7 +13,7 @@ import { RelacionesGraph, type RelNode } from "@/components/fichas/personaje/Rel
 import { PerfilMagico } from "@/components/fichas/personaje/PerfilMagico";
 import { getGaleria } from "@/lib/queries/galeria";
 import { resolveMagiaLinks } from "@/lib/queries/magia";
-import type { PersonajeFicha } from "@/lib/queries/fichas";
+import { getFamiliasDePersonaje, type PersonajeFicha } from "@/lib/queries/fichas";
 import type { Track } from "@/hooks/usePlayerStore";
 
 /** Cuerpo de la ficha de personaje: hero cinematográfico + secciones (§ punto 2). */
@@ -21,11 +21,22 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   const nombre = [p.nombre, p.surname].filter(Boolean).join(" ");
   const stats = p.estadisticas?.[0];
 
-  const [galeria, magiaLinksMap] = await Promise.all([
+  const [galeria, magiaLinksMap, familias] = await Promise.all([
     getGaleria("personajes", p.id).catch(() => []),
     resolveMagiaLinks([p.tipoMagiaPrincipal, p.magiaSecundaria]).catch(() => new Map<string, number>()),
+    getFamiliasDePersonaje(p.id).catch(() => []),
   ]);
   const magiaLinks = Object.fromEntries(magiaLinksMap);
+
+  // Habilidades con nombre resuelto (del hechizo enlazado) y enlace a /magia.
+  const habilidades = (p.habilidades ?? []).map((h) => ({
+    idHabilidad: h.idHabilidad,
+    categoria: h.categoria,
+    nombre: h.fundamento?.nombre ?? h.nombre,
+    tipo: h.tipo,
+    descripcion: h.descripcion,
+    href: h.fundamento && h.fundamento.estadoPublicacion === "publicado" ? `/magia/${h.fundamento.id}` : null,
+  }));
 
   const tracks: Track[] = (p.canciones ?? [])
     .filter((c) => c.cancion)
@@ -78,7 +89,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
     { label: "Altura", value: p.altura ? `${p.altura} m` : null },
     { label: "Origen", value: p.lugarNacimiento },
     { label: "Ocupación", value: p.ocupacion },
-    { label: "Familia", value: p.familia },
+    { label: familias.length > 1 ? "Familias" : "Familia", value: familias.map((fa) => fa.nombre).join(", ") || null },
   ].filter((f) => f.value);
 
   return (
@@ -169,14 +180,22 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
               <div className="mt-2">
                 <h3 className="mb-3 font-display text-lg text-accent">Eventos clave</h3>
                 <ol className="relative space-y-4 border-l border-border-glow pl-5">
-                  {p.eventos.map((e) => (
-                    <li key={e.idEvento} className="relative">
-                      <span className="absolute -left-[26px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-                      {e.fecha && <p className="font-mono text-xs text-fg-muted">{e.fecha}</p>}
-                      <p className="font-medium text-fg">{e.titulo}</p>
-                      {e.descripcion && <p className="text-sm text-fg-secondary">{e.descripcion}</p>}
-                    </li>
-                  ))}
+                  {p.eventos
+                    .filter((e) => e.evento)
+                    .map((e) => (
+                      <li key={e.id} className="relative">
+                        <span className="absolute -left-6.5 top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                        {e.evento!.fechaLore && <p className="font-mono text-xs text-fg-muted">{e.evento!.fechaLore}</p>}
+                        <Link href="/timeline" className="font-medium text-fg hover:text-primary-glow">
+                          {e.evento!.titulo}
+                        </Link>
+                        {e.nota ? (
+                          <p className="text-sm text-fg-secondary">{e.nota}</p>
+                        ) : (
+                          e.evento!.descripcion && <p className="text-sm text-fg-secondary">{e.evento!.descripcion}</p>
+                        )}
+                      </li>
+                    ))}
                 </ol>
               </div>
             )}
@@ -208,9 +227,9 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         )}
 
         {/* Habilidades */}
-        {(p.habilidades?.length ?? 0) > 0 && (
+        {habilidades.length > 0 && (
           <Section icon="Swords" title="Habilidades">
-            <AbilityList habilidades={p.habilidades ?? []} />
+            <AbilityList habilidades={habilidades} />
           </Section>
         )}
 
@@ -219,7 +238,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
           (p.naciones?.length ?? 0) > 0 ||
           (p.razas?.length ?? 0) > 0 ||
           (p.organizaciones?.length ?? 0) > 0 ||
-          (p.equipamiento?.length ?? 0) > 0) && (
+          (p.objetos?.length ?? 0) > 0) && (
           <Section icon="Network" title="Relaciones y vínculos">
             {vinculos.length > 0 && (
               <>
@@ -280,16 +299,39 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
               }))}
             />
 
-            {p.equipamiento && p.equipamiento.length > 0 && (
+            {p.objetos && p.objetos.length > 0 && (
               <div>
-                <h3 className="mb-3 font-display text-lg text-secondary">Equipamiento</h3>
+                <h3 className="mb-3 font-display text-lg text-secondary">Objetos, armas y artefactos</h3>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {p.equipamiento.map((eq) => (
-                    <div key={eq.idArma} className="rounded-xl border border-border-base bg-surface/40 p-3">
-                      <p className="font-medium text-fg">{eq.nombre}</p>
-                      {eq.descripcion && <p className="text-sm text-fg-secondary">{eq.descripcion}</p>}
-                    </div>
-                  ))}
+                  {p.objetos
+                    .filter((o) => o.objeto)
+                    .map((o) => {
+                      const enlazable = o.objeto!.estadoPublicacion === "publicado";
+                      const inner = (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-fg">{o.objeto!.nombre}</span>
+                            {o.objeto!.tipo && <Badge tone="secondary">{o.objeto!.tipo}</Badge>}
+                          </div>
+                          {(o.nota || o.objeto!.descripcion) && (
+                            <p className="text-sm text-fg-secondary">{o.nota || o.objeto!.descripcion}</p>
+                          )}
+                        </>
+                      );
+                      return enlazable ? (
+                        <Link
+                          key={o.id}
+                          href={`/artefactos/${o.objeto!.id}`}
+                          className="block rounded-xl border border-border-base bg-surface/40 p-3 transition-colors hover:border-border-glow"
+                        >
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div key={o.id} className="rounded-xl border border-border-base bg-surface/40 p-3">
+                          {inner}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             )}

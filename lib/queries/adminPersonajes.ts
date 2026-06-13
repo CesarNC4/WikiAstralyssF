@@ -84,10 +84,9 @@ export async function getPersonajeParaEditar(id: number) {
     where: (p, { eq, and, isNull }) => and(eq(p.id, id), isNull(p.eliminadoEn)),
     with: {
       estadisticas: true,
-      habilidades: true,
-      eventos: true,
-      equipamiento: true,
-      objetos: true,
+      habilidades: { with: { fundamento: { columns: { id: true, nombre: true } } } },
+      eventos: { with: { evento: { columns: { id: true, fechaLore: true, titulo: true } } } },
+      objetos: { with: { objeto: { columns: { id: true, nombre: true, tipo: true } } } },
       relaciones: {
         with: {
           relacionado: { columns: { id: true, nombre: true, surname: true } },
@@ -98,6 +97,17 @@ export async function getPersonajeParaEditar(id: number) {
       organizaciones: { with: { organizacion: { columns: { id: true, nombre: true } } } },
     },
   });
+}
+
+/** Nombres de las familias a las que pertenece el PJ (derivado de familia_jerarquia). */
+export async function listFamiliasDePersonaje(personajeId: number): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ nombre: s.familias.nombre })
+    .from(s.familiaJerarquia)
+    .innerJoin(s.familias, eq(s.familiaJerarquia.familiaId, s.familias.id))
+    .where(and(eq(s.familiaJerarquia.personajeId, personajeId), isNull(s.familias.eliminadoEn)))
+    .orderBy(asc(s.familias.nombre));
+  return rows.map((r) => r.nombre).filter(Boolean);
 }
 
 export type PersonajeParaEditar = NonNullable<Awaited<ReturnType<typeof getPersonajeParaEditar>>>;
@@ -143,4 +153,46 @@ export async function listOrganizacionesOpciones(): Promise<Opcion[]> {
     .from(s.organizaciones)
     .orderBy(asc(s.organizaciones.nombre));
   return rows.map((r) => ({ id: r.id, label: r.nombre }));
+}
+
+/** Hechizos/técnicas reutilizables del catálogo Magia (excluye Fundamento y Concepto). */
+export async function listMagiaHechizosOpciones(): Promise<Opcion[]> {
+  const rows = await db
+    .select({
+      id: s.magiaFundamentos.id,
+      nombre: s.magiaFundamentos.nombre,
+      tipo: s.magiaFundamentos.tipo,
+      subcategoria: s.magiaFundamentos.subcategoria,
+      naturaleza: s.magiaFundamentos.naturaleza,
+    })
+    .from(s.magiaFundamentos)
+    .where(isNull(s.magiaFundamentos.eliminadoEn))
+    .orderBy(asc(s.magiaFundamentos.nombre));
+  const excluidas = new Set(["fundamento", "concepto"]);
+  return rows
+    .filter((r) => !excluidas.has((r.naturaleza ?? "").trim().toLowerCase()))
+    .map((r) => ({
+      id: r.id,
+      label: [r.nombre, [r.tipo, r.subcategoria].filter(Boolean).join(" · ")].filter(Boolean).join(" — "),
+    }));
+}
+
+/** Eventos de la cronología global (para vincular eventos clave del PJ). */
+export async function listTimelineOpciones(): Promise<Opcion[]> {
+  const rows = await db
+    .select({ id: s.timelineEventos.id, fechaLore: s.timelineEventos.fechaLore, titulo: s.timelineEventos.titulo })
+    .from(s.timelineEventos)
+    .where(isNull(s.timelineEventos.eliminadoEn))
+    .orderBy(asc(s.timelineEventos.orden), asc(s.timelineEventos.titulo));
+  return rows.map((r) => ({ id: r.id, label: [r.fechaLore, r.titulo].filter(Boolean).join(" · ") }));
+}
+
+/** Armas/artefactos/objetos del catálogo global (para vincular objetos del PJ). */
+export async function listArtefactosOpciones(): Promise<Opcion[]> {
+  const rows = await db
+    .select({ id: s.armasArtefactos.id, nombre: s.armasArtefactos.nombre, tipo: s.armasArtefactos.tipo })
+    .from(s.armasArtefactos)
+    .where(isNull(s.armasArtefactos.eliminadoEn))
+    .orderBy(asc(s.armasArtefactos.nombre));
+  return rows.map((r) => ({ id: r.id, label: r.tipo ? `${r.nombre} (${r.tipo})` : r.nombre }));
 }

@@ -20,7 +20,7 @@ export function AccordionSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="overflow-hidden rounded-2xl border border-border-base bg-surface/40">
+    <section className="rounded-2xl border border-border-base bg-surface/40">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

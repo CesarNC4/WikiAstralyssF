@@ -1,6 +1,24 @@
-import { pgTable, serial, integer, varchar, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, boolean, text } from "drizzle-orm/pg-core";
 
 /** Tablas de relación N:M entre dominios. */
+
+/** Eventos clave del personaje: vínculo a la cronología global con nota propia del PJ. */
+export const personajeEvento = pgTable("personaje_evento", {
+  id: serial("id").primaryKey(),
+  personajeId: integer("personaje_id").notNull(),
+  timelineEventoId: integer("timeline_evento_id").notNull(),
+  nota: text("nota"),
+  orden: integer("orden").notNull().default(0),
+});
+
+/** Objetos/armas/artefactos del personaje: vínculo al catálogo global con nota propia del PJ. */
+export const personajeObjeto = pgTable("personaje_objeto", {
+  id: serial("id").primaryKey(),
+  personajeId: integer("personaje_id").notNull(),
+  armaArtefactoId: integer("arma_artefacto_id").notNull(),
+  nota: text("nota"),
+  orden: integer("orden").notNull().default(0),
+});
 
 export const capituloPersonaje = pgTable("capitulo_personaje", {
   id: serial("id").primaryKey(),

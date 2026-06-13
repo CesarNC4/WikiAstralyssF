@@ -11,11 +11,14 @@ export async function getPersonajeFicha(id: number) {
       and(eq(p.id, id), eq(p.estadoPublicacion, "publicado"), isNull(p.eliminadoEn)),
     with: {
       estadisticas: true,
-      habilidades: true,
-      eventos: true,
+      habilidades: { with: { fundamento: { columns: { id: true, nombre: true, estadoPublicacion: true } } } },
+      eventos: {
+        with: { evento: { columns: { id: true, fechaLore: true, titulo: true, descripcion: true } } },
+      },
       narrativa: true,
-      equipamiento: true,
-      objetos: true,
+      objetos: {
+        with: { objeto: { columns: { id: true, nombre: true, tipo: true, descripcion: true, estadoPublicacion: true } } },
+      },
       relaciones: {
         with: {
           relacionado: {
@@ -45,11 +48,14 @@ export async function getPersonajePreview(id: number) {
     where: (p, { eq, and, isNull }) => and(eq(p.id, id), isNull(p.eliminadoEn)),
     with: {
       estadisticas: true,
-      habilidades: true,
-      eventos: true,
+      habilidades: { with: { fundamento: { columns: { id: true, nombre: true, estadoPublicacion: true } } } },
+      eventos: {
+        with: { evento: { columns: { id: true, fechaLore: true, titulo: true, descripcion: true } } },
+      },
       narrativa: true,
-      equipamiento: true,
-      objetos: true,
+      objetos: {
+        with: { objeto: { columns: { id: true, nombre: true, tipo: true, descripcion: true, estadoPublicacion: true } } },
+      },
       relaciones: {
         with: {
           relacionado: {
@@ -69,6 +75,23 @@ export async function getPersonajePreview(id: number) {
       },
     },
   });
+}
+
+/** Familias (publicadas) a las que pertenece el PJ — derivado de familia_jerarquia. */
+export async function getFamiliasDePersonaje(personajeId: number): Promise<{ id: number; nombre: string }[]> {
+  const rows = await db
+    .selectDistinct({ id: s.familias.id, nombre: s.familias.nombre })
+    .from(s.familiaJerarquia)
+    .innerJoin(s.familias, eq(s.familiaJerarquia.familiaId, s.familias.id))
+    .where(
+      and(
+        eq(s.familiaJerarquia.personajeId, personajeId),
+        eq(s.familias.estadoPublicacion, "publicado"),
+        isNull(s.familias.eliminadoEn),
+      ),
+    )
+    .orderBy(asc(s.familias.nombre));
+  return rows.filter((r) => r.nombre);
 }
 
 /** Personajes asociados a una nación (para la ficha de nación). */

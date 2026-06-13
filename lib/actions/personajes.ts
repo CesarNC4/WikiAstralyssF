@@ -32,6 +32,10 @@ function revalidarPersonaje(id: number) {
   revalidatePath("/personajes");
   revalidatePath(`/personajes/${id}`);
   revalidatePath("/");
+  // Pueden haberse creado entradas globales al vuelo desde la ficha.
+  revalidatePath("/magia");
+  revalidatePath("/timeline");
+  revalidatePath("/artefactos");
 }
 
 function scalars(data: PersonajeInput) {
@@ -46,7 +50,7 @@ function scalars(data: PersonajeInput) {
     ocupacion: data.ocupacion,
     rangoAventurero: data.rangoAventurero,
     lugarNacimiento: data.lugarNacimiento,
-    familia: data.familia,
+    // `familia` ya no se escribe: es solo-lectura derivado de familia_jerarquia.
     esInvocado: data.esInvocado ?? false,
     tipoInvocacion: data.tipoInvocacion,
     historia: data.historia,
@@ -86,55 +90,92 @@ async function guardarHijos(
     await tx.insert(s.estadisticas).values({ ...data.estadisticas, personajeId });
   }
 
+  // Habilidades: enlace a un hechizo del catálogo Magia (o creación de uno nuevo).
   await tx.delete(s.habilidades).where(eq(s.habilidades.personajeId, personajeId));
-  if (data.habilidades.length) {
-    await tx.insert(s.habilidades).values(
-      data.habilidades.map((h) => ({
-        personajeId,
-        categoria: h.categoria,
-        nombre: h.nombre,
-        descripcion: h.descripcion,
-        tipo: h.tipo,
-        magiaFundamentoId: h.magiaFundamentoId,
-      })),
-    );
+  for (const h of data.habilidades) {
+    let magiaId = h.magiaFundamentoId ?? null;
+    let nombre = h.nombre;
+    let tipo = h.tipo;
+    if (h.nuevaMagia) {
+      const [m] = await tx
+        .insert(s.magiaFundamentos)
+        .values({
+          nombre: h.nuevaMagia.nombre,
+          naturaleza: "Hechizo",
+          tipo: h.nuevaMagia.tipo,
+          subcategoria: h.nuevaMagia.subcategoria,
+          estadoPublicacion: "borrador",
+        })
+        .returning({ id: s.magiaFundamentos.id });
+      magiaId = m.id;
+      nombre = nombre ?? h.nuevaMagia.nombre;
+      tipo = tipo ?? h.nuevaMagia.tipo;
+    }
+    if (!magiaId && !nombre) continue; // fila vacía
+    await tx.insert(s.habilidades).values({
+      personajeId,
+      magiaFundamentoId: magiaId,
+      categoria: h.categoria || "Habilidades",
+      nombre,
+      tipo,
+      descripcion: h.descripcion,
+    });
   }
 
-  await tx.delete(s.eventosPersonaje).where(eq(s.eventosPersonaje.personajeId, personajeId));
-  if (data.eventos.length) {
-    await tx.insert(s.eventosPersonaje).values(
-      data.eventos.map((e) => ({
-        personajeId,
-        fecha: e.fecha,
-        titulo: e.titulo,
-        descripcion: e.descripcion,
-      })),
-    );
+  // Eventos clave: vínculo a la cronología global (o creación de un evento nuevo).
+  await tx.delete(s.personajeEvento).where(eq(s.personajeEvento.personajeId, personajeId));
+  let ordenEv = 0;
+  for (const e of data.eventos) {
+    let eventoId = e.timelineEventoId ?? null;
+    if (e.nuevoEvento) {
+      const [ev] = await tx
+        .insert(s.timelineEventos)
+        .values({
+          fechaLore: e.nuevoEvento.fechaLore,
+          titulo: e.nuevoEvento.titulo,
+          importancia: e.nuevoEvento.importancia,
+          categoria: e.nuevoEvento.categoria,
+          era: e.nuevoEvento.era,
+          estadoPublicacion: "borrador",
+        })
+        .returning({ id: s.timelineEventos.id });
+      eventoId = ev.id;
+    }
+    if (!eventoId) continue;
+    await tx.insert(s.personajeEvento).values({
+      personajeId,
+      timelineEventoId: eventoId,
+      nota: e.nota,
+      orden: ordenEv++,
+    });
   }
 
-  await tx.delete(s.equipamiento).where(eq(s.equipamiento.personajeId, personajeId));
-  if (data.equipamiento.length) {
-    await tx.insert(s.equipamiento).values(
-      data.equipamiento.map((q) => ({
-        personajeId,
-        nombre: q.nombre,
-        tipo: q.tipo,
-        descripcion: q.descripcion,
-        poderEspecial: q.poderEspecial,
-      })),
-    );
-  }
-
-  await tx.delete(s.objetosImportantes).where(eq(s.objetosImportantes.personajeId, personajeId));
-  if (data.objetos.length) {
-    await tx.insert(s.objetosImportantes).values(
-      data.objetos.map((o) => ({
-        personajeId,
-        nombre: o.nombre,
-        tipo: o.tipo,
-        descripcion: o.descripcion,
-      })),
-    );
+  // Objetos/armas/artefactos: vínculo al catálogo global (o creación de uno nuevo).
+  await tx.delete(s.personajeObjeto).where(eq(s.personajeObjeto.personajeId, personajeId));
+  let ordenOb = 0;
+  for (const o of data.objetos) {
+    let artId = o.armaArtefactoId ?? null;
+    if (o.nuevoObjeto) {
+      const [a] = await tx
+        .insert(s.armasArtefactos)
+        .values({
+          nombre: o.nuevoObjeto.nombre,
+          tipo: o.nuevoObjeto.tipo,
+          descripcion: o.nuevoObjeto.descripcion,
+          poderEspecial: o.nuevoObjeto.poderEspecial,
+          propietarioId: personajeId,
+          estadoPublicacion: "borrador",
+        })
+        .returning({ id: s.armasArtefactos.id });
+      artId = a.id;
+    }
+    if (!artId) continue;
+    await tx.insert(s.personajeObjeto).values({
+      personajeId,
+      armaArtefactoId: artId,
+      nota: o.nota,
+      orden: ordenOb++,
+    });
   }
 
   await tx.delete(s.relaciones).where(eq(s.relaciones.personajeId, personajeId));
@@ -318,9 +359,8 @@ export async function eliminarDefinitivo(id: number): Promise<void> {
   await db.transaction(async (tx) => {
     await tx.delete(s.estadisticas).where(eq(s.estadisticas.personajeId, id));
     await tx.delete(s.habilidades).where(eq(s.habilidades.personajeId, id));
-    await tx.delete(s.eventosPersonaje).where(eq(s.eventosPersonaje.personajeId, id));
-    await tx.delete(s.equipamiento).where(eq(s.equipamiento.personajeId, id));
-    await tx.delete(s.objetosImportantes).where(eq(s.objetosImportantes.personajeId, id));
+    await tx.delete(s.personajeEvento).where(eq(s.personajeEvento.personajeId, id));
+    await tx.delete(s.personajeObjeto).where(eq(s.personajeObjeto.personajeId, id));
     await tx.delete(s.relaciones).where(eq(s.relaciones.personajeId, id));
     await tx.delete(s.personajeNacion).where(eq(s.personajeNacion.personajeId, id));
     await tx.delete(s.personajeRaza).where(eq(s.personajeRaza.personajeId, id));

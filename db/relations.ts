@@ -4,10 +4,7 @@ import {
   estadisticas,
   habilidades,
   relaciones,
-  eventosPersonaje,
   personajeNarrativa,
-  equipamiento,
-  objetosImportantes,
 } from "./schema/personajes";
 import {
   naciones,
@@ -15,8 +12,9 @@ import {
   organizaciones,
   familias,
   gremio,
+  armasArtefactos,
 } from "./schema/mundo";
-import { magiaFundamentos } from "./schema/lore";
+import { magiaFundamentos, timelineEventos } from "./schema/lore";
 import {
   canciones,
   personajeCancion,
@@ -26,6 +24,8 @@ import {
   personajeNacion,
   personajeRaza,
   personajeOrganizacion,
+  personajeEvento,
+  personajeObjeto,
 } from "./schema/relacionesNM";
 import {
   familiaArbol,
@@ -50,10 +50,9 @@ export const personajesRelations = relations(personajes, ({ one, many }) => ({
   estadisticas: many(estadisticas),
   habilidades: many(habilidades),
   relaciones: many(relaciones, { relationName: "relacion_origen" }),
-  eventos: many(eventosPersonaje),
+  eventos: many(personajeEvento),
   narrativa: one(personajeNarrativa),
-  equipamiento: many(equipamiento),
-  objetos: many(objetosImportantes),
+  objetos: many(personajeObjeto),
   canciones: many(personajeCancion),
   naciones: many(personajeNacion),
   razas: many(personajeRaza),
@@ -101,10 +100,14 @@ export const relacionesRelations = relations(relaciones, ({ one }) => ({
   }),
 }));
 
-export const eventosPersonajeRelations = relations(eventosPersonaje, ({ one }) => ({
+export const personajeEventoRelations = relations(personajeEvento, ({ one }) => ({
   personaje: one(personajes, {
-    fields: [eventosPersonaje.personajeId],
+    fields: [personajeEvento.personajeId],
     references: [personajes.id],
+  }),
+  evento: one(timelineEventos, {
+    fields: [personajeEvento.timelineEventoId],
+    references: [timelineEventos.id],
   }),
 }));
 
@@ -115,17 +118,14 @@ export const personajeNarrativaRelations = relations(personajeNarrativa, ({ one 
   }),
 }));
 
-export const equipamientoRelations = relations(equipamiento, ({ one }) => ({
+export const personajeObjetoRelations = relations(personajeObjeto, ({ one }) => ({
   personaje: one(personajes, {
-    fields: [equipamiento.personajeId],
+    fields: [personajeObjeto.personajeId],
     references: [personajes.id],
   }),
-}));
-
-export const objetosRelations = relations(objetosImportantes, ({ one }) => ({
-  personaje: one(personajes, {
-    fields: [objetosImportantes.personajeId],
-    references: [personajes.id],
+  objeto: one(armasArtefactos, {
+    fields: [personajeObjeto.armaArtefactoId],
+    references: [armasArtefactos.id],
   }),
 }));
 

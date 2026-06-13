@@ -10,6 +10,10 @@ import {
   listNacionesOpciones,
   listRazasOpciones,
   listOrganizacionesOpciones,
+  listMagiaHechizosOpciones,
+  listTimelineOpciones,
+  listArtefactosOpciones,
+  listFamiliasDePersonaje,
 } from "@/lib/queries/adminPersonajes";
 
 export const dynamic = "force-dynamic";
@@ -26,12 +30,26 @@ export default async function EditarPersonajePage({
   const inicial = await getPersonajeParaEditar(pid);
   if (!inicial) notFound();
 
-  const [catalogos, personajesOpts, nacionesOpts, razasOpts, organizacionesOpts] = await Promise.all([
+  const [
+    catalogos,
+    personajesOpts,
+    nacionesOpts,
+    razasOpts,
+    organizacionesOpts,
+    magiaHechizosOpts,
+    timelineOpts,
+    artefactosOpts,
+    familiasOpts,
+  ] = await Promise.all([
     getCatalogosPersonaje(),
     listPersonajesOpciones(pid),
     listNacionesOpciones(),
     listRazasOpciones(),
     listOrganizacionesOpciones(),
+    listMagiaHechizosOpciones(),
+    listTimelineOpciones(),
+    listArtefactosOpciones(),
+    listFamiliasDePersonaje(pid),
   ]);
 
   const nombre = [inicial.nombre, inicial.surname].filter(Boolean).join(" ");
@@ -56,6 +74,10 @@ export default async function EditarPersonajePage({
         nacionesOpts={nacionesOpts}
         razasOpts={razasOpts}
         organizacionesOpts={organizacionesOpts}
+        magiaHechizosOpts={magiaHechizosOpts}
+        timelineOpts={timelineOpts}
+        artefactosOpts={artefactosOpts}
+        familiasDelPersonaje={familiasOpts}
       />
     </AdminShell>
   );

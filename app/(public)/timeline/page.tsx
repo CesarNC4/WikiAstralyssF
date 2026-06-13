@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { TimelineRio } from "@/components/viz/TimelineRio";
+import { TimelineEspiral } from "@/components/viz/TimelineEspiral";
 import { getTimeline } from "@/lib/queries/extra";
 import { Icon } from "@/components/Icon";
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Cronología",
-  description: "El río del tiempo de Astralys: eras, eventos y su historia, vivos e interactivos.",
+  description: "El túnel del tiempo de Astralys: recorre eras y eventos en una espiral viva e interactiva.",
 };
 
 export default async function TimelinePage() {
@@ -20,14 +20,14 @@ export default async function TimelinePage() {
         </span>
         <div>
           <h1 className="font-display text-3xl text-gradient-cosmic md:text-4xl">Cronología</h1>
-          <p className="text-sm text-fg-muted">El río del tiempo de Astralys — muévete por él.</p>
+          <p className="text-sm text-fg-muted">El túnel del tiempo de Astralys — arrástralo para recorrer las eras.</p>
         </div>
       </header>
 
       {eventos.length === 0 ? (
         <p className="text-fg-muted">No hay eventos en la cronología.</p>
       ) : (
-        <TimelineRio eventos={eventos} />
+        <TimelineEspiral eventos={eventos} />
       )}
     </div>
   );

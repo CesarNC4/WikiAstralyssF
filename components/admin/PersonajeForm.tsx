@@ -9,6 +9,7 @@ import { useToast } from "@/components/admin/Toast";
 import { AccordionSection, Repeater, MultiPicker } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
+import { cn } from "@/lib/utils";
 import {
   Field,
   TextInput,
@@ -19,25 +20,55 @@ import {
 } from "@/components/admin/fields";
 
 // ── tipos locales del estado del formulario ─────────────────────────────────
-interface Hab { idHabilidad?: number; categoria: string; nombre: string; descripcion: string; tipo: string; magiaFundamentoId: number | null }
-interface Ev { idEvento?: number; fecha: string; titulo: string; descripcion: string }
-interface Eq { idArma?: number; nombre: string; tipo: string; descripcion: string; poderEspecial: string }
-interface Ob { idObjeto?: number; nombre: string; tipo: string; descripcion: string }
+interface Hab {
+  modo: "existente" | "nueva";
+  magiaFundamentoId: number | null;
+  magiaLabel: string;
+  nuevoNombre: string;
+  nuevoTipo: string;
+  nuevoSubcategoria: string;
+  categoria: string;
+  descripcion: string;
+}
+interface Ev {
+  modo: "existente" | "nueva";
+  timelineEventoId: number | null;
+  eventoLabel: string;
+  nFecha: string;
+  nTitulo: string;
+  nImportancia: string;
+  nCategoria: string;
+  nEra: string;
+  nota: string;
+}
+interface Ob {
+  modo: "existente" | "nueva";
+  armaArtefactoId: number | null;
+  objetoLabel: string;
+  nNombre: string;
+  nTipo: string;
+  nDescripcion: string;
+  nPoder: string;
+  nota: string;
+}
 interface Rel { idRr?: number; personajeRelacionadoId: number | null; relLabel: string; nombreExterno: string; tipoRelacion: string; subtipoRelacion: string; descripcion: string }
 interface NacSel { nacionId: number; label: string; tipo: string; descripcion: string }
 interface RazSel { razaId: number; label: string; esMixta: boolean; nota: string }
 interface OrgSel { organizacionId: number; label: string; rol: string; tipo: string; descripcion: string }
 
-const STAT_KEYS = [
-  "fuerza", "destreza", "constitucion", "inteligencia", "sabiduria", "carisma",
+const PRIMARY_KEYS = ["fuerza", "destreza", "constitucion", "inteligencia", "sabiduria", "carisma"] as const;
+const COMBAT_KEYS = [
   "mpMax", "ataqueFisico", "ataqueMagico", "defensaFisica", "defensaMagica",
   "velocidad", "capacidadDeReaccion", "precisionVal",
 ] as const;
 const RATING_KEYS = [
   "rangoCuerpoACuerpo", "rangoDistancia", "danoMagico", "defensa", "apoyo", "movilidad", "controlDeMasas",
 ] as const;
+const STAT_KEYS = [...PRIMARY_KEYS, ...COMBAT_KEYS] as const;
 type StatKey = (typeof STAT_KEYS)[number];
 type RatingKey = (typeof RATING_KEYS)[number];
+
+const TIPO_INVOCACION = ["Natural", "Ishkoriana"] as const;
 
 const s = (v: unknown) => (v == null ? "" : String(v));
 
@@ -48,6 +79,10 @@ export function PersonajeForm({
   nacionesOpts,
   razasOpts,
   organizacionesOpts,
+  magiaHechizosOpts,
+  timelineOpts,
+  artefactosOpts,
+  familiasDelPersonaje,
 }: {
   inicial: PersonajeParaEditar | null;
   catalogos: CatalogosPersonaje;
@@ -55,6 +90,10 @@ export function PersonajeForm({
   nacionesOpts: Opcion[];
   razasOpts: Opcion[];
   organizacionesOpts: Opcion[];
+  magiaHechizosOpts: Opcion[];
+  timelineOpts: Opcion[];
+  artefactosOpts: Opcion[];
+  familiasDelPersonaje: string[];
 }) {
   const toast = useToast();
   const [dirty, setDirty] = useState(false);
@@ -69,7 +108,7 @@ export function PersonajeForm({
     nombre: s(inicial?.nombre), surname: s(inicial?.surname), titulo: s(inicial?.titulo),
     subtitulo: s(inicial?.subtitulo), edad: s(inicial?.edad), genero: s(inicial?.genero),
     altura: s(inicial?.altura), ocupacion: s(inicial?.ocupacion), rangoAventurero: s(inicial?.rangoAventurero),
-    lugarNacimiento: s(inicial?.lugarNacimiento), familia: s(inicial?.familia),
+    lugarNacimiento: s(inicial?.lugarNacimiento),
     esInvocado: Boolean(inicial?.esInvocado), tipoInvocacion: s(inicial?.tipoInvocacion),
     historia: s(inicial?.historia), rasgosPersonalidad: s(inicial?.rasgosPersonalidad),
     motivacion: s(inicial?.motivacion), miedos: s(inicial?.miedos), filosofia: s(inicial?.filosofia),
@@ -81,6 +120,8 @@ export function PersonajeForm({
     estadoPublicacion: (inicial?.estadoPublicacion ?? "borrador") as EstadoPublicacion,
   });
   const patch = (p: Partial<typeof f>) => { setF((prev) => ({ ...prev, ...p })); markDirty(); };
+  // Punto 1: "Es invocado" gobierna el tipo de invocación; al desactivarlo se limpia.
+  const setEsInvocado = (v: boolean) => patch(v ? { esInvocado: true } : { esInvocado: false, tipoInvocacion: "" });
 
   const [imagen, setImagen] = useState<ImageValue>({ assetId: inicial?.imagenAssetId ?? null, url: s(inicial?.imagenUrl) || null });
   const [banner, setBanner] = useState<ImageValue>({ assetId: inicial?.bannerAssetId ?? null, url: s(inicial?.bannerUrl) || null });
@@ -88,16 +129,34 @@ export function PersonajeForm({
   const setStat = (k: string, v: string) => { setStats((p) => ({ ...p, [k]: v })); markDirty(); };
 
   const [habilidades, setHabilidades] = useState<Hab[]>(
-    (inicial?.habilidades ?? []).map((h) => ({ idHabilidad: h.idHabilidad, categoria: s(h.categoria), nombre: s(h.nombre), descripcion: s(h.descripcion), tipo: s(h.tipo), magiaFundamentoId: h.magiaFundamentoId ?? null })),
+    (inicial?.habilidades ?? []).map((h) => ({
+      modo: h.magiaFundamentoId ? "existente" : "nueva",
+      magiaFundamentoId: h.magiaFundamentoId ?? null,
+      magiaLabel: h.fundamento?.nombre ?? s(h.nombre),
+      nuevoNombre: s(h.nombre),
+      nuevoTipo: s(h.tipo),
+      nuevoSubcategoria: "",
+      categoria: s(h.categoria),
+      descripcion: s(h.descripcion),
+    })),
   );
   const [eventos, setEventos] = useState<Ev[]>(
-    (inicial?.eventos ?? []).map((e) => ({ idEvento: e.idEvento, fecha: s(e.fecha), titulo: s(e.titulo), descripcion: s(e.descripcion) })),
-  );
-  const [equipamiento, setEquip] = useState<Eq[]>(
-    (inicial?.equipamiento ?? []).map((q) => ({ idArma: q.idArma, nombre: s(q.nombre), tipo: s(q.tipo), descripcion: s(q.descripcion), poderEspecial: s(q.poderEspecial) })),
+    (inicial?.eventos ?? []).map((e) => ({
+      modo: "existente" as const,
+      timelineEventoId: e.timelineEventoId ?? null,
+      eventoLabel: e.evento ? [e.evento.fechaLore, e.evento.titulo].filter(Boolean).join(" · ") : "",
+      nFecha: "", nTitulo: "", nImportancia: "", nCategoria: "", nEra: "",
+      nota: s(e.nota),
+    })),
   );
   const [objetos, setObjetos] = useState<Ob[]>(
-    (inicial?.objetos ?? []).map((o) => ({ idObjeto: o.idObjeto, nombre: s(o.nombre), tipo: s(o.tipo), descripcion: s(o.descripcion) })),
+    (inicial?.objetos ?? []).map((o) => ({
+      modo: "existente" as const,
+      armaArtefactoId: o.armaArtefactoId ?? null,
+      objetoLabel: o.objeto ? (o.objeto.tipo ? `${o.objeto.nombre} (${o.objeto.tipo})` : o.objeto.nombre) : "",
+      nNombre: "", nTipo: "", nDescripcion: "", nPoder: "",
+      nota: s(o.nota),
+    })),
   );
   const [relaciones, setRelaciones] = useState<Rel[]>(
     (inicial?.relaciones ?? []).map((r) => ({
@@ -123,7 +182,6 @@ export function PersonajeForm({
 
   useEffect(() => {
     if (!state) return;
-    // La creación redirige en el servidor; aquí solo manejamos guardado de edición y errores.
     if (state.ok) {
       toast("Cambios guardados.", "success");
       setDirty(false);
@@ -132,7 +190,6 @@ export function PersonajeForm({
     }
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── aviso al salir con cambios sin guardar ──
   useEffect(() => {
     const h = (e: BeforeUnloadEvent) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } };
     window.addEventListener("beforeunload", h);
@@ -141,12 +198,67 @@ export function PersonajeForm({
 
   const submit = () => {
     const statsHasValue = [...STAT_KEYS, ...RATING_KEYS].some((k) => s(stats[k]).trim() !== "");
+
+    const habilidadesPayload = habilidades
+      .filter((h) => (h.modo === "nueva" ? h.nuevoNombre.trim() : h.magiaFundamentoId))
+      .map((h) =>
+        h.modo === "nueva"
+          ? {
+              magiaFundamentoId: null,
+              nuevaMagia: { nombre: h.nuevoNombre.trim(), tipo: h.nuevoTipo, subcategoria: h.nuevoSubcategoria },
+              categoria: h.categoria,
+              nombre: h.nuevoNombre.trim(),
+              tipo: h.nuevoTipo,
+              descripcion: h.descripcion,
+            }
+          : {
+              magiaFundamentoId: h.magiaFundamentoId,
+              nuevaMagia: null,
+              categoria: h.categoria,
+              nombre: null,
+              tipo: null,
+              descripcion: h.descripcion,
+            },
+      );
+
+    const eventosPayload = eventos
+      .filter((e) => (e.modo === "nueva" ? e.nTitulo.trim() && e.nFecha.trim() : e.timelineEventoId))
+      .map((e) =>
+        e.modo === "nueva"
+          ? {
+              timelineEventoId: null,
+              nuevoEvento: {
+                fechaLore: e.nFecha.trim(),
+                titulo: e.nTitulo.trim(),
+                importancia: e.nImportancia,
+                categoria: e.nCategoria,
+                era: e.nEra,
+              },
+              nota: e.nota,
+            }
+          : { timelineEventoId: e.timelineEventoId, nuevoEvento: null, nota: e.nota },
+      );
+
+    const objetosPayload = objetos
+      .filter((o) => (o.modo === "nueva" ? o.nNombre.trim() : o.armaArtefactoId))
+      .map((o) =>
+        o.modo === "nueva"
+          ? {
+              armaArtefactoId: null,
+              nuevoObjeto: { nombre: o.nNombre.trim(), tipo: o.nTipo, descripcion: o.nDescripcion, poderEspecial: o.nPoder },
+              nota: o.nota,
+            }
+          : { armaArtefactoId: o.armaArtefactoId, nuevoObjeto: null, nota: o.nota },
+      );
+
     const payload = {
       ...f,
       imagenAssetId: imagen.assetId, imagenUrl: imagen.url,
       bannerAssetId: banner.assetId, bannerUrl: banner.url,
       estadisticas: statsHasValue ? stats : null,
-      habilidades, eventos, equipamiento, objetos,
+      habilidades: habilidadesPayload,
+      eventos: eventosPayload,
+      objetos: objetosPayload,
       relaciones: relaciones.map((r) => ({
         idRr: r.idRr,
         personajeRelacionadoId: r.personajeRelacionadoId,
@@ -154,7 +266,7 @@ export function PersonajeForm({
         tipoRelacion: r.tipoRelacion,
         subtipoRelacion: r.subtipoRelacion,
         descripcion: r.descripcion,
-      })), // relLabel es solo de UI; no se envía
+      })),
       naciones: naciones.map((n) => ({ nacionId: n.nacionId, tipo: n.tipo, descripcion: n.descripcion })),
       razas: razas.map((r) => ({ razaId: r.razaId, esMixta: r.esMixta, nota: r.nota })),
       organizaciones: organizaciones.map((o) => ({ organizacionId: o.organizacionId, rol: o.rol, tipo: o.tipo, descripcion: o.descripcion })),
@@ -188,12 +300,35 @@ export function PersonajeForm({
           <Field label="Ocupación"><TextInput value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} /></Field>
           <Field label="Rango aventurero"><Combobox value={f.rangoAventurero} onChange={(v) => patch({ rangoAventurero: v })} options={catalogos.rango_aventurero} campo="rango_aventurero" /></Field>
           <Field label="Lugar de nacimiento"><TextInput value={f.lugarNacimiento} onChange={(v) => patch({ lugarNacimiento: v })} /></Field>
-          <Field label="Familia (texto)"><TextInput value={f.familia} onChange={(v) => patch({ familia: v })} /></Field>
-          <Field label="Tipo de invocación"><TextInput value={f.tipoInvocacion} onChange={(v) => patch({ tipoInvocacion: v })} /></Field>
-          <label className="flex items-center gap-2 text-sm text-fg-secondary">
-            <input type="checkbox" checked={f.esInvocado} onChange={(e) => patch({ esInvocado: e.target.checked })} />
+          {/* Punto 2: Familia derivada (solo lectura). */}
+          <Field label="Familia" hint="Se asigna desde el editor de Familia (no editable)">
+            <div className="min-h-10 rounded-lg border border-border-base bg-deep/40 px-3 py-2 text-sm">
+              {familiasDelPersonaje.length > 0 ? (
+                <span className="text-fg">{familiasDelPersonaje.join(", ")}</span>
+              ) : (
+                <span className="text-fg-muted">Sin familia asignada</span>
+              )}
+            </div>
+          </Field>
+          <div />
+          {/* Punto 1: invocación. */}
+          <label className="flex items-center gap-2 self-end pb-2 text-sm text-fg-secondary">
+            <input type="checkbox" checked={f.esInvocado} onChange={(e) => setEsInvocado(e.target.checked)} />
             Es invocado
           </label>
+          <Field label="Tipo de invocación">
+            <select
+              value={f.tipoInvocacion}
+              disabled={!f.esInvocado}
+              onChange={(e) => patch({ tipoInvocacion: e.target.value })}
+              className="w-full rounded-lg border border-border-base bg-surface px-3 py-2 text-sm text-fg outline-none transition-colors focus:border-border-glow disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">{f.esInvocado ? "Selecciona…" : "—"}</option>
+              {TIPO_INVOCACION.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </Field>
         </div>
       </AccordionSection>
 
@@ -213,31 +348,47 @@ export function PersonajeForm({
         </div>
       </AccordionSection>
 
-      {/* Magia y combate */}
+      {/* Magia y combate (punto 4: campos grandes markdown) */}
       <AccordionSection title="Magia y combate">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Magia principal"><MagiaPicker value={f.tipoMagiaPrincipal} onChange={(v) => patch({ tipoMagiaPrincipal: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
           <Field label="Magia secundaria"><MagiaPicker value={f.magiaSecundaria} onChange={(v) => patch({ magiaSecundaria: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
           <Field label="Nivel de consciencia"><Combobox value={f.nivelDeConsciencia} onChange={(v) => patch({ nivelDeConsciencia: v })} options={catalogos.nivel_consciencia} campo="nivel_consciencia" /></Field>
-          <Field label="Circuito Forte" hint="texto libre"><TextInput value={f.circuitoForte} onChange={(v) => patch({ circuitoForte: v })} /></Field>
-          <Field label="Essentia" hint="texto libre"><TextInput value={f.essentia} onChange={(v) => patch({ essentia: v })} /></Field>
-          <Field label="Zenithra" hint="texto libre"><TextInput value={f.zenithra} onChange={(v) => patch({ zenithra: v })} /></Field>
-          <Field label="Bendición" hint="texto libre"><TextInput value={f.bendicion} onChange={(v) => patch({ bendicion: v })} /></Field>
-          <Field label="Segundo despertar"><TextInput value={f.segundoDespertar} onChange={(v) => patch({ segundoDespertar: v })} /></Field>
+          <div />
+        </div>
+        <div className="mt-3 space-y-3">
+          <Field label="Circuito Forte"><MarkdownField value={f.circuitoForte} onChange={(v) => patch({ circuitoForte: v })} rows={4} /></Field>
+          <Field label="Essentia"><MarkdownField value={f.essentia} onChange={(v) => patch({ essentia: v })} rows={4} /></Field>
+          <Field label="Zenithra"><MarkdownField value={f.zenithra} onChange={(v) => patch({ zenithra: v })} rows={4} /></Field>
+          <Field label="Bendición"><MarkdownField value={f.bendicion} onChange={(v) => patch({ bendicion: v })} rows={4} /></Field>
+          <Field label="Segundo despertar"><MarkdownField value={f.segundoDespertar} onChange={(v) => patch({ segundoDespertar: v })} rows={4} /></Field>
         </div>
       </AccordionSection>
 
-      {/* Stats */}
+      {/* Stats (punto 5: tres grupos) */}
       <AccordionSection title="Estadísticas">
-        <p className="mb-2 text-xs text-fg-muted">Atributos primarios: 0–100. El resto, enteros sin tope.</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {STAT_KEYS.map((k) => (
+        <p className="mb-2 text-xs uppercase tracking-wide text-accent">Atributos primarios</p>
+        <p className="mb-2 text-xs text-fg-muted">Rango 0–100.</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+          {PRIMARY_KEYS.map((k) => (
             <Field key={k} label={statLabel(k)} error={fe[`estadisticas.${k}`]}>
-              <NumberInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} min={0} max={k === "fuerza" || k === "destreza" || k === "constitucion" || k === "inteligencia" || k === "sabiduria" || k === "carisma" ? 100 : undefined} />
+              <NumberInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} min={0} max={100} />
             </Field>
           ))}
         </div>
-        <p className="mb-2 mt-4 text-xs text-fg-muted">Valoraciones cualitativas (texto: S, A, B…).</p>
+
+        <p className="mb-2 mt-5 text-xs uppercase tracking-wide text-accent">Estadísticas de combate</p>
+        <p className="mb-2 text-xs text-fg-muted">Enteros sin tope.</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {COMBAT_KEYS.map((k) => (
+            <Field key={k} label={statLabel(k)} error={fe[`estadisticas.${k}`]}>
+              <NumberInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} min={0} />
+            </Field>
+          ))}
+        </div>
+
+        <p className="mb-2 mt-5 text-xs uppercase tracking-wide text-accent">Rangos</p>
+        <p className="mb-2 text-xs text-fg-muted">Valoraciones cualitativas (texto: S, A, B…).</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {RATING_KEYS.map((k) => (
             <Field key={k} label={ratingLabel(k)}><TextInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} /></Field>
@@ -245,37 +396,84 @@ export function PersonajeForm({
         </div>
       </AccordionSection>
 
-      {/* Habilidades */}
+      {/* Habilidades (punto 6) */}
       <AccordionSection title="Habilidades" subtitle={`${habilidades.length}`}>
+        <p className="mb-3 text-xs text-fg-muted">Enlaza un hechizo del catálogo de Magia o crea uno nuevo (se guardará en Magia). La descripción es la nota propia de este personaje.</p>
         <Repeater
           items={habilidades}
           onChange={wrapSetter(setHabilidades)}
-          blank={() => ({ categoria: "", nombre: "", descripcion: "", tipo: "", magiaFundamentoId: null })}
+          blank={(): Hab => ({ modo: "existente", magiaFundamentoId: null, magiaLabel: "", nuevoNombre: "", nuevoTipo: "", nuevoSubcategoria: "", categoria: "", descripcion: "" })}
           addLabel="Añadir habilidad"
           renderItem={(h, up) => (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Field label="Categoría *"><Combobox value={h.categoria} onChange={(v) => up({ categoria: v })} options={catalogos.habilidad_categoria} campo="habilidad_categoria" /></Field>
-              <Field label="Nombre"><TextInput value={h.nombre} onChange={(v) => up({ nombre: v })} /></Field>
-              <Field label="Tipo"><Combobox value={h.tipo} onChange={(v) => up({ tipo: v })} options={catalogos.habilidad_tipo} campo="habilidad_tipo" /></Field>
-              <div />
-              <div className="sm:col-span-2"><Field label="Descripción"><MarkdownField value={h.descripcion} onChange={(v) => up({ descripcion: v })} rows={3} /></Field></div>
+            <div className="space-y-2">
+              <ModoToggle
+                modo={h.modo}
+                etiquetas={["Escoger de Magia", "Crear nueva"]}
+                onChange={(modo) => up({ modo })}
+              />
+              {h.modo === "existente" ? (
+                <Field label="Hechizo / técnica">
+                  <Picker
+                    label={h.magiaLabel}
+                    options={magiaHechizosOpts}
+                    placeholder="Buscar en el catálogo de Magia…"
+                    onPick={(id, label) => up({ magiaFundamentoId: id, magiaLabel: label })}
+                    onClear={() => up({ magiaFundamentoId: null, magiaLabel: "" })}
+                  />
+                </Field>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <Field label="Nombre *"><TextInput value={h.nuevoNombre} onChange={(v) => up({ nuevoNombre: v })} /></Field>
+                  <Field label="Tipo / escuela"><Combobox value={h.nuevoTipo} onChange={(v) => up({ nuevoTipo: v })} options={catalogos.magiaTipos} campo="magia_tipo" /></Field>
+                  <Field label="Elemento"><Combobox value={h.nuevoSubcategoria} onChange={(v) => up({ nuevoSubcategoria: v })} options={catalogos.magiaVariantes[h.nuevoTipo] ?? []} campo="magia_variante" grupo={h.nuevoTipo} /></Field>
+                </div>
+              )}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Field label="Categoría" hint="agrupa en la ficha"><Combobox value={h.categoria} onChange={(v) => up({ categoria: v })} options={catalogos.habilidad_categoria} campo="habilidad_categoria" /></Field>
+                <div />
+              </div>
+              <Field label="Descripción"><MarkdownField value={h.descripcion} onChange={(v) => up({ descripcion: v })} rows={3} /></Field>
             </div>
           )}
         />
       </AccordionSection>
 
-      {/* Eventos */}
+      {/* Eventos (punto 7) */}
       <AccordionSection title="Eventos clave" subtitle={`${eventos.length}`}>
+        <p className="mb-3 text-xs text-fg-muted">Vincula un evento de la cronología o crea uno nuevo (se ubicará en la cronología global). La nota es lo que significa este evento para este personaje.</p>
         <Repeater
           items={eventos}
           onChange={wrapSetter(setEventos)}
-          blank={() => ({ fecha: "", titulo: "", descripcion: "" })}
+          blank={(): Ev => ({ modo: "existente", timelineEventoId: null, eventoLabel: "", nFecha: "", nTitulo: "", nImportancia: "", nCategoria: "", nEra: "", nota: "" })}
           addLabel="Añadir evento"
           renderItem={(e, up) => (
-            <div className="grid gap-2 sm:grid-cols-3">
-              <Field label="Fecha (lore)"><TextInput value={e.fecha} onChange={(v) => up({ fecha: v })} /></Field>
-              <div className="sm:col-span-2"><Field label="Título *"><TextInput value={e.titulo} onChange={(v) => up({ titulo: v })} /></Field></div>
-              <div className="sm:col-span-3"><Field label="Descripción"><MarkdownField value={e.descripcion} onChange={(v) => up({ descripcion: v })} rows={3} /></Field></div>
+            <div className="space-y-2">
+              <ModoToggle
+                modo={e.modo}
+                etiquetas={["Escoger de cronología", "Crear evento"]}
+                onChange={(modo) => up({ modo })}
+              />
+              {e.modo === "existente" ? (
+                <Field label="Evento de la cronología">
+                  <Picker
+                    label={e.eventoLabel}
+                    options={timelineOpts}
+                    placeholder="Buscar en la cronología…"
+                    onPick={(id, label) => up({ timelineEventoId: id, eventoLabel: label })}
+                    onClear={() => up({ timelineEventoId: null, eventoLabel: "" })}
+                  />
+                </Field>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Field label="Fecha (lore) *"><TextInput value={e.nFecha} onChange={(v) => up({ nFecha: v })} /></Field>
+                  <Field label="Título *"><TextInput value={e.nTitulo} onChange={(v) => up({ nTitulo: v })} /></Field>
+                  <Field label="Importancia"><Combobox value={e.nImportancia} onChange={(v) => up({ nImportancia: v })} options={catalogos.timeline_importancia} campo="timeline_importancia" /></Field>
+                  <Field label="Categoría"><Combobox value={e.nCategoria} onChange={(v) => up({ nCategoria: v })} options={catalogos.timeline_categoria} campo="timeline_categoria" /></Field>
+                  <Field label="Era"><TextInput value={e.nEra} onChange={(v) => up({ nEra: v })} /></Field>
+                  <div />
+                </div>
+              )}
+              <Field label="Nota del personaje"><MarkdownField value={e.nota} onChange={(v) => up({ nota: v })} rows={3} /></Field>
             </div>
           )}
         />
@@ -336,34 +534,40 @@ export function PersonajeForm({
         </div>
       </AccordionSection>
 
-      {/* Equipamiento y objetos */}
-      <AccordionSection title="Equipamiento y objetos" subtitle={`${equipamiento.length + objetos.length}`}>
-        <p className="mb-1 text-xs text-fg-muted">Equipamiento</p>
-        <Repeater
-          items={equipamiento}
-          onChange={wrapSetter(setEquip)}
-          blank={() => ({ nombre: "", tipo: "", descripcion: "", poderEspecial: "" })}
-          addLabel="Añadir equipamiento"
-          renderItem={(q, up) => (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Field label="Nombre"><TextInput value={q.nombre} onChange={(v) => up({ nombre: v })} /></Field>
-              <Field label="Tipo"><TextInput value={q.tipo} onChange={(v) => up({ tipo: v })} /></Field>
-              <div className="sm:col-span-2"><Field label="Descripción"><TextInput value={q.descripcion} onChange={(v) => up({ descripcion: v })} /></Field></div>
-              <div className="sm:col-span-2"><Field label="Poder especial"><TextInput value={q.poderEspecial} onChange={(v) => up({ poderEspecial: v })} /></Field></div>
-            </div>
-          )}
-        />
-        <p className="mb-1 mt-4 text-xs text-fg-muted">Objetos importantes</p>
+      {/* Objetos, armas y artefactos (punto 8) */}
+      <AccordionSection title="Objetos, armas y artefactos" subtitle={`${objetos.length}`}>
+        <p className="mb-3 text-xs text-fg-muted">Enlaza un objeto del catálogo Armas y Artefactos (el tipo distingue arma/artefacto/objeto) o crea uno nuevo (aparecerá en /artefactos). La nota es propia de este personaje.</p>
         <Repeater
           items={objetos}
           onChange={wrapSetter(setObjetos)}
-          blank={() => ({ nombre: "", tipo: "", descripcion: "" })}
+          blank={(): Ob => ({ modo: "existente", armaArtefactoId: null, objetoLabel: "", nNombre: "", nTipo: "", nDescripcion: "", nPoder: "", nota: "" })}
           addLabel="Añadir objeto"
           renderItem={(o, up) => (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Field label="Nombre"><TextInput value={o.nombre} onChange={(v) => up({ nombre: v })} /></Field>
-              <Field label="Tipo"><TextInput value={o.tipo} onChange={(v) => up({ tipo: v })} /></Field>
-              <div className="sm:col-span-2"><Field label="Descripción"><TextInput value={o.descripcion} onChange={(v) => up({ descripcion: v })} /></Field></div>
+            <div className="space-y-2">
+              <ModoToggle
+                modo={o.modo}
+                etiquetas={["Escoger del catálogo", "Crear nuevo"]}
+                onChange={(modo) => up({ modo })}
+              />
+              {o.modo === "existente" ? (
+                <Field label="Objeto / arma / artefacto">
+                  <Picker
+                    label={o.objetoLabel}
+                    options={artefactosOpts}
+                    placeholder="Buscar en Armas y Artefactos…"
+                    onPick={(id, label) => up({ armaArtefactoId: id, objetoLabel: label })}
+                    onClear={() => up({ armaArtefactoId: null, objetoLabel: "" })}
+                  />
+                </Field>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Field label="Nombre *"><TextInput value={o.nNombre} onChange={(v) => up({ nNombre: v })} /></Field>
+                  <Field label="Tipo" hint="arma · artefacto · objeto…"><Combobox value={o.nTipo} onChange={(v) => up({ nTipo: v })} options={catalogos.artefacto_tipo} campo="artefacto_tipo" /></Field>
+                  <div className="sm:col-span-2"><Field label="Descripción"><MarkdownField value={o.nDescripcion} onChange={(v) => up({ nDescripcion: v })} rows={3} /></Field></div>
+                  <div className="sm:col-span-2"><Field label="Poder especial"><TextInput value={o.nPoder} onChange={(v) => up({ nPoder: v })} /></Field></div>
+                </div>
+              )}
+              <Field label="Nota del personaje"><TextInput value={o.nota} onChange={(v) => up({ nota: v })} /></Field>
             </div>
           )}
         />
@@ -409,6 +613,60 @@ export function PersonajeForm({
       </div>
     </div>
   );
+}
+
+// ── Conmutador de modo (escoger existente / crear nuevo) ─────────────────────
+function ModoToggle({
+  modo,
+  etiquetas,
+  onChange,
+}: {
+  modo: "existente" | "nueva";
+  etiquetas: [string, string];
+  onChange: (m: "existente" | "nueva") => void;
+}) {
+  return (
+    <div className="inline-flex rounded-lg border border-border-base p-0.5 text-xs">
+      {(["existente", "nueva"] as const).map((m, i) => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => onChange(m)}
+          className={cn(
+            "rounded-md px-3 py-1 transition-colors",
+            modo === m ? "bg-primary text-void" : "text-fg-muted hover:text-fg",
+          )}
+        >
+          {etiquetas[i]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Selector de una entidad existente (chip + buscador) ──────────────────────
+function Picker({
+  label,
+  options,
+  placeholder,
+  onPick,
+  onClear,
+}: {
+  label: string;
+  options: Opcion[];
+  placeholder?: string;
+  onPick: (id: number, label: string) => void;
+  onClear: () => void;
+}) {
+  if (label) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-border-base bg-surface px-3 py-2 text-sm">
+        <span className="text-fg">{label}</span>
+        <button type="button" className="ml-auto text-fg-muted hover:text-error" onClick={onClear}>✕</button>
+      </div>
+    );
+  }
+  return <MultiPicker options={options} selectedIds={[]} placeholder={placeholder} onAdd={onPick} />;
 }
 
 // ── sub-componente genérico de pertenencia N:M ──────────────────────────────

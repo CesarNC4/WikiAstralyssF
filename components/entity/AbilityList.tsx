@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/entity/Badge";
 
 interface Ability {
@@ -6,6 +7,7 @@ interface Ability {
   nombre: string | null;
   descripcion: string | null;
   tipo: string | null;
+  href?: string | null;
 }
 
 /** Habilidades agrupadas por categoría (§5.1). */
@@ -27,7 +29,13 @@ export function AbilityList({ habilidades }: { habilidades: Ability[] }) {
             {list.map((h) => (
               <div key={h.idHabilidad} className="rounded-xl border border-border-base bg-surface/40 p-4">
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="font-medium text-fg">{h.nombre ?? "Habilidad"}</span>
+                  {h.href ? (
+                    <Link href={h.href} className="font-medium text-fg hover:text-primary-glow">
+                      {h.nombre ?? "Habilidad"}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-fg">{h.nombre ?? "Habilidad"}</span>
+                  )}
                   {h.tipo && <Badge tone="secondary">{h.tipo}</Badge>}
                 </div>
                 {h.descripcion && (

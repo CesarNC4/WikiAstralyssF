@@ -105,14 +105,6 @@ export const relaciones = pgTable("relaciones", {
   subtipoRelacion: varchar("subtipo_relacion"),
 });
 
-export const eventosPersonaje = pgTable("eventos_personaje", {
-  idEvento: serial("id_evento").primaryKey(),
-  personajeId: integer("personaje_id").notNull(),
-  fecha: varchar("fecha"),
-  titulo: varchar("titulo").notNull(),
-  descripcion: text("descripcion"),
-});
-
 export const personajeNarrativa = pgTable("personaje_narrativa", {
   id: serial("id").primaryKey(),
   personajeId: integer("personaje_id"),
@@ -129,19 +121,3 @@ export const personajeNarrativa = pgTable("personaje_narrativa", {
   porcentajeEscrito: integer("porcentaje_escrito"),
 });
 
-export const equipamiento = pgTable("equipamiento", {
-  idArma: serial("id_arma").primaryKey(),
-  personajeId: integer("personaje_id"),
-  nombre: varchar("nombre"),
-  tipo: varchar("tipo"),
-  descripcion: text("descripcion"),
-  poderEspecial: text("poder_especial"),
-});
-
-export const objetosImportantes = pgTable("objetos_importantes", {
-  idObjeto: serial("id_objeto").primaryKey(),
-  descripcion: text("descripcion"),
-  nombre: varchar("nombre"),
-  tipo: varchar("tipo"),
-  personajeId: integer("personaje_id"),
-});
