@@ -20,7 +20,9 @@
       "Bash(NODE_OPTIONS=\"--conditions=react-server\" npx --yes tsx scripts/_smoke-editar.ts 49)",
       "Bash(NODE_OPTIONS=\"--conditions=react-server\" npx --yes tsx scripts/_smoke.mts 49)",
       "Bash(npx --yes tsx scripts/_smoke.mts 49)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
+      "Bash(echo \"exit_find=$?\")"
     ]
   }
 }

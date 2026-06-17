@@ -3,6 +3,7 @@ export * from "./enums";
 export * from "./search";
 export * from "./personajes";
 export * from "./mundo";
+export * from "./elementos";
 export * from "./lore";
 export * from "./narrativa";
 export * from "./media";

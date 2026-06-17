@@ -9,7 +9,8 @@ import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
-import { Field, TextInput, NumberInput, Combobox, MarkdownField, ReferenceField } from "@/components/admin/fields";
+import { RelacionesEditor } from "@/components/admin/blocks/RelacionEditor";
+import { Field, TextInput, NumberInput, Combobox, MarkdownField, ReferenceField, SliderInput } from "@/components/admin/fields";
 
 type Referencias = Partial<Record<RefTarget, OpcionRef[]>>;
 
@@ -152,6 +153,9 @@ export function EntidadForm({
         </AccordionSection>
       )}
 
+      {/* Relaciones N:M (solo al editar: necesitan un id de entidad existente) */}
+      {id && <RelacionesEditor entidad={config.key} ownerId={id} revalidar={`${config.route}/${id}`} />}
+
       {/* Galería (solo al editar: necesita un id de entidad existente) */}
       {id && config.hasImage && (
         <GaleriaEditor entidadTipo={config.key} entidadId={id} revalidar={`${config.route}/${id}`} alt={values[config.nameField]} />
@@ -212,6 +216,13 @@ function FieldRender({
     return (
       <Field label={label} hint={fd.hint} error={error}>
         <NumberInput value={value} onChange={onChange} />
+      </Field>
+    );
+  }
+  if (fd.type === "slider") {
+    return (
+      <Field label={label} hint={fd.hint} error={error}>
+        <SliderInput value={value} onChange={onChange} />
       </Field>
     );
   }

@@ -17,6 +17,17 @@ const intField = z.preprocess(
   z.number().int().nullable(),
 );
 
+/** Stat 0-100: recorta al rango y vacío → null. */
+const statField = z.preprocess(
+  (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return null;
+    return Math.min(100, Math.max(0, Math.trunc(n)));
+  },
+  z.number().int().min(0).max(100).nullable(),
+);
+
 const boolField = z.preprocess(
   (v) => v === true || v === "true" || v === "on" || v === 1 || v === "1",
   z.boolean(),
@@ -41,6 +52,7 @@ export function buildEntidadSchema(config: EntidadConfig) {
   };
   for (const field of config.fields) {
     if (field.type === "reference") shape[field.name] = idField;
+    else if (field.type === "slider") shape[field.name] = statField;
     else if (field.type === "number") shape[field.name] = intField;
     else if (field.type === "checkbox") shape[field.name] = boolField;
     else if (field.required) shape[field.name] = z.string().trim().min(1, `${field.label} es obligatorio`);

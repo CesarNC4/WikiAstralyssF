@@ -80,6 +80,52 @@ export function NumberInput({
   );
 }
 
+// ── Slider 0-100 con valor numérico editable ───────────────────────────────
+export function SliderInput({
+  value,
+  onChange,
+  color = "var(--color-primary, #7b5cff)",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  color?: string;
+}) {
+  const n = value === "" ? null : Math.min(100, Math.max(0, Math.trunc(Number(value)) || 0));
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={n ?? 0}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-surface accent-primary"
+        style={{ accentColor: color }}
+      />
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={100}
+        value={n ?? ""}
+        placeholder="—"
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(inputCls, "w-16 px-2 py-1 text-center font-mono")}
+      />
+      {value !== "" && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="shrink-0 text-xs text-fg-muted hover:text-error"
+          title="Vaciar"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Combobox (catálogo flexible que persiste valores nuevos) ────────────────
 export function Combobox({
   value,

@@ -3,15 +3,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FichaHero, SectionHead } from "@/components/fichas/FichaHero";
 import { FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
+import { LinkGrid } from "@/components/fichas/LinkGrid";
 import { MiniMapa, type MiniPin } from "@/components/viz/MiniMapa";
-import { EntityImage } from "@/components/media/EntityImage";
+import { StatRadar } from "@/components/viz/StatRadar";
+import { MiniGrafo, type GrafoGrupo } from "@/components/viz/MiniGrafo";
 import { Badge } from "@/components/entity/Badge";
 import { Galeria } from "@/components/fichas/Galeria";
 import { Icon } from "@/components/Icon";
 import { getNacion, getPersonajesDeNacion, getNacionFacciones, getVisibleIds } from "@/lib/queries/fichas";
+import { getNacionRelacionesExtra } from "@/lib/queries/mundoRelaciones";
 import { getNacionTerritorio } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
+import { STATS_POR_ENTIDAD, tieneStats } from "@/lib/stats";
 import { TIPOS_LOCACION, type TipoLocacionKey } from "@/lib/mapa";
+
+const DIPLO_COLOR: Record<string, string> = {
+  Aliada: "#5fb98f", Rival: "#e0a44a", Neutral: "#9aa3b2", Vasalla: "#5b8def", "En guerra": "#ef6f6f",
+};
 
 export const revalidate = 3600;
 
@@ -36,11 +44,12 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
   const n = await getNacion(Number(id)).catch(() => null);
   if (!n) notFound();
 
-  const [personajes, territorio, facciones, galeria] = await Promise.all([
+  const [personajes, territorio, facciones, galeria, extra] = await Promise.all([
     getPersonajesDeNacion(n.id).catch(() => []),
     getNacionTerritorio(n.id).catch(() => ({ regiones: [], locaciones: [] })),
     getNacionFacciones(n.id).catch(() => ({ organizaciones: [], razas: [] })),
     getGaleria("naciones", n.id).catch(() => []),
+    getNacionRelacionesExtra(n.id).catch(() => ({ bestias: [], diplomacia: [] })),
   ]);
 
   const color = n.color ?? "#7b5cff";
@@ -124,8 +133,20 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
             { label: "Gobierno", value: n.gobierno },
             { label: "Idioma", value: n.idioma },
             { label: "Población", value: n.poblacion },
+            { label: "Clima", value: n.clima },
+            { label: "Terreno", value: n.terreno },
           ]}
         />
+
+        {/* Poder (radar) */}
+        {tieneStats("naciones", n as Record<string, unknown>) && STATS_POR_ENTIDAD.naciones[0] && (
+          <section>
+            <SectionHead icon="Gauge" title="Poder de la nación" accent={color} />
+            <div className="grid place-items-center rounded-2xl border border-border-base bg-surface/30 p-4">
+              <StatRadar group={{ ...STATS_POR_ENTIDAD.naciones[0], color }} row={n as Record<string, unknown>} />
+            </div>
+          </section>
+        )}
 
         {/* Prosa */}
         <div>
@@ -133,6 +154,7 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
             fields={[
               { label: "Descripción", value: n.descripcion },
               { label: "Historia", value: n.historia },
+              { label: "Recursos naturales", value: n.recursosNaturales },
               { label: "Estructura", value: n.estructura },
               { label: "Estado actual", value: n.estadoActual },
             ]}
@@ -177,26 +199,48 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
           </section>
         )}
 
+        {/* Bestias presentes */}
+        {extra.bestias.length > 0 && (
+          <section>
+            <SectionHead icon="PawPrint" title="Bestias del territorio" accent={color} />
+            <LinkGrid items={extra.bestias.map((b) => ({ id: b.id, nombre: b.nombre, img: b.imagenUrl, nota: b.nivel ? `Amenaza ${b.nivel}` : null, href: `/bestias/${b.id}` }))} />
+          </section>
+        )}
+
+        {/* Diplomacia */}
+        {extra.diplomacia.length > 0 && (
+          <section>
+            <SectionHead icon="Landmark" title="Diplomacia" accent={color} />
+            <div className="flex flex-wrap gap-3">
+              {extra.diplomacia.map((d) => {
+                const dc = (d.tipo && DIPLO_COLOR[d.tipo]) || "#9aa3b2";
+                return (
+                  <Link key={d.id} href={`/naciones/${d.id}`} className="flex items-center gap-3 rounded-xl border bg-surface/40 p-3 pr-4 hover:border-border-glow" style={{ borderColor: `${dc}55` }}>
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: dc }} />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-fg">{d.nombre}</p>
+                      <p className="truncate text-xs" style={{ color: dc }}>{d.tipo ?? "Relación"}{d.nota ? ` · ${d.nota}` : ""}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Grafo de relaciones */}
+        {(() => {
+          const grupos: GrafoGrupo[] = [
+            { label: "Pueblos", color: "#9b8cff", nodos: facciones.razas.map((r) => ({ id: `r${r.id}`, label: r.nombre, href: `/razas/${r.id}`, img: r.imagenUrl })) },
+            { label: "Organizaciones", color: "#5b8def", nodos: facciones.organizaciones.map((o) => ({ id: `o${o.id}`, label: o.nombre, href: `/organizaciones/${o.id}`, img: o.imagenUrl })) },
+            { label: "Bestias", color: "#ef6f6f", nodos: extra.bestias.map((b) => ({ id: `b${b.id}`, label: b.nombre, href: `/bestias/${b.id}`, img: b.imagenUrl })) },
+            { label: "Diplomacia", color: "#e0a44a", nodos: extra.diplomacia.map((d) => ({ id: `n${d.id}`, label: d.nombre, href: `/naciones/${d.id}`, img: d.imagenUrl })) },
+          ].filter((g) => g.nodos.length > 0);
+          return grupos.length > 0 ? <MiniGrafo centro={{ label: n.nombre, img: n.imagenUrl }} grupos={grupos} accent={color} /> : null;
+        })()}
+
         {galeria.length > 0 && <Galeria images={galeria} />}
       </div>
-    </div>
-  );
-}
-
-function LinkGrid({ items }: { items: { id: number; nombre: string; img: string | null; nota: string | null; href: string }[] }) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {items.map((i) => (
-        <Link key={i.id} href={i.href} className="flex items-center gap-2 rounded-xl border border-border-base bg-surface/40 p-2 pr-4 hover:border-border-glow">
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg">
-            <EntityImage src={i.img} alt={i.nombre} name={i.nombre} sizes="36px" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm text-fg">{i.nombre}</p>
-            {i.nota && <p className="truncate text-xs text-fg-muted">{i.nota}</p>}
-          </div>
-        </Link>
-      ))}
     </div>
   );
 }

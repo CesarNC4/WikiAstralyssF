@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
-import { Badge } from "@/components/entity/Badge";
+import { RazaFichaBody } from "@/components/fichas/RazaFichaBody";
 import { getRaza, getVisibleIds } from "@/lib/queries/fichas";
 
 export const revalidate = 3600;
@@ -23,21 +22,5 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const x = await getRaza(Number(id)).catch(() => null);
   if (!x) notFound();
 
-  return (
-    <FichaShell
-      banner={x.bannerUrl}
-      imagen={x.imagenUrl}
-      titulo={x.nombre}
-      subtitulo={x.subtitulo}
-      nombre={x.nombre}
-      backHref="/razas"
-      backLabel="Razas"
-      galeriaTipo="razas"
-      galeriaId={x.id}
-      badges={<>{x.clasificacion && <Badge tone="secondary">{x.clasificacion}</Badge>}</>}
-    >
-      <FieldGrid fields={[{ label: "Clasificación", value: x.clasificacion }, { label: "Esperanza de vida", value: x.esperanzaVida }]} />
-      <ProseFields fields={[{ label: "Descripción", value: x.descripcion }, { label: "Origen", value: x.origen }, { label: "Rasgos físicos", value: x.rasgosFisicos }, { label: "Cultura", value: x.cultura }, { label: "Habilidades de raza", value: x.habilidadesRasgo }]} />
-    </FichaShell>
-  );
+  return <RazaFichaBody raza={x} />;
 }

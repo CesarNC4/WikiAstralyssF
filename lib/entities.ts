@@ -25,7 +25,9 @@ export type EntityKey =
   | "artefactos"
   | "economia"
   | "timeline"
-  | "mapa";
+  | "mapa"
+  | "compendio"
+  | "atlas";
 
 export interface EntityMeta {
   key: EntityKey;
@@ -256,6 +258,28 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     tagline: "El mundo de Astralys, región a región.",
     hasIndex: false,
   },
+  compendio: {
+    key: "compendio",
+    plural: "Compendio",
+    singular: "Compendio",
+    route: "/compendio",
+    accent: "text-primary",
+    icon: "Table2",
+    group: "explorar",
+    tagline: "Compara bestias, minerales, razas y naciones.",
+    hasIndex: false,
+  },
+  atlas: {
+    key: "atlas",
+    plural: "Atlas",
+    singular: "Atlas",
+    route: "/atlas",
+    accent: "text-secondary",
+    icon: "Network",
+    group: "explorar",
+    tagline: "El grafo de relaciones del mundo.",
+    hasIndex: false,
+  },
 };
 
 export const ENTITY_LIST = Object.values(ENTITIES);
@@ -292,7 +316,7 @@ export const NAV_GROUPS: { id: EntityGroup; label: string; keys: EntityKey[] }[]
     keys: ["naciones", "razas", "organizaciones", "familias", "gremio", "bestias", "minerales", "demonios", "artefactos"],
   },
   { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "misiones", "economia"] },
-  { id: "explorar", label: "Explorar", keys: ["timeline", "mapa"] },
+  { id: "explorar", label: "Explorar", keys: ["timeline", "mapa", "compendio", "atlas"] },
 ];
 
 export function entityByKey(key: string): EntityMeta | undefined {

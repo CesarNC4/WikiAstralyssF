@@ -20,6 +20,16 @@ export const naciones = pgTable("naciones", {
   diosFundador: varchar("dios_fundador"),
   estadoActual: text("estado_actual"),
   estructura: text("estructura"),
+  // Clima / geografía (§overhaul mundo).
+  clima: varchar("clima"),
+  terreno: varchar("terreno"),
+  recursosNaturales: text("recursos_naturales"),
+  // Medidores de poder 0-100 (radar comparativo).
+  poderMilitarNivel: integer("poder_militar_nivel"),
+  poderEconomicoNivel: integer("poder_economico_nivel"),
+  poderPoliticoNivel: integer("poder_politico_nivel"),
+  poderMagicoNivel: integer("poder_magico_nivel"),
+  poderTecnologicoNivel: integer("poder_tecnologico_nivel"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
   // Geometría en el mapa (§10): contorno y centro normalizados 0..1.
@@ -44,6 +54,26 @@ export const razas = pgTable("razas", {
   cultura: text("cultura"),
   habilidadesRasgo: text("habilidades_rasgo"),
   esperanzaVida: varchar("esperanza_vida"),
+  // Linaje: sub-razas / variantes (auto-referencia, como magia_fundamentos).
+  razaPadreId: integer("raza_padre_id"),
+  // Atributos raciales 0-100 (medidores).
+  statLongevidad: integer("stat_longevidad"),
+  statAfinidadMagica: integer("stat_afinidad_magica"),
+  statFuerza: integer("stat_fuerza"),
+  statAgilidad: integer("stat_agilidad"),
+  statAdaptabilidad: integer("stat_adaptabilidad"),
+  // Demografía.
+  poblacionEstimada: varchar("poblacion_estimada"),
+  statDispersion: integer("stat_dispersion"),
+  statPurezaLinaje: integer("stat_pureza_linaje"),
+  // Sociedad / costumbres.
+  estructuraSocial: text("estructura_social"),
+  creencias: text("creencias"),
+  relacionOtrasRazas: text("relacion_otras_razas"),
+  // Anatomía / biología.
+  dieta: varchar("dieta"),
+  reproduccion: text("reproduccion"),
+  rasgosDistintivos: text("rasgos_distintivos"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
@@ -109,6 +139,19 @@ export const bestias = pgTable("bestias", {
   comportamiento: text("comportamiento"),
   habitat: text("habitat"),
   recursos: text("recursos"),
+  // Taxonomía.
+  categoria: varchar("categoria"),
+  dieta: varchar("dieta"),
+  tamano: varchar("tamano"),
+  // Stats de combate 0-100.
+  statFuerza: integer("stat_fuerza"),
+  statVelocidad: integer("stat_velocidad"),
+  statResistencia: integer("stat_resistencia"),
+  statPoderMagico: integer("stat_poder_magico"),
+  // Stats de bestiario 0-100.
+  statPeligrosidad: integer("stat_peligrosidad"),
+  statRareza: integer("stat_rareza"),
+  statTerritorialidad: integer("stat_territorialidad"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
@@ -125,7 +168,22 @@ export const minerales = pgTable("minerales", {
   propiedades: text("propiedades"),
   usos: text("usos"),
   origen: varchar("origen"),
+  // Afinidad elemental (slug del catálogo unificado).
+  elemento: varchar("elemento"),
+  // Stats de gema 0-100.
+  statDureza: integer("stat_dureza"),
+  statPureza: integer("stat_pureza"),
+  statConductividad: integer("stat_conductividad"),
+  // Stats económicos 0-100.
+  statRareza: integer("stat_rareza"),
+  statValor: integer("stat_valor"),
+  statDemanda: integer("stat_demanda"),
+  statAbundancia: integer("stat_abundancia"),
+  // Valor monetario concreto (enlace al sistema monetario).
+  valorMonedaId: integer("valor_moneda_id"),
+  valorCantidad: doublePrecision("valor_cantidad"),
   imagenUrl: varchar("imagen_url"),
+  bannerUrl: varchar("banner_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
 });

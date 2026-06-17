@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, getTableColumns, ilike, inArray, isNotNull, 
 import { db } from "@/db/client";
 import { catalogos } from "@/db/schema/admin";
 import { capitulos } from "@/db/schema/narrativa";
+import { naciones, razas, sistemaMonetario } from "@/db/schema/mundo";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { getEntidadConfig, type EntidadConfig, type RefTarget } from "@/lib/admin/fields";
 import { listPersonajesOpciones } from "@/lib/queries/adminPersonajes";
@@ -24,6 +25,18 @@ export async function getOpcionesReferencia(target: RefTarget): Promise<OpcionRe
       .from(capitulos)
       .orderBy(asc(capitulos.numero));
     return rows.map((r) => ({ id: r.id, label: `Cap. ${r.numero} — ${r.titulo}` }));
+  }
+  if (target === "naciones") {
+    const rows = await db.select({ id: naciones.id, label: naciones.nombre }).from(naciones).where(isNull(naciones.eliminadoEn)).orderBy(asc(naciones.nombre));
+    return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
+  }
+  if (target === "razas") {
+    const rows = await db.select({ id: razas.id, label: razas.nombre }).from(razas).where(isNull(razas.eliminadoEn)).orderBy(asc(razas.nombre));
+    return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
+  }
+  if (target === "monedas") {
+    const rows = await db.select({ id: sistemaMonetario.id, label: sistemaMonetario.nombre }).from(sistemaMonetario).where(isNull(sistemaMonetario.eliminadoEn)).orderBy(asc(sistemaMonetario.nombre));
+    return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
   }
   return [];
 }

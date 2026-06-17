@@ -67,6 +67,69 @@ export const nacionRaza = pgTable("nacion_raza", {
   tipo: varchar("tipo"),
 });
 
+// ── Overhaul mundo: hábitat, drops, diplomacia y forja ──────────────────────
+
+/** Hábitat de una bestia en una nación. */
+export const bestiaNacion = pgTable("bestia_nacion", {
+  id: serial("id").primaryKey(),
+  bestiaId: integer("bestia_id").notNull(),
+  nacionId: integer("nacion_id").notNull(),
+  nota: varchar("nota"),
+});
+
+/** Hábitat de una bestia en una región del mapa (para pins). */
+export const bestiaRegion = pgTable("bestia_region", {
+  id: serial("id").primaryKey(),
+  bestiaId: integer("bestia_id").notNull(),
+  regionId: integer("region_id").notNull(),
+  nota: varchar("nota"),
+});
+
+/** Drop de una bestia: un mineral del catálogo con su rareza/nota. */
+export const bestiaDrop = pgTable("bestia_drop", {
+  id: serial("id").primaryKey(),
+  bestiaId: integer("bestia_id").notNull(),
+  mineralId: integer("mineral_id").notNull(),
+  rareza: varchar("rareza"),
+  nota: varchar("nota"),
+  orden: integer("orden").notNull().default(0),
+});
+
+/** Relación bestia ↔ bestia: depredador/presa, subespecie, evolución. */
+export const bestiaRelacion = pgTable("bestia_relacion", {
+  id: serial("id").primaryKey(),
+  bestiaId: integer("bestia_id").notNull(),
+  relacionadaId: integer("relacionada_id").notNull(),
+  tipo: varchar("tipo"),
+  nota: varchar("nota"),
+});
+
+/** Mineral forjado en un arma/artefacto. */
+export const mineralArtefacto = pgTable("mineral_artefacto", {
+  id: serial("id").primaryKey(),
+  mineralId: integer("mineral_id").notNull(),
+  artefactoId: integer("artefacto_id").notNull(),
+  nota: varchar("nota"),
+});
+
+/** Uso/aplicación estructurada de un mineral. */
+export const mineralUso = pgTable("mineral_uso", {
+  id: serial("id").primaryKey(),
+  mineralId: integer("mineral_id").notNull(),
+  nombre: varchar("nombre").notNull(),
+  detalle: varchar("detalle"),
+  orden: integer("orden").notNull().default(0),
+});
+
+/** Diplomacia nación ↔ nación: aliada/rival/neutral/vasalla. */
+export const nacionDiplomacia = pgTable("nacion_diplomacia", {
+  id: serial("id").primaryKey(),
+  nacionId: integer("nacion_id").notNull(),
+  otraNacionId: integer("otra_nacion_id").notNull(),
+  tipo: varchar("tipo"),
+  nota: varchar("nota"),
+});
+
 export const hojaPersonaje = pgTable("hoja_personaje", {
   id: serial("id").primaryKey(),
   hojaId: integer("hoja_id").notNull(),

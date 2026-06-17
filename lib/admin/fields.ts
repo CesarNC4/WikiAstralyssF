@@ -4,9 +4,9 @@
  * renderiza el formulario, la tabla y el preview de cada entidad simple.
  */
 
-export type FieldType = "text" | "textarea" | "number" | "combobox" | "checkbox" | "reference";
+export type FieldType = "text" | "textarea" | "number" | "combobox" | "checkbox" | "reference" | "slider";
 
-export type RefTarget = "personajes" | "capitulos" | "magia";
+export type RefTarget = "personajes" | "capitulos" | "magia" | "naciones" | "razas" | "monedas";
 
 export interface FieldDef {
   /** Clave de columna en Drizzle (camelCase). */
@@ -73,6 +73,14 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
       f("elementoFundamental", "Elemento fundamental", "combobox", "Datos clave", { catalogCampo: "nacion_elemento" }),
       f("conceptoDivino", "Concepto divino", "text", "Datos clave"),
       f("diosFundador", "Dios fundador", "text", "Datos clave"),
+      f("clima", "Clima", "combobox", "Geografía", { catalogCampo: "nacion_clima" }),
+      f("terreno", "Terreno", "combobox", "Geografía", { catalogCampo: "nacion_terreno" }),
+      f("recursosNaturales", "Recursos naturales", "textarea", "Geografía"),
+      f("poderMilitarNivel", "Militar", "slider", "Poder (0-100)"),
+      f("poderEconomicoNivel", "Económico", "slider", "Poder (0-100)"),
+      f("poderPoliticoNivel", "Político", "slider", "Poder (0-100)"),
+      f("poderMagicoNivel", "Mágico", "slider", "Poder (0-100)"),
+      f("poderTecnologicoNivel", "Tecnológico", "slider", "Poder (0-100)"),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("historia", "Historia", "textarea", "Contenido", { rows: 8 }),
       f("estadoActual", "Estado actual", "textarea", "Contenido"),
@@ -91,14 +99,29 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("clasificacion", "Clasificación", "combobox", "Identidad", { catalogCampo: "raza_clasificacion" }),
-      f("afinidad", "Afinidad", "combobox", "Identidad", { catalogCampo: "raza_afinidad", hint: "Afinidad mágica/elemental para filtrar (Pyro, Hydro…)" }),
+      f("afinidad", "Afinidad elemental", "combobox", "Identidad", { catalogCampo: "raza_afinidad", hint: "Afinidad principal (Pyro, Hydro…). Debilidades/resistencias se editan abajo." }),
       f("subtitulo", "Subtítulo", "text", "Identidad"),
+      f("razaPadreId", "Deriva de (raza padre)", "reference", "Identidad", { refTarget: "razas", hint: "para sub-razas / variantes / mestizajes" }),
       f("esperanzaVida", "Esperanza de vida", "text", "Datos clave"),
+      f("poblacionEstimada", "Población estimada", "text", "Datos clave"),
+      f("dieta", "Dieta", "combobox", "Datos clave", { catalogCampo: "raza_dieta" }),
+      f("statLongevidad", "Longevidad", "slider", "Atributos (0-100)"),
+      f("statAfinidadMagica", "Afinidad mágica", "slider", "Atributos (0-100)"),
+      f("statFuerza", "Fuerza física", "slider", "Atributos (0-100)"),
+      f("statAgilidad", "Agilidad", "slider", "Atributos (0-100)"),
+      f("statAdaptabilidad", "Adaptabilidad", "slider", "Atributos (0-100)"),
+      f("statDispersion", "Dispersión", "slider", "Demografía (0-100)"),
+      f("statPurezaLinaje", "Pureza de linaje", "slider", "Demografía (0-100)"),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("origen", "Origen", "textarea", "Contenido"),
       f("rasgosFisicos", "Rasgos físicos", "textarea", "Contenido"),
       f("cultura", "Cultura", "textarea", "Contenido"),
       f("habilidadesRasgo", "Habilidades de raza", "textarea", "Contenido"),
+      f("estructuraSocial", "Estructura social", "textarea", "Sociedad"),
+      f("creencias", "Creencias / religión", "textarea", "Sociedad"),
+      f("relacionOtrasRazas", "Relación con otras razas", "textarea", "Sociedad"),
+      f("reproduccion", "Reproducción", "textarea", "Biología"),
+      f("rasgosDistintivos", "Rasgos distintivos", "textarea", "Biología"),
     ],
   },
   bestias: {
@@ -113,12 +136,22 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("subtitulo", "Subtítulo", "text", "Identidad"),
+      f("categoria", "Categoría", "combobox", "Identidad", { catalogCampo: "bestia_categoria", hint: "Común · Jefe · Legendaria · Divina" }),
       f("nivelAmenaza", "Nivel de amenaza", "combobox", "Datos clave", { catalogCampo: "bestia_nivel_amenaza" }),
+      f("dieta", "Dieta", "combobox", "Datos clave", { catalogCampo: "bestia_dieta", hint: "Carnívoro · Herbívoro · Omnívoro…" }),
+      f("tamano", "Tamaño", "combobox", "Datos clave", { catalogCampo: "bestia_tamano", hint: "Diminuto · Pequeño · Mediano · Grande · Colosal" }),
+      f("statFuerza", "Fuerza", "slider", "Combate (0-100)"),
+      f("statVelocidad", "Velocidad", "slider", "Combate (0-100)"),
+      f("statResistencia", "Resistencia", "slider", "Combate (0-100)"),
+      f("statPoderMagico", "Poder mágico", "slider", "Combate (0-100)"),
+      f("statPeligrosidad", "Peligrosidad", "slider", "Bestiario (0-100)"),
+      f("statRareza", "Rareza", "slider", "Bestiario (0-100)"),
+      f("statTerritorialidad", "Territorialidad", "slider", "Bestiario (0-100)"),
       f("descripcion", "Descripción", "textarea", "Contenido"),
-      f("habitat", "Hábitat", "textarea", "Contenido"),
+      f("habitat", "Hábitat (prosa)", "textarea", "Contenido", { hint: "El hábitat enlazado a naciones/regiones se edita abajo" }),
       f("comportamiento", "Comportamiento", "textarea", "Contenido"),
       f("cicloVida", "Ciclo de vida", "textarea", "Contenido"),
-      f("recursos", "Recursos", "textarea", "Contenido"),
+      f("recursos", "Recursos (prosa)", "textarea", "Contenido", { hint: "Los drops enlazados a minerales se editan abajo" }),
     ],
   },
   minerales: {
@@ -129,15 +162,25 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     icon: "Gem",
     nameField: "nombre",
     hasImage: true,
-    hasBanner: false,
+    hasBanner: true,
     hasFicha: true,
     fields: [
       f("rareza", "Rareza", "combobox", "Identidad", { catalogCampo: "mineral_rareza" }),
       f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "mineral_tipo" }),
+      f("elemento", "Afinidad elemental", "combobox", "Identidad", { catalogCampo: "mineral_elemento", hint: "Pyro, Hydro, Cryo… (catálogo unificado)" }),
       f("origen", "Origen", "text", "Datos clave"),
+      f("valorMonedaId", "Moneda de referencia", "reference", "Datos clave", { refTarget: "monedas" }),
+      f("valorCantidad", "Valor (cantidad)", "number", "Datos clave", { hint: "p.ej. 250 (en la moneda elegida)" }),
+      f("statDureza", "Dureza", "slider", "Gema (0-100)"),
+      f("statPureza", "Pureza", "slider", "Gema (0-100)"),
+      f("statConductividad", "Conductividad mágica", "slider", "Gema (0-100)"),
+      f("statRareza", "Rareza", "slider", "Mercado (0-100)"),
+      f("statValor", "Valor", "slider", "Mercado (0-100)"),
+      f("statDemanda", "Demanda", "slider", "Mercado (0-100)"),
+      f("statAbundancia", "Abundancia", "slider", "Mercado (0-100)"),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("propiedades", "Propiedades", "textarea", "Contenido"),
-      f("usos", "Usos", "textarea", "Contenido"),
+      f("usos", "Usos (prosa)", "textarea", "Contenido", { hint: "Los usos estructurados y artefactos se editan abajo" }),
     ],
   },
   conceptos: {
