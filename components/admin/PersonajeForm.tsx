@@ -18,6 +18,19 @@ import {
   MagiaPicker,
   MarkdownField,
 } from "@/components/admin/fields";
+import {
+  PRIMARY_KEYS,
+  COMBAT_KEYS,
+  RATING_KEYS,
+  PRIMARY_MIN,
+  PRIMARY_MAX,
+  COMBAT_MIN,
+  COMBAT_MAX,
+  RANGOS,
+  RANGO_DEFAULT,
+  esRango,
+  calcularPoderDeCombate,
+} from "@/lib/poderCombate";
 
 // ── tipos locales del estado del formulario ─────────────────────────────────
 interface Hab {
@@ -56,16 +69,7 @@ interface NacSel { nacionId: number; label: string; tipo: string; descripcion: s
 interface RazSel { razaId: number; label: string; esMixta: boolean; nota: string }
 interface OrgSel { organizacionId: number; label: string; rol: string; tipo: string; descripcion: string }
 
-const PRIMARY_KEYS = ["fuerza", "destreza", "constitucion", "inteligencia", "sabiduria", "carisma"] as const;
-const COMBAT_KEYS = [
-  "mpMax", "ataqueFisico", "ataqueMagico", "defensaFisica", "defensaMagica",
-  "velocidad", "capacidadDeReaccion", "precisionVal",
-] as const;
-const RATING_KEYS = [
-  "rangoCuerpoACuerpo", "rangoDistancia", "danoMagico", "defensa", "apoyo", "movilidad", "controlDeMasas",
-] as const;
-const STAT_KEYS = [...PRIMARY_KEYS, ...COMBAT_KEYS] as const;
-type StatKey = (typeof STAT_KEYS)[number];
+type StatKey = (typeof PRIMARY_KEYS)[number] | (typeof COMBAT_KEYS)[number];
 type RatingKey = (typeof RATING_KEYS)[number];
 
 const TIPO_INVOCACION = ["Natural", "Ishkoriana"] as const;
@@ -99,14 +103,17 @@ export function PersonajeForm({
   const [dirty, setDirty] = useState(false);
   const markDirty = () => setDirty(true);
 
-  const st = inicial?.estadisticas?.[0];
+  const st = inicial?.estadisticas?.[0] as Record<string, unknown> | undefined;
+  // Regla: los campos sin valor parten del mínimo de su escala (1, 1, "D").
   const initStats: Record<string, string> = {};
-  [...STAT_KEYS, ...RATING_KEYS].forEach((k) => (initStats[k] = s((st as Record<string, unknown> | undefined)?.[k])));
+  PRIMARY_KEYS.forEach((k) => (initStats[k] = s(st?.[k]) || String(PRIMARY_MIN)));
+  COMBAT_KEYS.forEach((k) => (initStats[k] = s(st?.[k]) || String(COMBAT_MIN)));
+  RATING_KEYS.forEach((k) => (initStats[k] = esRango(st?.[k]) ? String(st?.[k]) : RANGO_DEFAULT));
 
   // ── estado del formulario ──
   const [f, setF] = useState({
     nombre: s(inicial?.nombre), surname: s(inicial?.surname), titulo: s(inicial?.titulo),
-    subtitulo: s(inicial?.subtitulo), edad: s(inicial?.edad), genero: s(inicial?.genero),
+    edad: s(inicial?.edad), genero: s(inicial?.genero),
     altura: s(inicial?.altura), ocupacion: s(inicial?.ocupacion), rangoAventurero: s(inicial?.rangoAventurero),
     lugarNacimiento: s(inicial?.lugarNacimiento),
     esInvocado: Boolean(inicial?.esInvocado), tipoInvocacion: s(inicial?.tipoInvocacion),
@@ -197,8 +204,6 @@ export function PersonajeForm({
   }, [dirty]);
 
   const submit = () => {
-    const statsHasValue = [...STAT_KEYS, ...RATING_KEYS].some((k) => s(stats[k]).trim() !== "");
-
     const habilidadesPayload = habilidades
       .filter((h) => (h.modo === "nueva" ? h.nuevoNombre.trim() : h.magiaFundamentoId))
       .map((h) =>
@@ -255,7 +260,7 @@ export function PersonajeForm({
       ...f,
       imagenAssetId: imagen.assetId, imagenUrl: imagen.url,
       bannerAssetId: banner.assetId, bannerUrl: banner.url,
-      estadisticas: statsHasValue ? stats : null,
+      estadisticas: stats,
       habilidades: habilidadesPayload,
       eventos: eventosPayload,
       objetos: objetosPayload,
@@ -283,6 +288,9 @@ export function PersonajeForm({
     return w;
   }, [f.historia]);
 
+  // Poder de Combate dinámico: recalcula con cada cambio de estadística.
+  const poder = useMemo(() => calcularPoderDeCombate(stats), [stats]);
+
   const fe = state?.fieldErrors ?? {};
 
   return (
@@ -293,7 +301,6 @@ export function PersonajeForm({
           <Field label="Nombre *" error={fe.nombre}><TextInput value={f.nombre} onChange={(v) => patch({ nombre: v })} placeholder="Nombre" /></Field>
           <Field label="Apellido"><TextInput value={f.surname} onChange={(v) => patch({ surname: v })} /></Field>
           <Field label="Título"><TextInput value={f.titulo} onChange={(v) => patch({ titulo: v })} /></Field>
-          <Field label="Subtítulo"><TextInput value={f.subtitulo} onChange={(v) => patch({ subtitulo: v })} /></Field>
           <Field label="Edad"><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
           <Field label="Género"><Combobox value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} campo="genero" /></Field>
           <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" /></Field>
@@ -365,40 +372,44 @@ export function PersonajeForm({
         </div>
       </AccordionSection>
 
-      {/* Stats (punto 5: tres grupos) */}
-      <AccordionSection title="Estadísticas">
-        <p className="mb-2 text-xs uppercase tracking-wide text-accent">Atributos primarios</p>
-        <p className="mb-2 text-xs text-fg-muted">Rango 0–100.</p>
+      {/* Stats (punto 5: tres grupos + Poder de Combate dinámico) */}
+      <AccordionSection title="Estadísticas" subtitle={`Poder de Combate ${poder.total}% · ${poder.letra}`}>
+        <PoderDeCombatePanel poder={poder} />
+
+        <p className="mb-2 mt-5 text-xs uppercase tracking-wide text-accent">Atributos primarios</p>
+        <p className="mb-2 text-xs text-fg-muted">Rango {PRIMARY_MIN}–{PRIMARY_MAX}.</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
           {PRIMARY_KEYS.map((k) => (
             <Field key={k} label={statLabel(k)} error={fe[`estadisticas.${k}`]}>
-              <NumberInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} min={0} max={100} />
+              <NumberInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} min={PRIMARY_MIN} max={PRIMARY_MAX} />
             </Field>
           ))}
         </div>
 
         <p className="mb-2 mt-5 text-xs uppercase tracking-wide text-accent">Estadísticas de combate</p>
-        <p className="mb-2 text-xs text-fg-muted">Enteros sin tope.</p>
+        <p className="mb-2 text-xs text-fg-muted">Rango {COMBAT_MIN}–{COMBAT_MAX}.</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {COMBAT_KEYS.map((k) => (
             <Field key={k} label={statLabel(k)} error={fe[`estadisticas.${k}`]}>
-              <NumberInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} min={0} />
+              <NumberInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} min={COMBAT_MIN} max={COMBAT_MAX} />
             </Field>
           ))}
         </div>
 
         <p className="mb-2 mt-5 text-xs uppercase tracking-wide text-accent">Rangos</p>
-        <p className="mb-2 text-xs text-fg-muted">Valoraciones cualitativas (texto: S, A, B…).</p>
+        <p className="mb-2 text-xs text-fg-muted">Valoración cualitativa (D · C · B · A · S · SS · SSS).</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {RATING_KEYS.map((k) => (
-            <Field key={k} label={ratingLabel(k)}><TextInput value={stats[k] ?? ""} onChange={(v) => setStat(k, v)} /></Field>
+            <Field key={k} label={ratingLabel(k)} error={fe[`estadisticas.${k}`]}>
+              <RangoSelect value={stats[k] ?? RANGO_DEFAULT} onChange={(v) => setStat(k, v)} />
+            </Field>
           ))}
         </div>
       </AccordionSection>
 
       {/* Habilidades (punto 6) */}
       <AccordionSection title="Habilidades" subtitle={`${habilidades.length}`}>
-        <p className="mb-3 text-xs text-fg-muted">Enlaza un hechizo del catálogo de Magia o crea uno nuevo (se guardará en Magia). La descripción es la nota propia de este personaje.</p>
+        <p className="mb-3 text-xs text-fg-muted">Enlaza una técnica del catálogo de Magia (técnicas y técnicas avanzadas; los fundamentos y conceptos son teoría y no se enlazan) o crea una nueva (se guardará en Magia). La descripción es la nota propia de este personaje.</p>
         <Repeater
           items={habilidades}
           onChange={wrapSetter(setHabilidades)}
@@ -412,11 +423,11 @@ export function PersonajeForm({
                 onChange={(modo) => up({ modo })}
               />
               {h.modo === "existente" ? (
-                <Field label="Hechizo / técnica">
+                <Field label="Técnica">
                   <Picker
                     label={h.magiaLabel}
                     options={magiaHechizosOpts}
-                    placeholder="Buscar en el catálogo de Magia…"
+                    placeholder="Buscar técnica en el catálogo de Magia…"
                     onPick={(id, label) => up({ magiaFundamentoId: id, magiaLabel: label })}
                     onClear={() => up({ magiaFundamentoId: null, magiaLabel: "" })}
                   />
@@ -697,6 +708,60 @@ function Pertenencia<T extends { label: string }>({
         ))}
       </div>
       <MultiPicker options={opciones} selectedIds={selectedIds} onAdd={(id, label) => onChange([...items, add(id, label)])} placeholder={`Añadir ${titulo.toLowerCase()}…`} />
+    </div>
+  );
+}
+
+// ── Select de rango cualitativo (D…SSS) ─────────────────────────────────────
+function RangoSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <select
+      value={(RANGOS as readonly string[]).includes(value) ? value : RANGO_DEFAULT}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-lg border border-border-base bg-surface px-3 py-2 text-sm text-fg outline-none transition-colors focus:border-border-glow"
+    >
+      {RANGOS.map((r) => (
+        <option key={r} value={r}>{r}</option>
+      ))}
+    </select>
+  );
+}
+
+// ── Panel del Poder de Combate (promedio dinámico de las tres secciones) ─────
+function PoderDeCombatePanel({ poder }: { poder: ReturnType<typeof calcularPoderDeCombate> }) {
+  const subs: { label: string; value: number }[] = [
+    { label: "Atributos primarios", value: poder.primarios },
+    { label: "Estadísticas de combate", value: poder.combate },
+    { label: "Rangos", value: poder.rangos },
+  ];
+  return (
+    <div className="rounded-xl border border-border-glow bg-deep/40 p-4">
+      <div className="flex items-end gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-accent">Poder de Combate</p>
+          <p className="font-display text-3xl text-fg">
+            {poder.total}
+            <span className="text-lg text-fg-muted">%</span>
+          </p>
+        </div>
+        <span className="mb-1 rounded-lg border border-border-glow bg-surface px-2.5 py-1 font-mono text-lg text-primary-glow">
+          {poder.letra}
+        </span>
+        <p className="mb-1.5 ml-auto max-w-[16rem] text-right text-[11px] text-fg-muted">
+          Promedio dinámico de los tres porcentajes por sección.
+        </p>
+      </div>
+      <div className="mt-3 space-y-2">
+        {subs.map((sb) => (
+          <div key={sb.label} className="flex items-center gap-3">
+            <span className="w-40 shrink-0 text-xs text-fg-secondary">{sb.label}</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-deep">
+              <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary-glow" style={{ width: `${sb.value}%` }} />
+            </div>
+            <span className="w-10 shrink-0 text-right font-mono text-xs text-fg">{sb.value}%</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

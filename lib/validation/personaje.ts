@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RANGOS } from "@/lib/poderCombate";
 
 /**
  * Esquema del payload del formulario de personaje (§2.4).
@@ -13,15 +14,21 @@ const str = z
     return t.length > 0 ? t : null;
   });
 
-const intField = (max?: number) =>
+const intField = (min = 0, max?: number) =>
   z.preprocess(
     (v) => {
       if (v === "" || v === null || v === undefined) return null;
       const n = Number(v);
       return Number.isFinite(n) ? Math.trunc(n) : null;
     },
-    (max != null ? z.number().int().min(0).max(max) : z.number().int().min(0)).nullable(),
+    (max != null ? z.number().int().min(min).max(max) : z.number().int().min(min)).nullable(),
   );
+
+/** Rango cualitativo (D…SSS) o null. Texto vacío / desconocido → null. */
+const rangoField = z.preprocess(
+  (v) => (v === "" || v === null || v === undefined ? null : v),
+  z.enum(RANGOS).nullable(),
+);
 
 const boolField = z.preprocess(
   (v) => v === true || v === "true" || v === "on" || v === 1 || v === "1",
@@ -40,27 +47,30 @@ const idField = z.preprocess(
 export const estadoPublicacionSchema = z.enum(["borrador", "publicado", "oculto"]);
 
 export const estadisticasSchema = z.object({
-  fuerza: intField(100),
-  destreza: intField(100),
-  constitucion: intField(100),
-  inteligencia: intField(100),
-  sabiduria: intField(100),
-  carisma: intField(100),
-  mpMax: intField(),
-  ataqueFisico: intField(),
-  ataqueMagico: intField(),
-  defensaFisica: intField(),
-  defensaMagica: intField(),
-  velocidad: intField(),
-  capacidadDeReaccion: intField(),
-  precisionVal: intField(),
-  rangoCuerpoACuerpo: str,
-  rangoDistancia: str,
-  danoMagico: str,
-  defensa: str,
-  apoyo: str,
-  movilidad: str,
-  controlDeMasas: str,
+  // Atributos primarios: 1–10.
+  fuerza: intField(1, 10),
+  destreza: intField(1, 10),
+  constitucion: intField(1, 10),
+  inteligencia: intField(1, 10),
+  sabiduria: intField(1, 10),
+  carisma: intField(1, 10),
+  // Estadísticas de combate: 1–300.
+  mpMax: intField(1, 300),
+  ataqueFisico: intField(1, 300),
+  ataqueMagico: intField(1, 300),
+  defensaFisica: intField(1, 300),
+  defensaMagica: intField(1, 300),
+  velocidad: intField(1, 300),
+  capacidadDeReaccion: intField(1, 300),
+  precisionVal: intField(1, 300),
+  // Rangos cualitativos: D…SSS.
+  rangoCuerpoACuerpo: rangoField,
+  rangoDistancia: rangoField,
+  danoMagico: rangoField,
+  defensa: rangoField,
+  apoyo: rangoField,
+  movilidad: rangoField,
+  controlDeMasas: rangoField,
 });
 
 /**
@@ -157,7 +167,6 @@ export const personajeSchema = z.object({
   nombre: z.string().trim().min(1, "El nombre es obligatorio"),
   surname: str,
   titulo: str,
-  subtitulo: str,
   edad: str,
   genero: str,
   altura: z.preprocess(

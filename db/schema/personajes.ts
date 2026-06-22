@@ -21,7 +21,6 @@ export const personajes = pgTable("personajes", {
   nombre: varchar("nombre").notNull(),
   surname: varchar("surname"),
   titulo: varchar("titulo"),
-  subtitulo: varchar("subtitulo"),
   edad: varchar("edad"),
   genero: varchar("genero"),
   altura: doublePrecision("altura"),
@@ -82,6 +81,8 @@ export const estadisticas = pgTable("estadisticas", {
   movilidad: varchar("movilidad"),
   controlDeMasas: varchar("control_de_masas"),
   precisionVal: integer("precision_val"),
+  /** Poder de Combate: % derivado (promedio de primarios, combate y rangos). Se calcula al guardar. */
+  poderDeCombate: integer("poder_de_combate"),
 });
 
 export const habilidades = pgTable("habilidades", {

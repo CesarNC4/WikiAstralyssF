@@ -14,6 +14,7 @@ import { PerfilMagico } from "@/components/fichas/personaje/PerfilMagico";
 import { getGaleria } from "@/lib/queries/galeria";
 import { resolveMagiaLinks } from "@/lib/queries/magia";
 import { getFamiliasDePersonaje, type PersonajeFicha } from "@/lib/queries/fichas";
+import { calcularPoderDeCombate, PRIMARY_MAX, COMBAT_MAX } from "@/lib/poderCombate";
 import type { Track } from "@/hooks/usePlayerStore";
 
 /** Cuerpo de la ficha de personaje: hero cinematográfico + secciones (§ punto 2). */
@@ -60,7 +61,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         { label: "Carisma", value: stats.carisma },
       ]
     : [];
-  const primaryMax = Math.max(20, ...primary.map((st) => st.value ?? 0));
+  const primaryMax = PRIMARY_MAX;
 
   const combat = stats
     ? [
@@ -70,10 +71,14 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         { label: "Defensa mágica", value: stats.defensaMagica },
         { label: "Velocidad", value: stats.velocidad },
         { label: "Reacción", value: stats.capacidadDeReaccion },
+        { label: "Precisión", value: stats.precisionVal },
         { label: "MP máx", value: stats.mpMax },
       ]
     : [];
-  const combatMax = Math.max(100, ...combat.map((st) => st.value ?? 0));
+  const combatMax = COMBAT_MAX;
+
+  // Poder de Combate (promedio dinámico de las tres secciones). Solo si hay stats.
+  const poder = stats ? calcularPoderDeCombate(stats as Record<string, number | string | null>) : null;
 
   const vinculos: RelNode[] = (p.relaciones ?? []).map((r) => ({
     key: String(r.idRr),
@@ -118,8 +123,8 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
             <FadeIn className="pb-2">
               {p.titulo && <p className="font-display text-sm uppercase tracking-[0.2em] text-primary-glow">{p.titulo}</p>}
               <h1 className="font-display text-4xl text-fg md:text-6xl">{nombre}</h1>
-              {p.subtitulo && <p className="mt-1 text-fg-secondary">{p.subtitulo}</p>}
               <div className="mt-3 flex flex-wrap gap-2">
+                {poder && <Badge tone="primary">Poder de Combate {poder.total}% · {poder.letra}</Badge>}
                 {p.rangoAventurero && <Badge tone="primary">{p.rangoAventurero}</Badge>}
                 {p.ocupacion && <Badge>{p.ocupacion}</Badge>}
                 {p.esInvocado && <Badge tone="accent">Invocado</Badge>}
@@ -206,6 +211,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         {/* Atributos y combate */}
         {stats && (
           <Section icon="Activity" title="Atributos y combate">
+            {poder && <PoderDeCombate poder={poder} />}
             <div className="grid items-start gap-8 lg:grid-cols-2">
               {primary.length > 0 && <StatRadar stats={primary} max={primaryMax} />}
               <div>
@@ -339,6 +345,41 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         )}
 
         {galeria.length > 0 && <Galeria images={galeria} />}
+      </div>
+    </div>
+  );
+}
+
+function PoderDeCombate({ poder }: { poder: ReturnType<typeof calcularPoderDeCombate> }) {
+  const subs = [
+    { label: "Atributos primarios", value: poder.primarios },
+    { label: "Combate", value: poder.combate },
+    { label: "Rangos", value: poder.rangos },
+  ];
+  return (
+    <div className="mb-2 rounded-2xl border border-border-glow bg-surface/40 p-5">
+      <div className="flex flex-wrap items-end gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.15em] text-accent">Poder de Combate</p>
+          <p className="font-display text-5xl text-fg">
+            {poder.total}
+            <span className="text-2xl text-fg-muted">%</span>
+          </p>
+        </div>
+        <span className="mb-2 rounded-xl border border-border-glow bg-deep/60 px-3 py-1.5 font-mono text-2xl text-primary-glow">
+          {poder.letra}
+        </span>
+        <div className="ml-auto flex-1 space-y-1.5" style={{ minWidth: "16rem" }}>
+          {subs.map((sb) => (
+            <div key={sb.label} className="flex items-center gap-3">
+              <span className="w-36 shrink-0 text-xs text-fg-secondary">{sb.label}</span>
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-deep">
+                <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary-glow" style={{ width: `${sb.value}%` }} />
+              </div>
+              <span className="w-10 shrink-0 text-right font-mono text-xs text-fg">{sb.value}%</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

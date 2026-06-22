@@ -213,11 +213,11 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     fields: [
       f("naturaleza", "Naturaleza", "combobox", "Identidad", {
         catalogCampo: "magia_naturaleza",
-        hint: "Fundamento · Concepto · Tecnica Avanzada · Hechizo",
+        hint: "Teoría: Fundamento · Concepto. Seleccionables: Tecnica · Tecnica Avanzada",
       }),
       f("tipo", "Tipo / escuela", "combobox", "Identidad", {
         catalogCampo: "magia_tipo",
-        hint: "Solo hechizos: Elemental, Demoniaca…",
+        hint: "Solo técnicas: Elemental, Demoniaca…",
       }),
       f("subcategoria", "Elemento", "combobox", "Identidad", {
         catalogCampo: "magia_variante",

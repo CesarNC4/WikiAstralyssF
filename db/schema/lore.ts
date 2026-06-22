@@ -22,9 +22,9 @@ export const magiaFundamentos = pgTable("magia_fundamentos", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   categoria: varchar("categoria"),
-  /** Naturaleza conceptual: Fundamento | Tecnica Avanzada | Concepto | Hechizo (§ punto 12). */
+  /** Naturaleza conceptual: Fundamento | Concepto (teoría) | Tecnica | Tecnica Avanzada (§ punto 12). */
   naturaleza: varchar("naturaleza"),
-  /** Tipo/escuela del hechizo: Elemental | Demoniaca | … (NULL para conceptos del sistema). */
+  /** Tipo/escuela de la técnica: Elemental | Demoniaca | … (NULL para teoría: fundamentos/conceptos). */
   tipo: varchar("tipo"),
   /** Jerarquía opcional: fundamento del que depende un hechizo. */
   fundamentoPadreId: integer("fundamento_padre_id"),

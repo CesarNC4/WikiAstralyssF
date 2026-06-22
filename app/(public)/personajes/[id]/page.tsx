@@ -21,10 +21,10 @@ export async function generateMetadata({
   const nombre = [p.nombre, p.surname].filter(Boolean).join(" ");
   return {
     title: nombre,
-    description: p.subtitulo ?? p.titulo ?? undefined,
+    description: p.titulo ?? undefined,
     openGraph: {
       title: nombre,
-      description: p.subtitulo ?? p.titulo ?? undefined,
+      description: p.titulo ?? undefined,
       images: p.imagenUrl ? [p.imagenUrl] : undefined,
     },
   };

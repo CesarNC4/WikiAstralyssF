@@ -8,6 +8,7 @@ import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
 import { notificarNuevaPublicacion } from "@/lib/discord";
 import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje";
+import { calcularPoderDeCombate } from "@/lib/poderCombate";
 
 function nombreCompleto(nombre: string, surname?: string | null): string {
   return [nombre, surname].filter(Boolean).join(" ").trim();
@@ -43,7 +44,6 @@ function scalars(data: PersonajeInput) {
     nombre: data.nombre,
     surname: data.surname,
     titulo: data.titulo,
-    subtitulo: data.subtitulo,
     edad: data.edad,
     genero: data.genero,
     altura: data.altura,
@@ -87,7 +87,8 @@ async function guardarHijos(
   // Estrategia delete + re-insert (single-admin, bajo volumen).
   await tx.delete(s.estadisticas).where(eq(s.estadisticas.personajeId, personajeId));
   if (data.estadisticas) {
-    await tx.insert(s.estadisticas).values({ ...data.estadisticas, personajeId });
+    const poderDeCombate = calcularPoderDeCombate(data.estadisticas).total;
+    await tx.insert(s.estadisticas).values({ ...data.estadisticas, poderDeCombate, personajeId });
   }
 
   // Habilidades: enlace a un hechizo del catálogo Magia (o creación de uno nuevo).
@@ -101,7 +102,7 @@ async function guardarHijos(
         .insert(s.magiaFundamentos)
         .values({
           nombre: h.nuevaMagia.nombre,
-          naturaleza: "Hechizo",
+          naturaleza: "Tecnica",
           tipo: h.nuevaMagia.tipo,
           subcategoria: h.nuevaMagia.subcategoria,
           estadoPublicacion: "borrador",
@@ -294,7 +295,7 @@ export async function guardarPersonaje(
       tipo: "personajes",
       idOrSlug: savedId,
       nombre: nombreCompleto(data.nombre, data.surname),
-      descripcion: data.subtitulo ?? data.titulo,
+      descripcion: data.titulo,
       imagenUrl: data.imagenUrl,
     });
   }
@@ -314,7 +315,6 @@ export async function cambiarEstadoPersonaje(
       ppv: s.personajes.publicadoPrimeraVezEn,
       nombre: s.personajes.nombre,
       surname: s.personajes.surname,
-      subtitulo: s.personajes.subtitulo,
       titulo: s.personajes.titulo,
       imagenUrl: s.personajes.imagenUrl,
     })
@@ -333,7 +333,7 @@ export async function cambiarEstadoPersonaje(
       tipo: "personajes",
       idOrSlug: id,
       nombre: nombreCompleto(existing.nombre, existing.surname),
-      descripcion: existing.subtitulo ?? existing.titulo,
+      descripcion: existing.titulo,
       imagenUrl: existing.imagenUrl,
     });
   }

@@ -155,7 +155,7 @@ export async function listOrganizacionesOpciones(): Promise<Opcion[]> {
   return rows.map((r) => ({ id: r.id, label: r.nombre }));
 }
 
-/** Hechizos/técnicas reutilizables del catálogo Magia (excluye Fundamento y Concepto). */
+/** Técnicas reutilizables del catálogo Magia (excluye la teoría: Fundamento y Concepto). */
 export async function listMagiaHechizosOpciones(): Promise<Opcion[]> {
   const rows = await db
     .select({

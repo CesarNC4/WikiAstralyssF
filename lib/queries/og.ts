@@ -31,9 +31,9 @@ const OG: Record<string, OgCfg> = {
     accessor: "personajes",
     tipo: "Personaje",
     acento: "#7b5cff",
-    cols: { nombre: true, surname: true, titulo: true, subtitulo: true, imagenUrl: true },
+    cols: { nombre: true, surname: true, titulo: true, imagenUrl: true },
     name: (r) => [str(r.nombre), str(r.surname)].filter(Boolean).join(" ") || String(r.nombre ?? ""),
-    sub: (r) => str(r.subtitulo) ?? str(r.titulo),
+    sub: (r) => str(r.titulo),
   },
   naciones: {
     accessor: "naciones", tipo: "Nación", acento: "#2dd4bf",

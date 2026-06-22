@@ -95,11 +95,11 @@ export async function MagiaFichaBody({ data }: { data: MagiaFicha }) {
           </section>
         )}
 
-        {/* Hechizos derivados */}
+        {/* Técnicas derivadas */}
         {hijos.length > 0 && (
           <section className="mt-8">
             <SectionTitle icon="Sparkles" color={vis.color}>
-              Hechizos derivados
+              Técnicas derivadas
             </SectionTitle>
             <MagiaMiniGrid items={hijos} />
           </section>

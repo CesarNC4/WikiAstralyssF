@@ -1,7 +1,10 @@
 /**
  * Identidad visual del dominio Magia (§ puntos 11-12). Client-safe.
- * Separa los dos ejes: NATURALEZA (Fundamento/Concepto/Técnica/Hechizo) y
+ * Separa los dos ejes: NATURALEZA (Fundamento/Concepto/Técnica/Técnica Avanzada) y
  * TIPO/escuela (Elemental/Demoníaca…), con color e icono por elemento.
+ *
+ * Taxonomía: Fundamentos y Conceptos son TEORÍA (no seleccionables como
+ * habilidad); Técnicas y Técnicas Avanzadas son SELECCIONABLES.
  *
  * Las claves canónicas coinciden con los catálogos del admin (`magia_tipo`,
  * `magia_variante`). El lookup es insensible a acentos/mayúsculas para tolerar
@@ -50,23 +53,32 @@ export const TIPOS_MAGIA: Record<string, VisualMeta> = {
 };
 const TIPOS_LK = buildLookup(TIPOS_MAGIA);
 
-/** Naturaleza conceptual, en orden de presentación. Las tres primeras son "sistema". */
-export const NATURALEZAS: { key: string; label: string; icon: string; color: string; sistema: boolean }[] = [
-  { key: "Fundamento", label: "Fundamentos", icon: "Atom", color: "#7fb0ff", sistema: true },
-  { key: "Concepto", label: "Conceptos", icon: "Lightbulb", color: "#ffd27f", sistema: true },
-  { key: "Tecnica Avanzada", label: "Técnicas Avanzadas", icon: "Wand2", color: "#c07bff", sistema: true },
-  { key: "Hechizo", label: "Hechizos", icon: "Sparkles", color: "#8b7bff", sistema: false },
+/**
+ * Naturaleza conceptual, en orden de presentación.
+ * `teoria: true` → Fundamentos/Conceptos (no seleccionables; se agrupan por
+ * naturaleza). `teoria: false` → Técnicas/Técnicas Avanzadas (seleccionables;
+ * se agrupan por tipo/escuela en el explorador).
+ */
+export const NATURALEZAS: { key: string; label: string; icon: string; color: string; teoria: boolean }[] = [
+  { key: "Fundamento", label: "Fundamentos", icon: "Atom", color: "#7fb0ff", teoria: true },
+  { key: "Concepto", label: "Conceptos", icon: "Lightbulb", color: "#ffd27f", teoria: true },
+  { key: "Tecnica", label: "Técnicas", icon: "Sparkles", color: "#8b7bff", teoria: false },
+  { key: "Tecnica Avanzada", label: "Técnicas Avanzadas", icon: "Wand2", color: "#c07bff", teoria: false },
 ];
 
 export const NATURALEZA_LABEL: Record<string, string> = {
   Fundamento: "Fundamento",
   Concepto: "Concepto",
+  Tecnica: "Técnica",
   "Tecnica Avanzada": "Técnica Avanzada",
-  Hechizo: "Hechizo",
 };
 
-export function naturalezaEsSistema(naturaleza: string | null | undefined): boolean {
-  return naturaleza === "Fundamento" || naturaleza === "Concepto" || naturaleza === "Tecnica Avanzada";
+/** Claves de naturaleza seleccionables como habilidad (técnicas). */
+export const NATURALEZAS_SELECCIONABLES = ["Tecnica", "Tecnica Avanzada"] as const;
+
+/** ¿Es teoría (Fundamento/Concepto) y por tanto NO seleccionable como habilidad? */
+export function naturalezaEsTeoria(naturaleza: string | null | undefined): boolean {
+  return naturaleza === "Fundamento" || naturaleza === "Concepto";
 }
 
 /** Busca el elemento por nombre (tolerante a acentos). */

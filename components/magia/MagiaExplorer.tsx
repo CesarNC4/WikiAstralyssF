@@ -49,17 +49,18 @@ export function MagiaExplorer({ items }: { items: MagiaIndexItem[] }) {
     });
   }, [items, q, naturaleza, tipo, elemento]);
 
-  // Secciones ordenadas: primero el sistema (por naturaleza), luego hechizos por tipo.
+  // Secciones ordenadas: primero la teoría (por naturaleza), luego técnicas por tipo.
   const secciones = useMemo(() => {
     const out: { key: string; label: string; icon: string; color: string; items: MagiaIndexItem[] }[] = [];
-    // Sistema
-    for (const nat of NATURALEZAS.filter((n) => n.sistema)) {
+    // Teoría (Fundamentos, Conceptos)
+    for (const nat of NATURALEZAS.filter((n) => n.teoria)) {
       const subset = filtered.filter((it) => it.naturaleza === nat.key);
       if (subset.length) out.push({ key: `nat-${nat.key}`, label: nat.label, icon: nat.icon, color: nat.color, items: subset });
     }
-    // Hechizos por tipo
-    const hechizos = filtered.filter((it) => it.naturaleza === "Hechizo");
-    const tipos = [...new Set(hechizos.map((it) => it.tipo).filter(Boolean) as string[])];
+    // Técnicas (Técnica + Técnica Avanzada) agrupadas por tipo/escuela
+    const tecnicaKeys = new Set(NATURALEZAS.filter((n) => !n.teoria).map((n) => n.key));
+    const tecnicas = filtered.filter((it) => it.naturaleza != null && tecnicaKeys.has(it.naturaleza));
+    const tipos = [...new Set(tecnicas.map((it) => it.tipo).filter(Boolean) as string[])];
     for (const t of tipos) {
       const meta = TIPOS_MAGIA[t] ?? { label: t, icon: "Sparkles", color: "#8b7bff" };
       out.push({
@@ -67,12 +68,12 @@ export function MagiaExplorer({ items }: { items: MagiaIndexItem[] }) {
         label: meta.label,
         icon: meta.icon,
         color: meta.color,
-        items: hechizos.filter((it) => it.tipo === t),
+        items: tecnicas.filter((it) => it.tipo === t),
       });
     }
-    // Hechizos sin tipo (por si acaso)
-    const sinTipo = hechizos.filter((it) => !it.tipo);
-    if (sinTipo.length) out.push({ key: "tipo-otros", label: "Otros hechizos", icon: "Sparkles", color: "#8b7bff", items: sinTipo });
+    // Técnicas sin tipo (por si acaso)
+    const sinTipo = tecnicas.filter((it) => !it.tipo);
+    if (sinTipo.length) out.push({ key: "tipo-otros", label: "Otras técnicas", icon: "Sparkles", color: "#8b7bff", items: sinTipo });
     return out;
   }, [filtered]);
 
@@ -94,7 +95,7 @@ export function MagiaExplorer({ items }: { items: MagiaIndexItem[] }) {
           </span>
           <div>
             <h1 className="font-display text-3xl text-gradient-cosmic md:text-4xl">Magia</h1>
-            <p className="text-sm text-fg-muted">El sistema arcano de Astralys: fundamentos, conceptos y hechizos.</p>
+            <p className="text-sm text-fg-muted">El sistema arcano de Astralys: fundamentos, conceptos y técnicas.</p>
           </div>
         </div>
       </header>
@@ -213,7 +214,7 @@ function MagiaCard({ item }: { item: MagiaIndexItem }) {
       <div className="min-w-0">
         <h3 className="truncate font-display text-base text-fg">{item.nombre}</h3>
         <div className="mt-1 flex flex-wrap gap-1">
-          {item.naturaleza && item.naturaleza !== "Hechizo" && (
+          {item.naturaleza && item.naturaleza !== "Tecnica" && (
             <span className="rounded-full bg-elevated px-2 py-0.5 text-[10px] text-fg-muted">
               {NATURALEZA_LABEL[item.naturaleza] ?? item.naturaleza}
             </span>

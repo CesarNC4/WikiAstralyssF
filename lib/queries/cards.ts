@@ -17,7 +17,6 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
         .select({
           id: s.personajes.id,
           titulo: s.personajes.nombre,
-          subtitulo: s.personajes.subtitulo,
           titulo2: s.personajes.titulo,
           imagenUrl: s.personajes.imagenUrl,
           badge: s.personajes.rangoAventurero,
@@ -28,7 +27,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
       return rows.map((r) => ({
         id: r.id,
         titulo: r.titulo,
-        subtitulo: r.subtitulo ?? r.titulo2 ?? null,
+        subtitulo: r.titulo2 ?? null,
         imagenUrl: r.imagenUrl,
         href: `/personajes/${r.id}`,
         badge: r.badge,
