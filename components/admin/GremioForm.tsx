@@ -70,7 +70,7 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
   const [state, formAction, pending] = useActionState<ComplejaFormState | undefined, FormData>(guardarGremio, undefined);
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); setDirty(false); }
+    if (state.ok) { toast("Cambios guardados.", "success"); }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -86,6 +86,7 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
     const fd = new FormData();
     fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));
+    setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
 

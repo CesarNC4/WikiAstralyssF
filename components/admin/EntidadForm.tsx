@@ -10,7 +10,7 @@ import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { RelacionesEditor } from "@/components/admin/blocks/RelacionEditor";
-import { Field, TextInput, NumberInput, Combobox, MarkdownField, ReferenceField, SliderInput } from "@/components/admin/fields";
+import { Field, TextInput, NumberInput, Select, MarkdownField, ReferenceField, SliderInput } from "@/components/admin/fields";
 
 type Referencias = Partial<Record<RefTarget, OpcionRef[]>>;
 
@@ -56,7 +56,6 @@ export function EntidadForm({
     if (!state) return;
     if (state.ok) {
       toast("Cambios guardados.", "success");
-      setDirty(false);
     } else if (state.error) {
       toast(state.error, "error");
     }
@@ -89,6 +88,7 @@ export function EntidadForm({
     fd.set("entidad", config.key);
     if (id) fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));
+    setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
 
@@ -229,7 +229,7 @@ function FieldRender({
   if (fd.type === "combobox") {
     return (
       <Field label={label} hint={fd.hint} error={error}>
-        <Combobox value={value} onChange={onChange} options={catalogos[fd.catalogCampo ?? ""] ?? []} campo={fd.catalogCampo} />
+        <Select value={value} onChange={onChange} options={catalogos[fd.catalogCampo ?? ""] ?? []} />
       </Field>
     );
   }

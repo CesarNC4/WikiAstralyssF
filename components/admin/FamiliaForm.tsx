@@ -8,7 +8,7 @@ import type { RangoRow, FaccionRow, JerarquiaRow, ArbolRow } from "@/lib/admin/c
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
-import { Field, TextInput, MarkdownField, Combobox } from "@/components/admin/fields";
+import { Field, TextInput, MarkdownField, Select } from "@/components/admin/fields";
 import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
@@ -116,7 +116,7 @@ export function FamiliaForm({
           <Field label="Nombre *" error={fe.nombre}><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Casa Valeria" /></Field>
           <Field label="Apellido / casa"><TextInput value={campos.apellido} onChange={(x) => set("apellido", x)} /></Field>
           <Field label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
-          <Field label="Origen"><Combobox value={campos.origen} onChange={(x) => set("origen", x)} options={catalogos.familia_origen ?? []} campo="familia_origen" placeholder="Nación / región" /></Field>
+          <Field label="Origen"><Select value={campos.origen} onChange={(x) => set("origen", x)} options={catalogos.familia_origen ?? []} placeholder="Selecciona origen…" /></Field>
         </div>
       </AccordionSection>
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Markdown } from "@/components/markdown/Markdown";
-import { agregarValorCatalogo } from "@/lib/actions/catalogos";
 import { cn } from "@/lib/utils";
 
 // ── Campos base ─────────────────────────────────────────────────────────────
@@ -126,26 +125,24 @@ export function SliderInput({
   );
 }
 
-// ── Combobox (catálogo flexible que persiste valores nuevos) ────────────────
-export function Combobox({
+// ── Select estricto (solo elegir de una lista fija; sin texto libre) ─────────
+export function Select({
   value,
   onChange,
   options,
-  campo,
-  grupo,
-  placeholder = "Selecciona o escribe…",
+  placeholder = "Selecciona…",
+  allowClear = true,
 }: {
   value: string;
   onChange: (v: string) => void;
-  options: string[];
-  /** Campo del catálogo donde persistir un valor nuevo (opcional). */
-  campo?: string;
-  grupo?: string | null;
+  options: readonly string[];
   placeholder?: string;
+  allowClear?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const searchable = options.length > 8;
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -155,37 +152,25 @@ export function Combobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const filtered = query
-    ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
-    : options;
-  const exact = options.some((o) => o.toLowerCase() === query.trim().toLowerCase());
-
-  const commit = async (v: string, isNew: boolean) => {
+  const filtered = query ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase())) : options;
+  const pick = (v: string) => {
     onChange(v);
     setOpen(false);
     setQuery("");
-    if (isNew && campo && v.trim()) {
-      await agregarValorCatalogo(campo, v.trim(), grupo ?? null).catch(() => {});
-    }
   };
 
   return (
     <div className="relative" ref={ref}>
       <div className="flex items-center gap-1">
-        <input
-          value={open ? query : value}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => {
-            setQuery("");
-            setOpen(true);
-          }}
-          placeholder={value || placeholder}
-          className={inputCls}
-        />
-        {value && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className={cn(inputCls, "flex items-center text-left")}
+        >
+          <span className={value ? "text-fg" : "text-fg-muted"}>{value || placeholder}</span>
+          <span className="ml-auto pl-2 text-fg-muted">▾</span>
+        </button>
+        {allowClear && value && (
           <button
             type="button"
             onClick={() => onChange("")}
@@ -198,29 +183,32 @@ export function Combobox({
       </div>
       {open && (
         <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border-glow bg-elevated p-1 shadow-xl">
+          {searchable && (
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filtrar…"
+              className="mb-1 w-full rounded border border-border-base bg-surface px-2 py-1 text-sm text-fg outline-none"
+            />
+          )}
           {filtered.map((o) => (
             <button
               key={o}
               type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => commit(o, false)}
-              className="block w-full rounded px-2 py-1.5 text-left text-sm text-fg-secondary hover:bg-surface hover:text-fg"
+              onClick={() => pick(o)}
+              className={cn(
+                "block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-surface",
+                o === value ? "text-accent" : "text-fg-secondary hover:text-fg",
+              )}
             >
               {o}
             </button>
           ))}
-          {query.trim() && !exact && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => commit(query.trim(), true)}
-              className="block w-full rounded px-2 py-1.5 text-left text-sm text-accent hover:bg-surface"
-            >
-              + Añadir «{query.trim()}»
-            </button>
-          )}
-          {filtered.length === 0 && !query.trim() && (
-            <p className="px-2 py-1.5 text-xs text-fg-muted">Sin valores aún. Escribe para crear.</p>
+          {filtered.length === 0 && (
+            <p className="px-2 py-1.5 text-xs text-fg-muted">
+              {options.length === 0 ? "Sin opciones (defínelas en lib/catalogos.ts)." : "Sin coincidencias."}
+            </p>
           )}
         </div>
       )}
@@ -228,39 +216,37 @@ export function Combobox({
   );
 }
 
-// ── MagiaPicker (combobox de dos niveles: tipo + variante) ──────────────────
+// ── MagiaPicker (selección estructurada de dos niveles: tipo + variante) ─────
 export function MagiaPicker({
-  value,
-  onChange,
+  tipo,
+  variante,
+  onTipo,
+  onVariante,
   tipos,
   variantes,
 }: {
-  value: string;
-  onChange: (v: string) => void;
-  tipos: string[];
-  variantes: Record<string, string[]>;
+  tipo: string;
+  variante: string;
+  onTipo: (v: string) => void;
+  onVariante: (v: string) => void;
+  tipos: readonly string[];
+  variantes: Record<string, readonly string[]>;
 }) {
-  // Parsea "Tipo (Variante)".
-  const m = /^(.*?)(?:\s*\(([^)]+)\))?$/.exec(value.trim());
-  const tipo = m?.[1]?.trim() ?? "";
-  const variante = m?.[2]?.trim() ?? "";
   const variantesDisp = variantes[tipo] ?? [];
-
-  const setTipo = (t: string) => onChange(t);
-  const setVariante = (v: string) => onChange(v ? `${tipo} (${v})` : tipo);
-
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Combobox value={tipo} onChange={setTipo} options={tipos} campo="magia_tipo" placeholder="Tipo de magia" />
+      <Select
+        value={tipo}
+        // Al cambiar el tipo se limpia la variante (depende del tipo).
+        onChange={(t) => {
+          onTipo(t);
+          if (t !== tipo) onVariante("");
+        }}
+        options={tipos}
+        placeholder="Tipo de magia"
+      />
       {variantesDisp.length > 0 ? (
-        <Combobox
-          value={variante}
-          onChange={setVariante}
-          options={variantesDisp}
-          campo="magia_variante"
-          grupo={tipo}
-          placeholder="Variante"
-        />
+        <Select value={variante} onChange={onVariante} options={variantesDisp} placeholder="Variante" />
       ) : (
         <div className="grid place-items-center rounded-lg border border-dashed border-border-base text-xs text-fg-muted">
           Sin variantes

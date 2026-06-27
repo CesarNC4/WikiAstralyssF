@@ -14,7 +14,7 @@ import {
   Field,
   TextInput,
   NumberInput,
-  Combobox,
+  Select,
   MagiaPicker,
   MarkdownField,
 } from "@/components/admin/fields";
@@ -120,7 +120,8 @@ export function PersonajeForm({
     historia: s(inicial?.historia), rasgosPersonalidad: s(inicial?.rasgosPersonalidad),
     motivacion: s(inicial?.motivacion), miedos: s(inicial?.miedos), filosofia: s(inicial?.filosofia),
     gustos: s(inicial?.gustos), disgustos: s(inicial?.disgustos), debilidades: s(inicial?.debilidades),
-    tipoMagiaPrincipal: s(inicial?.tipoMagiaPrincipal), magiaSecundaria: s(inicial?.magiaSecundaria),
+    magiaPrincipalTipo: s(inicial?.magiaPrincipalTipo), magiaPrincipalVariante: s(inicial?.magiaPrincipalVariante),
+    magiaSecundariaTipo: s(inicial?.magiaSecundariaTipo), magiaSecundariaVariante: s(inicial?.magiaSecundariaVariante),
     nivelDeConsciencia: s(inicial?.nivelDeConsciencia), circuitoForte: s(inicial?.circuitoForte),
     essentia: s(inicial?.essentia), zenithra: s(inicial?.zenithra), bendicion: s(inicial?.bendicion),
     segundoDespertar: s(inicial?.segundoDespertar),
@@ -191,7 +192,6 @@ export function PersonajeForm({
     if (!state) return;
     if (state.ok) {
       toast("Cambios guardados.", "success");
-      setDirty(false);
     } else if (state.error) {
       toast(state.error, "error");
     }
@@ -264,18 +264,22 @@ export function PersonajeForm({
       habilidades: habilidadesPayload,
       eventos: eventosPayload,
       objetos: objetosPayload,
-      relaciones: relaciones.map((r) => ({
-        idRr: r.idRr,
-        personajeRelacionadoId: r.personajeRelacionadoId,
-        nombreExterno: r.nombreExterno,
-        tipoRelacion: r.tipoRelacion,
-        subtipoRelacion: r.subtipoRelacion,
-        descripcion: r.descripcion,
-      })),
+      relaciones: relaciones
+        // Descarta filas vacías: una relación necesita un PJ vinculado o un nombre externo.
+        .filter((r) => r.personajeRelacionadoId || r.nombreExterno.trim())
+        .map((r) => ({
+          idRr: r.idRr,
+          personajeRelacionadoId: r.personajeRelacionadoId,
+          nombreExterno: r.nombreExterno,
+          tipoRelacion: r.tipoRelacion,
+          subtipoRelacion: r.subtipoRelacion,
+          descripcion: r.descripcion,
+        })),
       naciones: naciones.map((n) => ({ nacionId: n.nacionId, tipo: n.tipo, descripcion: n.descripcion })),
       razas: razas.map((r) => ({ razaId: r.razaId, esMixta: r.esMixta, nota: r.nota })),
       organizaciones: organizaciones.map((o) => ({ organizacionId: o.organizacionId, rol: o.rol, tipo: o.tipo, descripcion: o.descripcion })),
     };
+    setDirty(false); // optimista: guardar = persistir el estado actual
     const fd = new FormData();
     if (inicial?.id) fd.set("id", String(inicial.id));
     fd.set("payload", JSON.stringify(payload));
@@ -284,9 +288,12 @@ export function PersonajeForm({
 
   const incompleta = useMemo(() => {
     const w: string[] = [];
+    if (!f.nombre.trim()) w.push("Falta el nombre");
+    if (!imagen.url && !imagen.assetId) w.push("Sin avatar");
     if (!f.historia.trim()) w.push("Falta la historia");
+    if (!f.magiaPrincipalTipo.trim()) w.push("Sin magia principal");
     return w;
-  }, [f.historia]);
+  }, [f.nombre, f.historia, f.magiaPrincipalTipo, imagen.url, imagen.assetId]);
 
   // Poder de Combate dinámico: recalcula con cada cambio de estadística.
   const poder = useMemo(() => calcularPoderDeCombate(stats), [stats]);
@@ -302,10 +309,10 @@ export function PersonajeForm({
           <Field label="Apellido"><TextInput value={f.surname} onChange={(v) => patch({ surname: v })} /></Field>
           <Field label="Título"><TextInput value={f.titulo} onChange={(v) => patch({ titulo: v })} /></Field>
           <Field label="Edad"><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
-          <Field label="Género"><Combobox value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} campo="genero" /></Field>
+          <Field label="Género"><Select value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} /></Field>
           <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" /></Field>
           <Field label="Ocupación"><TextInput value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} /></Field>
-          <Field label="Rango aventurero"><Combobox value={f.rangoAventurero} onChange={(v) => patch({ rangoAventurero: v })} options={catalogos.rango_aventurero} campo="rango_aventurero" /></Field>
+          <Field label="Rango aventurero"><Select value={f.rangoAventurero} onChange={(v) => patch({ rangoAventurero: v })} options={catalogos.rango_aventurero} /></Field>
           <Field label="Lugar de nacimiento"><TextInput value={f.lugarNacimiento} onChange={(v) => patch({ lugarNacimiento: v })} /></Field>
           {/* Punto 2: Familia derivada (solo lectura). */}
           <Field label="Familia" hint="Se asigna desde el editor de Familia (no editable)">
@@ -358,9 +365,9 @@ export function PersonajeForm({
       {/* Magia y combate (punto 4: campos grandes markdown) */}
       <AccordionSection title="Magia y combate">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Magia principal"><MagiaPicker value={f.tipoMagiaPrincipal} onChange={(v) => patch({ tipoMagiaPrincipal: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
-          <Field label="Magia secundaria"><MagiaPicker value={f.magiaSecundaria} onChange={(v) => patch({ magiaSecundaria: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
-          <Field label="Nivel de consciencia"><Combobox value={f.nivelDeConsciencia} onChange={(v) => patch({ nivelDeConsciencia: v })} options={catalogos.nivel_consciencia} campo="nivel_consciencia" /></Field>
+          <Field label="Magia principal"><MagiaPicker tipo={f.magiaPrincipalTipo} variante={f.magiaPrincipalVariante} onTipo={(v) => patch({ magiaPrincipalTipo: v })} onVariante={(v) => patch({ magiaPrincipalVariante: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
+          <Field label="Magia secundaria"><MagiaPicker tipo={f.magiaSecundariaTipo} variante={f.magiaSecundariaVariante} onTipo={(v) => patch({ magiaSecundariaTipo: v })} onVariante={(v) => patch({ magiaSecundariaVariante: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
+          <Field label="Nivel de consciencia"><Select value={f.nivelDeConsciencia} onChange={(v) => patch({ nivelDeConsciencia: v })} options={catalogos.nivel_consciencia} /></Field>
           <div />
         </div>
         <div className="mt-3 space-y-3">
@@ -435,12 +442,12 @@ export function PersonajeForm({
               ) : (
                 <div className="grid gap-2 sm:grid-cols-3">
                   <Field label="Nombre *"><TextInput value={h.nuevoNombre} onChange={(v) => up({ nuevoNombre: v })} /></Field>
-                  <Field label="Tipo / escuela"><Combobox value={h.nuevoTipo} onChange={(v) => up({ nuevoTipo: v })} options={catalogos.magiaTipos} campo="magia_tipo" /></Field>
-                  <Field label="Elemento"><Combobox value={h.nuevoSubcategoria} onChange={(v) => up({ nuevoSubcategoria: v })} options={catalogos.magiaVariantes[h.nuevoTipo] ?? []} campo="magia_variante" grupo={h.nuevoTipo} /></Field>
+                  <Field label="Tipo / escuela"><Select value={h.nuevoTipo} onChange={(v) => up({ nuevoTipo: v })} options={catalogos.magiaTipos} /></Field>
+                  <Field label="Elemento"><Select value={h.nuevoSubcategoria} onChange={(v) => up({ nuevoSubcategoria: v })} options={catalogos.magiaVariantes[h.nuevoTipo] ?? []} /></Field>
                 </div>
               )}
               <div className="grid gap-2 sm:grid-cols-2">
-                <Field label="Categoría" hint="agrupa en la ficha"><Combobox value={h.categoria} onChange={(v) => up({ categoria: v })} options={catalogos.habilidad_categoria} campo="habilidad_categoria" /></Field>
+                <Field label="Categoría" hint="agrupa en la ficha"><Select value={h.categoria} onChange={(v) => up({ categoria: v })} options={catalogos.habilidad_categoria} /></Field>
                 <div />
               </div>
               <Field label="Descripción"><MarkdownField value={h.descripcion} onChange={(v) => up({ descripcion: v })} rows={3} /></Field>
@@ -478,8 +485,8 @@ export function PersonajeForm({
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Field label="Fecha (lore) *"><TextInput value={e.nFecha} onChange={(v) => up({ nFecha: v })} /></Field>
                   <Field label="Título *"><TextInput value={e.nTitulo} onChange={(v) => up({ nTitulo: v })} /></Field>
-                  <Field label="Importancia"><Combobox value={e.nImportancia} onChange={(v) => up({ nImportancia: v })} options={catalogos.timeline_importancia} campo="timeline_importancia" /></Field>
-                  <Field label="Categoría"><Combobox value={e.nCategoria} onChange={(v) => up({ nCategoria: v })} options={catalogos.timeline_categoria} campo="timeline_categoria" /></Field>
+                  <Field label="Importancia"><Select value={e.nImportancia} onChange={(v) => up({ nImportancia: v })} options={catalogos.timeline_importancia} /></Field>
+                  <Field label="Categoría"><Select value={e.nCategoria} onChange={(v) => up({ nCategoria: v })} options={catalogos.timeline_categoria} /></Field>
                   <Field label="Era"><TextInput value={e.nEra} onChange={(v) => up({ nEra: v })} /></Field>
                   <div />
                 </div>
@@ -511,8 +518,8 @@ export function PersonajeForm({
                   )}
                 </Field>
                 <Field label="o Nombre externo" hint="entidad sin ficha"><TextInput value={r.nombreExterno} onChange={(v) => up({ nombreExterno: v })} /></Field>
-                <Field label="Tipo de relación"><Combobox value={r.tipoRelacion} onChange={(v) => up({ tipoRelacion: v })} options={catalogos.tipo_relacion} campo="tipo_relacion" /></Field>
-                <Field label="Subtipo"><Combobox value={r.subtipoRelacion} onChange={(v) => up({ subtipoRelacion: v })} options={catalogos.subtipo_relacion} campo="subtipo_relacion" /></Field>
+                <Field label="Tipo de relación"><Select value={r.tipoRelacion} onChange={(v) => up({ tipoRelacion: v })} options={catalogos.tipo_relacion} /></Field>
+                <Field label="Subtipo"><Select value={r.subtipoRelacion} onChange={(v) => up({ subtipoRelacion: v })} options={catalogos.subtipo_relacion} /></Field>
               </div>
               <Field label="Descripción"><TextInput value={r.descripcion} onChange={(v) => up({ descripcion: v })} /></Field>
             </div>
@@ -573,7 +580,7 @@ export function PersonajeForm({
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Field label="Nombre *"><TextInput value={o.nNombre} onChange={(v) => up({ nNombre: v })} /></Field>
-                  <Field label="Tipo" hint="arma · artefacto · objeto…"><Combobox value={o.nTipo} onChange={(v) => up({ nTipo: v })} options={catalogos.artefacto_tipo} campo="artefacto_tipo" /></Field>
+                  <Field label="Tipo" hint="arma · artefacto · objeto…"><Select value={o.nTipo} onChange={(v) => up({ nTipo: v })} options={catalogos.artefacto_tipo} /></Field>
                   <div className="sm:col-span-2"><Field label="Descripción"><MarkdownField value={o.nDescripcion} onChange={(v) => up({ nDescripcion: v })} rows={3} /></Field></div>
                   <div className="sm:col-span-2"><Field label="Poder especial"><TextInput value={o.nPoder} onChange={(v) => up({ nPoder: v })} /></Field></div>
                 </div>

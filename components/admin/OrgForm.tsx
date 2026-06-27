@@ -7,7 +7,7 @@ import type { RangoRow, FaccionRow, JerarquiaRow, HistorialRow } from "@/lib/adm
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
-import { Field, TextInput, MarkdownField, Combobox } from "@/components/admin/fields";
+import { Field, TextInput, MarkdownField, Select } from "@/components/admin/fields";
 import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
@@ -77,7 +77,7 @@ export function OrgForm({
   const [state, formAction, pending] = useActionState<ComplejaFormState | undefined, FormData>(guardarOrganizacion, undefined);
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); setDirty(false); }
+    if (state.ok) { toast("Cambios guardados.", "success"); }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -100,6 +100,7 @@ export function OrgForm({
     const fd = new FormData();
     if (id) fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));
+    setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
 
@@ -109,8 +110,8 @@ export function OrgForm({
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre *" error={fe.nombre}><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Orden del Alba" /></Field>
           <Field label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
-          <Field label="Tipo"><Combobox value={campos.tipo} onChange={(x) => set("tipo", x)} options={catalogos.org_tipo ?? []} campo="org_tipo" placeholder="Orden, gremio, secta…" /></Field>
-          <Field label="Estado"><Combobox value={campos.estado} onChange={(x) => set("estado", x)} options={catalogos.org_estado ?? []} campo="org_estado" placeholder="Activa, disuelta…" /></Field>
+          <Field label="Tipo"><Select value={campos.tipo} onChange={(x) => set("tipo", x)} options={catalogos.org_tipo ?? []} placeholder="Orden, gremio, secta…" /></Field>
+          <Field label="Estado"><Select value={campos.estado} onChange={(x) => set("estado", x)} options={catalogos.org_estado ?? []} placeholder="Activa, disuelta…" /></Field>
           <Field label="Sede"><TextInput value={campos.sede} onChange={(x) => set("sede", x)} /></Field>
         </div>
       </AccordionSection>

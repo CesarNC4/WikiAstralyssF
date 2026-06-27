@@ -11,7 +11,6 @@ export interface CatalogosPersonaje {
   /** tipo de magia → variantes disponibles (vacío si el tipo no tiene). */
   magiaVariantes: Record<string, string[]>;
   habilidad_categoria: string[];
-  habilidad_tipo: string[];
   tipo_relacion: string[];
   subtipo_relacion: string[];
   artefacto_tipo: string[];
@@ -42,7 +41,6 @@ export async function getCatalogosPersonaje(): Promise<CatalogosPersonaje> {
     magiaTipos: pick("magia_tipo"),
     magiaVariantes,
     habilidad_categoria: pick("habilidad_categoria"),
-    habilidad_tipo: pick("habilidad_tipo"),
     tipo_relacion: pick("tipo_relacion"),
     subtipo_relacion: pick("subtipo_relacion"),
     artefacto_tipo: pick("artefacto_tipo"),

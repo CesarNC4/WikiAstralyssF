@@ -76,7 +76,7 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
 
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); setDirty(false); }
+    if (state.ok) { toast("Cambios guardados.", "success"); }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -100,6 +100,7 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
     const fd = new FormData();
     if (id) fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));
+    setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
 

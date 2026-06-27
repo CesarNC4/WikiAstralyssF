@@ -192,9 +192,11 @@ export const personajeSchema = z.object({
   gustos: str,
   disgustos: str,
   debilidades: str,
-  // magia / combate
-  tipoMagiaPrincipal: str,
-  magiaSecundaria: str,
+  // magia / combate (estructurado; el texto combinado se deriva en la acción)
+  magiaPrincipalTipo: str,
+  magiaPrincipalVariante: str,
+  magiaSecundariaTipo: str,
+  magiaSecundariaVariante: str,
   nivelDeConsciencia: str,
   circuitoForte: str,
   essentia: str,

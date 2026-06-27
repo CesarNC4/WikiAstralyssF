@@ -39,6 +39,12 @@ function revalidarPersonaje(id: number) {
   revalidatePath("/artefactos");
 }
 
+/** Compone "Tipo (Variante)" para el texto de display/enlace de la ficha pública. */
+function magiaCombinada(tipo: string | null, variante: string | null): string | null {
+  if (!tipo) return null;
+  return variante ? `${tipo} (${variante})` : tipo;
+}
+
 function scalars(data: PersonajeInput) {
   return {
     nombre: data.nombre,
@@ -61,8 +67,14 @@ function scalars(data: PersonajeInput) {
     gustos: data.gustos,
     disgustos: data.disgustos,
     debilidades: data.debilidades,
-    tipoMagiaPrincipal: data.tipoMagiaPrincipal,
-    magiaSecundaria: data.magiaSecundaria,
+    // Texto combinado derivado (display + enlace por nombre en la ficha pública).
+    tipoMagiaPrincipal: magiaCombinada(data.magiaPrincipalTipo, data.magiaPrincipalVariante),
+    magiaSecundaria: magiaCombinada(data.magiaSecundariaTipo, data.magiaSecundariaVariante),
+    // Estructurado.
+    magiaPrincipalTipo: data.magiaPrincipalTipo,
+    magiaPrincipalVariante: data.magiaPrincipalVariante,
+    magiaSecundariaTipo: data.magiaSecundariaTipo,
+    magiaSecundariaVariante: data.magiaSecundariaVariante,
     nivelDeConsciencia: data.nivelDeConsciencia,
     circuitoForte: data.circuitoForte,
     essentia: data.essentia,

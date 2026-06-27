@@ -5,7 +5,7 @@ import { ReactFlow, Background, Controls, type Node, type Edge } from "@xyflow/r
 import "@xyflow/react/dist/style.css";
 import { newKey, type ArbolRow } from "@/lib/admin/complejas";
 import { MiembroPicker, subInp, type Opcion } from "./shared";
-import { Combobox } from "@/components/admin/fields";
+import { Select } from "@/components/admin/fields";
 
 /**
  * Árbol genealógico visual (React Flow). Los nodos se colocan solos por
@@ -201,7 +201,7 @@ export function ArbolEditor({
 
               <label className="block">
                 <span className="mb-1 block text-xs text-fg-muted">Estado</span>
-                <Combobox value={sel.estado} onChange={(v) => patch(sel.key, { estado: v })} options={estadoOptions} campo="arbol_estado" placeholder="Vivo, fallecido…" />
+                <Select value={sel.estado} onChange={(v) => patch(sel.key, { estado: v })} options={estadoOptions} placeholder="Vivo, fallecido…" />
               </label>
 
               <label className="flex items-center gap-2 text-sm text-fg-secondary">

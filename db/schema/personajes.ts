@@ -35,8 +35,14 @@ export const personajes = pgTable("personajes", {
   filosofia: varchar("filosofia"),
   gustos: text("gustos"),
   disgustos: text("disgustos"),
+  // Texto combinado "Tipo (Variante)" — alimenta la ficha pública y el enlace por nombre.
   tipoMagiaPrincipal: varchar("tipo_magia_principal"),
   magiaSecundaria: varchar("magia_secundaria"),
+  // Estructurado (para edición limpia sin regex y filtros). Derivan el texto de arriba al guardar.
+  magiaPrincipalTipo: varchar("magia_principal_tipo"),
+  magiaPrincipalVariante: varchar("magia_principal_variante"),
+  magiaSecundariaTipo: varchar("magia_secundaria_tipo"),
+  magiaSecundariaVariante: varchar("magia_secundaria_variante"),
   nivelDeConsciencia: varchar("nivel_de_consciencia"),
   circuitoForte: varchar("circuito_forte"),
   essentia: varchar("essentia"),
