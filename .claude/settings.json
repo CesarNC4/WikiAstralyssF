@@ -22,7 +22,8 @@
       "Bash(npx --yes tsx scripts/_smoke.mts 49)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
-      "Bash(echo \"exit_find=$?\")"
+      "Bash(echo \"exit_find=$?\")",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }
