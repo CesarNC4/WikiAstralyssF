@@ -99,6 +99,27 @@ export const MAGIA_VARIANTES = {
 
 export type CatalogoCampo = keyof typeof CATALOGOS;
 
+/**
+ * Etiqueta inversa de una relación PJ↔PJ. Si A es "Mentor" de B, en la ficha de
+ * B la relación se muestra como "Aprendiz" automáticamente. Los tipos no listados
+ * aquí se consideran simétricos (misma etiqueta en ambos lados).
+ * Edita estos pares a tu gusto (deben existir en CATALOGOS.tipo_relacion).
+ */
+export const RELACION_INVERSA: Record<string, string> = {
+  Mentor: "Aprendiz",
+  Aprendiz: "Mentor",
+  Superior: "Subordinado",
+  Subordinado: "Superior",
+  // Simétricos (Aliado, Rival, Amigo, Enemigo, Familiar, Amante, Compañero, Otro)
+  // no necesitan entrada: se muestran con la misma etiqueta.
+};
+
+/** Devuelve la etiqueta a mostrar en el lado inverso de una relación. */
+export function etiquetaInversa(tipo: string | null | undefined): string | null {
+  if (!tipo) return tipo ?? null;
+  return RELACION_INVERSA[tipo] ?? tipo;
+}
+
 /** Migraciones de valores en uso (valor viejo en BD → valor canónico del archivo). */
 export const MIGRACIONES_VALOR: Record<string, Record<string, string>> = {
   habilidad_categoria: { TECNICA: "Técnica" },

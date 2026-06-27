@@ -26,6 +26,14 @@ export async function getPersonajeFicha(id: number) {
           },
         },
       },
+      // Relaciones donde este PJ es el destino: se muestran con etiqueta inversa.
+      relacionesInversas: {
+        with: {
+          personaje: {
+            columns: { id: true, nombre: true, surname: true, imagenUrl: true, titulo: true },
+          },
+        },
+      },
       canciones: { with: { cancion: true } },
       naciones: {
         with: { nacion: { columns: { id: true, nombre: true, subtitulo: true, imagenUrl: true } } },
@@ -59,6 +67,14 @@ export async function getPersonajePreview(id: number) {
       relaciones: {
         with: {
           relacionado: {
+            columns: { id: true, nombre: true, surname: true, imagenUrl: true, titulo: true },
+          },
+        },
+      },
+      // Relaciones donde este PJ es el destino: se muestran con etiqueta inversa.
+      relacionesInversas: {
+        with: {
+          personaje: {
             columns: { id: true, nombre: true, surname: true, imagenUrl: true, titulo: true },
           },
         },

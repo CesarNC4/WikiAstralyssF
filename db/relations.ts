@@ -50,6 +50,8 @@ export const personajesRelations = relations(personajes, ({ one, many }) => ({
   estadisticas: many(estadisticas),
   habilidades: many(habilidades),
   relaciones: many(relaciones, { relationName: "relacion_origen" }),
+  // Relaciones donde este PJ es el destino (para mostrarlas también en su ficha).
+  relacionesInversas: many(relaciones, { relationName: "relacion_destino" }),
   eventos: many(personajeEvento),
   narrativa: one(personajeNarrativa),
   objetos: many(personajeObjeto),

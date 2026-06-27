@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/Icon";
+import { EntityImage } from "@/components/media/EntityImage";
 import type { TimelineEventoPublico } from "@/lib/queries/extra";
 
 export type Ev = TimelineEventoPublico;
@@ -70,6 +71,28 @@ export function DetallePanel({ ev, onClose }: { ev: Ev; onClose: () => void }) {
                 <Icon name="ArrowRight" size={13} className="ml-auto text-fg-muted" />
               </Link>
             )}
+          </div>
+        )}
+
+        {ev.personajes.length > 0 && (
+          <div className="mt-6 border-t border-border-base pt-4">
+            <p className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wide text-fg-muted">
+              <Icon name="Users" size={13} /> Protagonistas
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {ev.personajes.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/personajes/${p.id}`}
+                  className="flex items-center gap-2 rounded-full border border-border-base bg-surface/40 py-1 pl-1 pr-3 text-sm hover:border-border-glow"
+                >
+                  <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                    <EntityImage src={p.imagenUrl} alt={p.nombre} name={p.nombre} sizes="28px" />
+                  </span>
+                  <span className="text-fg">{[p.nombre, p.surname].filter(Boolean).join(" ")}</span>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </motion.aside>

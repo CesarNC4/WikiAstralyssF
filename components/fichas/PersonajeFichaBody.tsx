@@ -15,6 +15,7 @@ import { getGaleria } from "@/lib/queries/galeria";
 import { resolveMagiaLinks } from "@/lib/queries/magia";
 import { getFamiliasDePersonaje, type PersonajeFicha } from "@/lib/queries/fichas";
 import { calcularPoderDeCombate, PRIMARY_MAX, COMBAT_MAX } from "@/lib/poderCombate";
+import { etiquetaInversa } from "@/lib/catalogos";
 import type { Track } from "@/hooks/usePlayerStore";
 
 /** Cuerpo de la ficha de personaje: hero cinematográfico + secciones (§ punto 2). */
@@ -80,13 +81,33 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   // Poder de Combate (promedio dinámico de las tres secciones). Solo si hay stats.
   const poder = stats ? calcularPoderDeCombate(stats as Record<string, number | string | null>) : null;
 
-  const vinculos: RelNode[] = (p.relaciones ?? []).map((r) => ({
-    key: String(r.idRr),
-    nombre: r.relacionado
-      ? [r.relacionado.nombre, r.relacionado.surname].filter(Boolean).join(" ")
+  // Relaciones unificadas: las propias (directas) + las inversas (donde este PJ es
+  // el destino), estas últimas con la etiqueta invertida. Así una relación creada
+  // en otra ficha aparece aquí sin duplicarla.
+  const relacionesView = [
+    ...(p.relaciones ?? []).map((r) => ({
+      key: `dir-${r.idRr}`,
+      otro: r.relacionado,
+      nombreExterno: r.nombreExterno,
+      tipo: r.tipoRelacion ?? r.subtipoRelacion,
+      descripcion: r.descripcion,
+    })),
+    ...(p.relacionesInversas ?? []).map((r) => ({
+      key: `inv-${r.idRr}`,
+      otro: r.personaje,
+      nombreExterno: null as string | null,
+      tipo: etiquetaInversa(r.tipoRelacion) ?? r.subtipoRelacion,
+      descripcion: r.descripcion,
+    })),
+  ];
+
+  const vinculos: RelNode[] = relacionesView.map((r) => ({
+    key: r.key,
+    nombre: r.otro
+      ? [r.otro.nombre, r.otro.surname].filter(Boolean).join(" ")
       : r.nombreExterno ?? "Desconocido",
-    tipo: r.tipoRelacion ?? r.subtipoRelacion,
-    href: r.relacionado ? `/personajes/${r.relacionado.id}` : null,
+    tipo: r.tipo,
+    href: r.otro ? `/personajes/${r.otro.id}` : null,
   }));
 
   const keyFacts = [
@@ -250,22 +271,22 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
               <>
                 <RelacionesGraph centro={nombre} vinculos={vinculos} />
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {p.relaciones!.map((r) => (
-                    <div key={r.idRr} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3">
-                      {r.relacionado ? (
-                        <Link href={`/personajes/${r.relacionado.id}`} className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-                          <EntityImage src={r.relacionado.imagenUrl} alt={r.relacionado.nombre} name={r.relacionado.nombre} sizes="48px" />
+                  {relacionesView.map((r) => (
+                    <div key={r.key} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3">
+                      {r.otro ? (
+                        <Link href={`/personajes/${r.otro.id}`} className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                          <EntityImage src={r.otro.imagenUrl} alt={r.otro.nombre} name={r.otro.nombre} sizes="48px" />
                         </Link>
                       ) : (
                         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-deep text-fg-muted">?</div>
                       )}
                       <div className="min-w-0">
                         <p className="truncate text-sm text-fg">
-                          {r.relacionado
-                            ? [r.relacionado.nombre, r.relacionado.surname].filter(Boolean).join(" ")
+                          {r.otro
+                            ? [r.otro.nombre, r.otro.surname].filter(Boolean).join(" ")
                             : r.nombreExterno ?? "Desconocido"}
                         </p>
-                        <p className="text-xs text-primary-glow">{r.tipoRelacion ?? r.subtipoRelacion}</p>
+                        <p className="text-xs text-primary-glow">{r.tipo}</p>
                         {r.descripcion && <p className="truncate text-xs text-fg-muted">{r.descripcion}</p>}
                       </div>
                     </div>
