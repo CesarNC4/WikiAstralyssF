@@ -1,5 +1,11 @@
 # PENDIENTE — pasos a hacer al desplegar
 
+> **ESTADO (2026-06-26): migración de BD APLICADA ✅.** Ejecutada contra Supabase
+> (proyecto `xjalihfqzitkxlskxyih`): `subtitulo` eliminada, `poder_de_combate` añadida,
+> 20 filas `Hechizo`→`Tecnica`, catálogo `magia_naturaleza` ordenado
+> (Fundamento → Concepto → Tecnica → Tecnica Avanzada). `npm run typecheck` pasa limpio.
+> **Solo queda confirmar el despliegue del código (paso 4)** en el hosting.
+
 Tareas que **todavía debo ejecutar** para que los cambios (eliminación del subtítulo,
 Poder de Combate dinámico y renombrado de magia `Hechizo` → `Tecnica`) queden activos.
 El código ya está listo; falta la base de datos y el despliegue.

@@ -59,6 +59,12 @@ try {
         SELECT 1 FROM catalogos WHERE campo = 'magia_naturaleza' AND valor = ${valor}
       )
     `;
+    // Forzar el orden canónico también para valores ya existentes (p. ej. el
+    // 'Tecnica' que viene de renombrar 'Hechizo' conserva el orden viejo).
+    await sql`
+      UPDATE catalogos SET orden = ${orden}
+      WHERE campo = 'magia_naturaleza' AND valor = ${valor} AND orden IS DISTINCT FROM ${orden}
+    `;
   }
   console.log("  ✅ catálogo magia_naturaleza actualizado");
 
