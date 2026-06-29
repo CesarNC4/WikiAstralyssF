@@ -11,19 +11,33 @@ export function AccordionSection({
   defaultOpen = false,
   badge,
   children,
+  id,
+  open: openProp,
+  onOpenChange,
 }: {
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
   badge?: ReactNode;
   children: ReactNode;
+  /** Ancla para el índice de secciones. */
+  id?: string;
+  /** Si se pasa, la apertura es controlada por el padre. */
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [openInternal, setOpenInternal] = useState(defaultOpen);
+  const open = openProp ?? openInternal;
+  const toggle = () => {
+    const next = !open;
+    onOpenChange?.(next);
+    if (openProp === undefined) setOpenInternal(next);
+  };
   return (
-    <section className="rounded-2xl border border-border-base bg-surface/40">
+    <section id={id} className="scroll-mt-20 rounded-2xl border border-border-base bg-surface/40">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         className="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
         <span className={cn("text-fg-muted transition-transform", open && "rotate-90")}>▸</span>

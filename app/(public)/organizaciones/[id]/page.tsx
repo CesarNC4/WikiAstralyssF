@@ -25,5 +25,5 @@ export default async function OrganizacionPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const data = await getOrganizacionFicha(Number(id)).catch(() => null);
   if (!data) notFound();
-  return <OrgFichaBody org={data.org} jerarquia={data.jerarquia} facciones={data.facciones} historial={data.historial} />;
+  return <OrgFichaBody org={data.org} jerarquia={data.jerarquia} facciones={data.facciones} historial={data.historial} vinculados={data.vinculados} />;
 }

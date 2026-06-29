@@ -132,6 +132,46 @@ export async function getPersonajesDeNacion(nacionId: number) {
     .limit(24);
 }
 
+/** Personajes nacidos en una nación (vía lugar de nacimiento). */
+export async function getPersonajesNacidosEnNacion(nacionId: number) {
+  return db
+    .select({
+      id: s.personajes.id,
+      nombre: s.personajes.nombre,
+      imagenUrl: s.personajes.imagenUrl,
+      titulo: s.personajes.titulo,
+    })
+    .from(s.personajes)
+    .where(
+      and(
+        eq(s.personajes.lugarNacimientoNacionId, nacionId),
+        eq(s.personajes.estadoPublicacion, "publicado"),
+        isNull(s.personajes.eliminadoEn),
+      ),
+    )
+    .orderBy(asc(s.personajes.nombre))
+    .limit(24);
+}
+
+/** Misiones encargadas por un personaje (reverso de misiones.personajeId). */
+export async function getMisionesDePersonaje(personajeId: number) {
+  return db
+    .select({ id: s.misiones.id, nombre: s.misiones.nombre, tipo: s.misiones.tipo, estado: s.misiones.estado, imagenUrl: s.misiones.imagenUrl })
+    .from(s.misiones)
+    .where(and(eq(s.misiones.personajeId, personajeId), eq(s.misiones.estadoPublicacion, "publicado"), isNull(s.misiones.eliminadoEn)))
+    .orderBy(asc(s.misiones.nombre));
+}
+
+/** Capítulos en los que aparece un personaje (reverso de capitulo_personaje). */
+export async function getCapitulosDePersonaje(personajeId: number) {
+  return db
+    .select({ id: s.capitulos.id, numero: s.capitulos.numero, titulo: s.capitulos.titulo, rol: s.capituloPersonaje.rolEnCapitulo })
+    .from(s.capituloPersonaje)
+    .innerJoin(s.capitulos, eq(s.capituloPersonaje.capituloId, s.capitulos.id))
+    .where(eq(s.capituloPersonaje.personajeId, personajeId))
+    .orderBy(asc(s.capitulos.numero));
+}
+
 /** Organizaciones y razas vinculadas a una nación (§ punto 3). */
 export async function getNacionFacciones(nacionId: number) {
   const [organizaciones, razas] = await Promise.all([
@@ -267,7 +307,7 @@ export async function getOrganizacionFicha(id: number) {
   );
   if (!org) return null;
 
-  const [jerRaw, facciones, historial] = await Promise.all([
+  const [jerRaw, facciones, historial, vinculados] = await Promise.all([
     db
       .select({
         id: s.orgJerarquia.id,
@@ -287,6 +327,13 @@ export async function getOrganizacionFicha(id: number) {
       .orderBy(asc(s.orgJerarquia.orden)),
     db.select().from(s.orgFacciones).where(eq(s.orgFacciones.organizacionId, id)),
     db.select().from(s.orgHistorial).where(eq(s.orgHistorial.organizacionId, id)).orderBy(asc(s.orgHistorial.orden)),
+    // Miembros vinculados desde la ficha de personaje (personaje_organizacion).
+    db
+      .select({ id: s.personajes.id, nombre: s.personajes.nombre, imagenUrl: s.personajes.imagenUrl, rol: s.personajeOrganizacion.rol })
+      .from(s.personajeOrganizacion)
+      .innerJoin(s.personajes, eq(s.personajeOrganizacion.personajeId, s.personajes.id))
+      .where(and(eq(s.personajeOrganizacion.organizacionId, id), eq(s.personajes.estadoPublicacion, "publicado"), isNull(s.personajes.eliminadoEn)))
+      .orderBy(asc(s.personajes.nombre)),
   ]);
 
   const jerarquia: FichaJerarquia[] = jerRaw.map((j) => ({
@@ -301,7 +348,11 @@ export async function getOrganizacionFicha(id: number) {
     personajeImg: j.personajeImg,
   }));
 
-  return { org, jerarquia, facciones, historial };
+  // Vinculados que no están ya en la jerarquía manual (evita duplicar).
+  const enJerarquia = new Set(jerRaw.map((j) => j.personajeId).filter(Boolean));
+  const vinculadosUnicos = vinculados.filter((v) => !enJerarquia.has(v.id));
+
+  return { org, jerarquia, facciones, historial, vinculados: vinculadosUnicos };
 }
 
 // ── Familia (con árbol y jerarquía) ──────────────────────

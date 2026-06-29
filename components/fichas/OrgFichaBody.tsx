@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { EntityImage } from "@/components/media/EntityImage";
 import { FichaHero, SectionHead } from "@/components/fichas/FichaHero";
 import { FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { Badge } from "@/components/entity/Badge";
@@ -37,11 +39,13 @@ export async function OrgFichaBody({
   jerarquia,
   facciones,
   historial,
+  vinculados = [],
 }: {
   org: OrgRow;
   jerarquia: FichaJerarquia[];
   facciones: Faccion[];
   historial: Historial[];
+  vinculados?: { id: number; nombre: string; imagenUrl: string | null; rol: string | null }[];
 }) {
   const galeria = await getGaleria("organizaciones", org.id).catch(() => []);
 
@@ -118,6 +122,24 @@ export async function OrgFichaBody({
 
         {/* Detalle de miembros por rango */}
         <JerarquiaSecciones items={jerarquia} variant="org" />
+
+        {/* Miembros vinculados desde sus fichas (personaje_organizacion) */}
+        {vinculados.length > 0 && (
+          <section>
+            <SectionHead icon="Users" title="Miembros vinculados" accent={ACCENT} />
+            <div className="flex flex-wrap gap-2">
+              {vinculados.map((m) => (
+                <Link key={m.id} href={`/personajes/${m.id}`} className="flex items-center gap-2 rounded-full border border-border-base bg-surface/40 py-1 pl-1 pr-3 text-sm hover:border-border-glow">
+                  <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                    <EntityImage src={m.imagenUrl} alt={m.nombre} name={m.nombre} sizes="28px" />
+                  </span>
+                  <span className="text-fg">{m.nombre}</span>
+                  {m.rol && <span className="text-xs text-fg-muted">· {m.rol}</span>}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Historial */}
         {historial.length > 0 && (

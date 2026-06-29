@@ -2,19 +2,22 @@
 
 import { useActionState, useEffect, useMemo, useState, startTransition, type ReactNode } from "react";
 import { guardarPersonaje, type PersonajeFormState } from "@/lib/actions/personajes";
-import type { PersonajeParaEditar, Opcion } from "@/lib/queries/adminPersonajes";
+import type { PersonajeParaEditar, Opcion, OpcionRegion, OpcionLocacion } from "@/lib/queries/adminPersonajes";
 import type { CatalogosPersonaje } from "@/lib/queries/catalogos";
 import type { EstadoPublicacion } from "@/db/schema/enums";
+import { CATALOGOS, etiquetaInversa } from "@/lib/catalogos";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection, Repeater, MultiPicker } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
+import { StatRadar } from "@/components/fichas/personaje/StatRadar";
 import { cn } from "@/lib/utils";
 import {
   Field,
   TextInput,
   NumberInput,
   Select,
+  ReferenceField,
   MagiaPicker,
   MarkdownField,
 } from "@/components/admin/fields";
@@ -72,9 +75,21 @@ interface OrgSel { organizacionId: number; label: string; rol: string; tipo: str
 type StatKey = (typeof PRIMARY_KEYS)[number] | (typeof COMBAT_KEYS)[number];
 type RatingKey = (typeof RATING_KEYS)[number];
 
-const TIPO_INVOCACION = ["Natural", "Ishkoriana"] as const;
-
 const s = (v: unknown) => (v == null ? "" : String(v));
+
+/** Mapea la ruta de un error de validación a la sección del formulario que lo contiene. */
+function pathToSection(path: string): string {
+  const head = path.split(".")[0];
+  if (["historia", "rasgosPersonalidad", "motivacion", "miedos", "filosofia", "gustos", "disgustos", "debilidades"].includes(head)) return "historia";
+  if (["magiaPrincipalTipo", "magiaPrincipalVariante", "magiaSecundariaTipo", "magiaSecundariaVariante", "nivelDeConsciencia", "circuitoForte", "essentia", "zenithra", "bendicion", "segundoDespertar"].includes(head)) return "magia";
+  if (head === "estadisticas") return "stats";
+  if (head === "habilidades") return "habilidades";
+  if (head === "eventos") return "eventos";
+  if (head === "relaciones") return "relaciones";
+  if (["naciones", "razas", "organizaciones"].includes(head)) return "pertenencias";
+  if (head === "objetos") return "objetos";
+  return "identidad";
+}
 
 export function PersonajeForm({
   inicial,
@@ -87,6 +102,8 @@ export function PersonajeForm({
   timelineOpts,
   artefactosOpts,
   familiasDelPersonaje,
+  regionesOpts,
+  locacionesOpts,
 }: {
   inicial: PersonajeParaEditar | null;
   catalogos: CatalogosPersonaje;
@@ -98,6 +115,8 @@ export function PersonajeForm({
   timelineOpts: Opcion[];
   artefactosOpts: Opcion[];
   familiasDelPersonaje: string[];
+  regionesOpts: OpcionRegion[];
+  locacionesOpts: OpcionLocacion[];
 }) {
   const toast = useToast();
   const [dirty, setDirty] = useState(false);
@@ -116,6 +135,9 @@ export function PersonajeForm({
     edad: s(inicial?.edad), genero: s(inicial?.genero),
     altura: s(inicial?.altura), ocupacion: s(inicial?.ocupacion), rangoAventurero: s(inicial?.rangoAventurero),
     lugarNacimiento: s(inicial?.lugarNacimiento),
+    lugarNacimientoNacionId: s(inicial?.lugarNacimientoNacionId),
+    lugarNacimientoRegionId: s(inicial?.lugarNacimientoRegionId),
+    lugarNacimientoLocacionId: s(inicial?.lugarNacimientoLocacionId),
     esInvocado: Boolean(inicial?.esInvocado), tipoInvocacion: s(inicial?.tipoInvocacion),
     historia: s(inicial?.historia), rasgosPersonalidad: s(inicial?.rasgosPersonalidad),
     motivacion: s(inicial?.motivacion), miedos: s(inicial?.miedos), filosofia: s(inicial?.filosofia),
@@ -188,6 +210,10 @@ export function PersonajeForm({
   // ── submit ──
   const [state, formAction, pending] = useActionState<PersonajeFormState | undefined, FormData>(guardarPersonaje, undefined);
 
+  // Apertura de secciones (controlada) para el índice lateral y el salto al error.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({ identidad: true });
+  const setOpen = (id: string, v: boolean) => setOpenMap((m) => ({ ...m, [id]: v }));
+
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
@@ -202,6 +228,16 @@ export function PersonajeForm({
     window.addEventListener("beforeunload", h);
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
+
+  // Al guardar con errores: desplaza a la primera sección con problema (la apertura
+  // de esa sección es derivada en `sec()`, así que aquí solo hacemos scroll).
+  useEffect(() => {
+    if (!state || state.ok || !state.fieldErrors) return;
+    const keys = Object.keys(state.fieldErrors);
+    if (keys.length === 0) return;
+    const target = pathToSection(keys[0]);
+    document.getElementById(`sec-${target}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [state]);
 
   const submit = () => {
     const habilidadesPayload = habilidades
@@ -299,11 +335,85 @@ export function PersonajeForm({
   const poder = useMemo(() => calcularPoderDeCombate(stats), [stats]);
 
   const fe = state?.fieldErrors ?? {};
+  const errores = Object.entries(fe).map(([path, msg]) => ({ path, msg, section: pathToSection(path) }));
+  const jumpTo = (sectionId: string) => {
+    setOpen(sectionId, true);
+    document.getElementById(`sec-${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // ── Lugar de nacimiento en cascada (nación → región → locación) ──
+  const nacId = f.lugarNacimientoNacionId;
+  const regId = f.lugarNacimientoRegionId;
+  const regionesDisp = regionesOpts.filter((r) => !nacId || String(r.nacionId) === nacId);
+  const locacionesDisp = locacionesOpts.filter((l) =>
+    regId ? String(l.regionId) === regId : !nacId || String(l.nacionId) === nacId,
+  );
+  const setNacNacion = (v: string) =>
+    patch({ lugarNacimientoNacionId: v, lugarNacimientoRegionId: "", lugarNacimientoLocacionId: "" });
+  const setNacRegion = (v: string) => {
+    const reg = regionesOpts.find((r) => String(r.id) === v);
+    patch({
+      lugarNacimientoRegionId: v,
+      lugarNacimientoLocacionId: "",
+      ...(reg?.nacionId && !nacId ? { lugarNacimientoNacionId: String(reg.nacionId) } : {}),
+    });
+  };
+  const setNacLocacion = (v: string) => {
+    const loc = locacionesOpts.find((l) => String(l.id) === v);
+    patch({
+      lugarNacimientoLocacionId: v,
+      ...(loc?.regionId && !regId ? { lugarNacimientoRegionId: String(loc.regionId) } : {}),
+      ...(loc?.nacionId && !nacId ? { lugarNacimientoNacionId: String(loc.nacionId) } : {}),
+    });
+  };
+
+  // ── Índice de secciones ──
+  const sectionHasError = (id: string) => errores.some((e) => e.section === id);
+  const sec = (id: string) => ({
+    id: `sec-${id}`,
+    open: (openMap[id] ?? false) || sectionHasError(id),
+    onOpenChange: (v: boolean) => setOpen(id, v),
+  });
+  const sections = [
+    { id: "identidad", label: "Identidad", content: !!f.nombre.trim() },
+    { id: "historia", label: "Historia", content: !!(f.historia || f.rasgosPersonalidad || f.motivacion || f.miedos || f.filosofia || f.gustos || f.disgustos || f.debilidades) },
+    { id: "magia", label: "Magia y combate", content: !!(f.magiaPrincipalTipo || f.circuitoForte || f.essentia || f.zenithra || f.bendicion || f.segundoDespertar) },
+    { id: "stats", label: "Estadísticas", content: poder.total > 0 },
+    { id: "habilidades", label: "Habilidades", content: habilidades.length > 0 },
+    { id: "eventos", label: "Eventos clave", content: eventos.length > 0 },
+    { id: "relaciones", label: "Relaciones", content: relaciones.length > 0 || (inicial?.relacionesInversas?.length ?? 0) > 0 },
+    { id: "pertenencias", label: "Pertenencias", content: naciones.length > 0 || razas.length > 0 || organizaciones.length > 0 },
+    { id: "objetos", label: "Objetos", content: objetos.length > 0 },
+    { id: "imagenes", label: "Imágenes", content: !!(imagen.url || imagen.assetId || banner.url || banner.assetId) },
+  ];
 
   return (
-    <div className="space-y-4 pb-28">
+    <div className="lg:grid lg:grid-cols-[180px_1fr] lg:gap-6">
+      {/* Índice de secciones (lateral fijo) */}
+      <aside className="hidden lg:block">
+        <nav className="sticky top-4 space-y-0.5">
+          {sections.map((sc) => (
+            <a
+              key={sc.id}
+              href={`#sec-${sc.id}`}
+              onClick={() => setOpen(sc.id, true)}
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-fg-secondary hover:bg-surface hover:text-fg"
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                  sectionHasError(sc.id) ? "bg-error" : sc.content ? "bg-success" : "bg-border-base",
+                )}
+              />
+              {sc.label}
+            </a>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="space-y-4 pb-28">
       {/* Identidad */}
-      <AccordionSection title="Identidad" defaultOpen badge={fe.nombre ? <span className="text-xs text-error">!</span> : null}>
+      <AccordionSection {...sec("identidad")} title="Identidad" badge={fe.nombre ? <span className="text-xs text-error">!</span> : null}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre *" error={fe.nombre}><TextInput value={f.nombre} onChange={(v) => patch({ nombre: v })} placeholder="Nombre" /></Field>
           <Field label="Apellido"><TextInput value={f.surname} onChange={(v) => patch({ surname: v })} /></Field>
@@ -313,7 +423,16 @@ export function PersonajeForm({
           <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" /></Field>
           <Field label="Ocupación"><TextInput value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} /></Field>
           <Field label="Rango aventurero"><Select value={f.rangoAventurero} onChange={(v) => patch({ rangoAventurero: v })} options={catalogos.rango_aventurero} /></Field>
-          <Field label="Lugar de nacimiento"><TextInput value={f.lugarNacimiento} onChange={(v) => patch({ lugarNacimiento: v })} /></Field>
+          {/* Lugar de nacimiento en 3 niveles (todos opcionales, en cascada). */}
+          <div className="sm:col-span-2">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-fg-muted">Lugar de nacimiento</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Field label="Nación"><ReferenceField value={f.lugarNacimientoNacionId} onChange={setNacNacion} options={nacionesOpts} placeholder="Buscar nación…" /></Field>
+              <Field label="Región"><ReferenceField value={f.lugarNacimientoRegionId} onChange={setNacRegion} options={regionesDisp} placeholder="Buscar región…" /></Field>
+              <Field label="Locación"><ReferenceField value={f.lugarNacimientoLocacionId} onChange={setNacLocacion} options={locacionesDisp} placeholder="Buscar locación…" /></Field>
+            </div>
+            <div className="mt-2"><Field label="Detalle libre" hint="Opcional, si el lugar no tiene ficha"><TextInput value={f.lugarNacimiento} onChange={(v) => patch({ lugarNacimiento: v })} placeholder="p. ej. 'una aldea en las montañas'" /></Field></div>
+          </div>
           {/* Punto 2: Familia derivada (solo lectura). */}
           <Field label="Familia" hint="Se asigna desde el editor de Familia (no editable)">
             <div className="min-h-10 rounded-lg border border-border-base bg-deep/40 px-3 py-2 text-sm">
@@ -338,7 +457,7 @@ export function PersonajeForm({
               className="w-full rounded-lg border border-border-base bg-surface px-3 py-2 text-sm text-fg outline-none transition-colors focus:border-border-glow disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">{f.esInvocado ? "Selecciona…" : "—"}</option>
-              {TIPO_INVOCACION.map((t) => (
+              {CATALOGOS.tipo_invocacion.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
@@ -347,7 +466,7 @@ export function PersonajeForm({
       </AccordionSection>
 
       {/* Historia y personalidad */}
-      <AccordionSection title="Historia y personalidad" subtitle="markdown">
+      <AccordionSection {...sec("historia")} title="Historia y personalidad" subtitle="markdown">
         <div className="space-y-3">
           <Field label="Historia"><MarkdownField value={f.historia} onChange={(v) => patch({ historia: v })} rows={8} /></Field>
           <Field label="Rasgos de personalidad"><MarkdownField value={f.rasgosPersonalidad} onChange={(v) => patch({ rasgosPersonalidad: v })} /></Field>
@@ -363,7 +482,7 @@ export function PersonajeForm({
       </AccordionSection>
 
       {/* Magia y combate (punto 4: campos grandes markdown) */}
-      <AccordionSection title="Magia y combate">
+      <AccordionSection {...sec("magia")} title="Magia y combate">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Magia principal"><MagiaPicker tipo={f.magiaPrincipalTipo} variante={f.magiaPrincipalVariante} onTipo={(v) => patch({ magiaPrincipalTipo: v })} onVariante={(v) => patch({ magiaPrincipalVariante: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
           <Field label="Magia secundaria"><MagiaPicker tipo={f.magiaSecundariaTipo} variante={f.magiaSecundariaVariante} onTipo={(v) => patch({ magiaSecundariaTipo: v })} onVariante={(v) => patch({ magiaSecundariaVariante: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
@@ -380,8 +499,16 @@ export function PersonajeForm({
       </AccordionSection>
 
       {/* Stats (punto 5: tres grupos + Poder de Combate dinámico) */}
-      <AccordionSection title="Estadísticas" subtitle={`Poder de Combate ${poder.total}% · ${poder.letra}`}>
-        <PoderDeCombatePanel poder={poder} />
+      <AccordionSection {...sec("stats")} title="Estadísticas" subtitle={`Poder de Combate ${poder.total}% · ${poder.letra}`}>
+        <div className="grid gap-3 lg:grid-cols-[1fr_15rem]">
+          <PoderDeCombatePanel poder={poder} />
+          <div className="grid place-items-center rounded-xl border border-border-base bg-deep/40 p-2">
+            <StatRadar
+              stats={PRIMARY_KEYS.map((k) => ({ label: statLabel(k), value: Number(stats[k]) || 0 }))}
+              max={PRIMARY_MAX}
+            />
+          </div>
+        </div>
 
         <p className="mb-2 mt-5 text-xs uppercase tracking-wide text-accent">Atributos primarios</p>
         <p className="mb-2 text-xs text-fg-muted">Rango {PRIMARY_MIN}–{PRIMARY_MAX}.</p>
@@ -415,7 +542,7 @@ export function PersonajeForm({
       </AccordionSection>
 
       {/* Habilidades (punto 6) */}
-      <AccordionSection title="Habilidades" subtitle={`${habilidades.length}`}>
+      <AccordionSection {...sec("habilidades")} title="Habilidades" subtitle={`${habilidades.length}`}>
         <p className="mb-3 text-xs text-fg-muted">Enlaza una técnica del catálogo de Magia (técnicas y técnicas avanzadas; los fundamentos y conceptos son teoría y no se enlazan) o crea una nueva (se guardará en Magia). La descripción es la nota propia de este personaje.</p>
         <Repeater
           items={habilidades}
@@ -457,7 +584,7 @@ export function PersonajeForm({
       </AccordionSection>
 
       {/* Eventos (punto 7) */}
-      <AccordionSection title="Eventos clave" subtitle={`${eventos.length}`}>
+      <AccordionSection {...sec("eventos")} title="Eventos clave" subtitle={`${eventos.length}`}>
         <p className="mb-3 text-xs text-fg-muted">Vincula un evento de la cronología o crea uno nuevo (se ubicará en la cronología global). La nota es lo que significa este evento para este personaje.</p>
         <Repeater
           items={eventos}
@@ -498,7 +625,21 @@ export function PersonajeForm({
       </AccordionSection>
 
       {/* Relaciones PJ↔PJ */}
-      <AccordionSection title="Relaciones" subtitle={`${relaciones.length}`}>
+      <AccordionSection {...sec("relaciones")} title="Relaciones" subtitle={`${relaciones.length}`}>
+        {(inicial?.relacionesInversas ?? []).filter((r) => r.personaje).length > 0 && (
+          <div className="mb-3 rounded-xl border border-dashed border-border-base bg-deep/30 p-3">
+            <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">Relacionado por otros (automático)</p>
+            <div className="space-y-1">
+              {(inicial?.relacionesInversas ?? []).filter((r) => r.personaje).map((r) => (
+                <div key={r.idRr} className="flex items-center gap-2 text-sm">
+                  <span className="text-fg">{[r.personaje!.nombre, r.personaje!.surname].filter(Boolean).join(" ")}</span>
+                  <span className="text-xs text-primary-glow">{etiquetaInversa(r.tipoRelacion) ?? r.subtipoRelacion}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] text-fg-muted">Estas se definen en la ficha del otro personaje; aparecen aquí automáticamente.</p>
+          </div>
+        )}
         <Repeater
           items={relaciones}
           onChange={wrapSetter(setRelaciones)}
@@ -521,19 +662,19 @@ export function PersonajeForm({
                 <Field label="Tipo de relación"><Select value={r.tipoRelacion} onChange={(v) => up({ tipoRelacion: v })} options={catalogos.tipo_relacion} /></Field>
                 <Field label="Subtipo"><Select value={r.subtipoRelacion} onChange={(v) => up({ subtipoRelacion: v })} options={catalogos.subtipo_relacion} /></Field>
               </div>
-              <Field label="Descripción"><TextInput value={r.descripcion} onChange={(v) => up({ descripcion: v })} /></Field>
+              <Field label="Descripción"><MarkdownField value={r.descripcion} onChange={(v) => up({ descripcion: v })} rows={2} /></Field>
             </div>
           )}
         />
       </AccordionSection>
 
       {/* Pertenencias N:M */}
-      <AccordionSection title="Pertenencias" subtitle="naciones · razas · organizaciones">
+      <AccordionSection {...sec("pertenencias")} title="Pertenencias" subtitle="naciones · razas · organizaciones">
         <div className="space-y-5">
           <Pertenencia<NacSel>
             titulo="Naciones" opciones={nacionesOpts} items={naciones} onChange={wrapSetter(setNaciones)}
             idOf={(x) => x.nacionId} add={(id, label) => ({ nacionId: id, label, tipo: "", descripcion: "" })}
-            extra={(it, up) => <TextInput value={it.tipo} onChange={(v) => up({ tipo: v })} placeholder="Rol/tipo (ciudadano, exiliado…)" />}
+            extra={(it, up) => <div className="w-44"><Select value={it.tipo} onChange={(v) => up({ tipo: v })} options={catalogos.nacion_rol} placeholder="Rol…" /></div>}
           />
           <Pertenencia<RazSel>
             titulo="Razas" opciones={razasOpts} items={razas} onChange={wrapSetter(setRazas)}
@@ -547,13 +688,13 @@ export function PersonajeForm({
           <Pertenencia<OrgSel>
             titulo="Organizaciones" opciones={organizacionesOpts} items={organizaciones} onChange={wrapSetter(setOrgs)}
             idOf={(x) => x.organizacionId} add={(id, label) => ({ organizacionId: id, label, rol: "", tipo: "", descripcion: "" })}
-            extra={(it, up) => <TextInput value={it.rol} onChange={(v) => up({ rol: v })} placeholder="Rol (miembro, líder…)" />}
+            extra={(it, up) => <div className="w-44"><Select value={it.rol} onChange={(v) => up({ rol: v })} options={catalogos.org_rol} placeholder="Rol…" /></div>}
           />
         </div>
       </AccordionSection>
 
       {/* Objetos, armas y artefactos (punto 8) */}
-      <AccordionSection title="Objetos, armas y artefactos" subtitle={`${objetos.length}`}>
+      <AccordionSection {...sec("objetos")} title="Objetos, armas y artefactos" subtitle={`${objetos.length}`}>
         <p className="mb-3 text-xs text-fg-muted">Enlaza un objeto del catálogo Armas y Artefactos (el tipo distingue arma/artefacto/objeto) o crea uno nuevo (aparecerá en /artefactos). La nota es propia de este personaje.</p>
         <Repeater
           items={objetos}
@@ -592,7 +733,7 @@ export function PersonajeForm({
       </AccordionSection>
 
       {/* Media */}
-      <AccordionSection title="Imágenes">
+      <AccordionSection {...sec("imagenes")} title="Imágenes">
         <div className="flex flex-wrap gap-8">
           <ImageField label="Avatar" value={imagen} onChange={wrapSetter(setImagen)} alt={f.nombre} />
           <ImageField label="Banner" value={banner} onChange={wrapSetter(setBanner)} alt={f.nombre} aspect="aspect-video" />
@@ -607,7 +748,21 @@ export function PersonajeForm({
       {/* Barra de acciones fija */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
-          {incompleta.length > 0 && <span className="text-xs text-warning">⚠ {incompleta.join(" · ")}</span>}
+          {errores.length > 0 ? (
+            <div className="min-w-0 text-xs text-error">
+              <span className="font-medium">⛔ Corrige:</span>{" "}
+              {errores.map((e, i) => (
+                <span key={e.path}>
+                  <button type="button" onClick={() => jumpTo(e.section)} className="underline decoration-dotted hover:text-fg" title={e.msg}>
+                    {e.path}
+                  </button>
+                  {i < errores.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </div>
+          ) : (
+            incompleta.length > 0 && <span className="text-xs text-warning">⚠ {incompleta.join(" · ")}</span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <select
               value={f.estadoPublicacion}
@@ -628,6 +783,7 @@ export function PersonajeForm({
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

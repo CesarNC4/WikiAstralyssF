@@ -13,6 +13,8 @@ export interface CatalogosPersonaje {
   habilidad_categoria: string[];
   tipo_relacion: string[];
   subtipo_relacion: string[];
+  nacion_rol: string[];
+  org_rol: string[];
   artefacto_tipo: string[];
   timeline_importancia: string[];
   timeline_categoria: string[];
@@ -43,6 +45,8 @@ export async function getCatalogosPersonaje(): Promise<CatalogosPersonaje> {
     habilidad_categoria: pick("habilidad_categoria"),
     tipo_relacion: pick("tipo_relacion"),
     subtipo_relacion: pick("subtipo_relacion"),
+    nacion_rol: pick("nacion_rol"),
+    org_rol: pick("org_rol"),
     artefacto_tipo: pick("artefacto_tipo"),
     timeline_importancia: pick("timeline_importancia"),
     timeline_categoria: pick("timeline_categoria"),

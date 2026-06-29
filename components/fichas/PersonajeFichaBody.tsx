@@ -13,7 +13,7 @@ import { RelacionesGraph, type RelNode } from "@/components/fichas/personaje/Rel
 import { PerfilMagico } from "@/components/fichas/personaje/PerfilMagico";
 import { getGaleria } from "@/lib/queries/galeria";
 import { resolveMagiaLinks } from "@/lib/queries/magia";
-import { getFamiliasDePersonaje, type PersonajeFicha } from "@/lib/queries/fichas";
+import { getFamiliasDePersonaje, getMisionesDePersonaje, getCapitulosDePersonaje, type PersonajeFicha } from "@/lib/queries/fichas";
 import { calcularPoderDeCombate, PRIMARY_MAX, COMBAT_MAX } from "@/lib/poderCombate";
 import { etiquetaInversa } from "@/lib/catalogos";
 import type { Track } from "@/hooks/usePlayerStore";
@@ -23,10 +23,12 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   const nombre = [p.nombre, p.surname].filter(Boolean).join(" ");
   const stats = p.estadisticas?.[0];
 
-  const [galeria, magiaLinksMap, familias] = await Promise.all([
+  const [galeria, magiaLinksMap, familias, misiones, capitulos] = await Promise.all([
     getGaleria("personajes", p.id).catch(() => []),
     resolveMagiaLinks([p.tipoMagiaPrincipal, p.magiaSecundaria]).catch(() => new Map<string, number>()),
     getFamiliasDePersonaje(p.id).catch(() => []),
+    getMisionesDePersonaje(p.id).catch(() => []),
+    getCapitulosDePersonaje(p.id).catch(() => []),
   ]);
   const magiaLinks = Object.fromEntries(magiaLinksMap);
 
@@ -362,6 +364,39 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
                 </div>
               </div>
             )}
+          </Section>
+        )}
+
+        {/* Misiones encargadas (reverso) */}
+        {misiones.length > 0 && (
+          <Section icon="Swords" title="Misiones">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {misiones.map((m) => (
+                <Link key={m.id} href={`/misiones/${m.id}`} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3 hover:border-border-glow">
+                  <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                    <EntityImage src={m.imagenUrl} alt={m.nombre} name={m.nombre} sizes="48px" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-fg">{m.nombre}</p>
+                    <p className="text-xs text-fg-muted">{[m.tipo, m.estado].filter(Boolean).join(" · ")}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Apariciones por capítulo (reverso) */}
+        {capitulos.length > 0 && (
+          <Section icon="ScrollText" title="Apariciones">
+            <div className="flex flex-wrap gap-2">
+              {capitulos.map((c) => (
+                <span key={c.id} className="rounded-full border border-border-base bg-surface/40 px-3 py-1 text-sm text-fg-secondary">
+                  Cap. {c.numero} — {c.titulo}
+                  {c.rol && <span className="text-fg-muted"> · {c.rol}</span>}
+                </span>
+              ))}
+            </div>
           </Section>
         )}
 

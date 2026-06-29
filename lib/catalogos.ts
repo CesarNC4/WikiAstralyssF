@@ -32,6 +32,10 @@ export const CATALOGOS = {
   tipo_relacion: ["Aliado", "Rival", "Amigo", "Enemigo", "Familiar", "Mentor", "Aprendiz", "Amante", "Compañero", "Subordinado", "Superior", "Otro"], // ✦ (incluye en uso: Aprendiz, Amante)
   subtipo_relacion: ["Amigo", "Mejor amigo", "Confidente", "Conocido", "Compañero de armas", "Otro"], // ✦ (en uso: amigo)
 
+  // ── Pertenencias del personaje ───────────────────────────────────────────
+  nacion_rol: ["Ciudadano", "Noble", "Exiliado", "Refugiado", "Diplomático", "Forastero", "Otro"], // ✦ (rol/tipo en una nación)
+  org_rol: ["Miembro", "Líder", "Fundador", "Oficial", "Recluta", "Veterano", "Aliado", "Desertor", "Otro"], // ✦ (rol en una organización)
+
   // ── Magia (catálogo y técnicas) ──────────────────────────────────────────
   magia_naturaleza: ["Fundamento", "Concepto", "Tecnica", "Tecnica Avanzada"], // · (sin tilde a propósito)
   magia_tipo: ["Elemental", "Rúnica", "Oscura", "Ritual", "Demoníaca", "Antigua"], // ·

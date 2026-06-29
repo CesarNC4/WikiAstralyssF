@@ -27,6 +27,10 @@ export const personajes = pgTable("personajes", {
   ocupacion: varchar("ocupacion"),
   rangoAventurero: varchar("rango_aventurero"),
   lugarNacimiento: varchar("lugar_nacimiento"),
+  // Lugar de nacimiento en 3 niveles (todos opcionales): nación → región → locación.
+  lugarNacimientoNacionId: integer("lugar_nacimiento_nacion_id"),
+  lugarNacimientoRegionId: integer("lugar_nacimiento_region_id"),
+  lugarNacimientoLocacionId: integer("lugar_nacimiento_locacion_id"),
   historia: text("historia"),
   familia: varchar("familia"),
   rasgosPersonalidad: text("rasgos_personalidad"),

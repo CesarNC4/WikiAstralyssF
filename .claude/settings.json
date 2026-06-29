@@ -23,7 +23,9 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
       "Bash(echo \"exit_find=$?\")",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -s -m 30 http://localhost:3000/api/_diag)",
+      "Bash(curl -s -m 40 http://localhost:3000/api/_valdiag)"
     ]
   }
 }

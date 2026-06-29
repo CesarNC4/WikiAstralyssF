@@ -56,6 +56,9 @@ function scalars(data: PersonajeInput) {
     ocupacion: data.ocupacion,
     rangoAventurero: data.rangoAventurero,
     lugarNacimiento: data.lugarNacimiento,
+    lugarNacimientoNacionId: data.lugarNacimientoNacionId,
+    lugarNacimientoRegionId: data.lugarNacimientoRegionId,
+    lugarNacimientoLocacionId: data.lugarNacimientoLocacionId,
     // `familia` ya no se escribe: es solo-lectura derivado de familia_jerarquia.
     esInvocado: data.esInvocado ?? false,
     tipoInvocacion: data.tipoInvocacion,

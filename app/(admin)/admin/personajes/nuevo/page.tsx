@@ -10,6 +10,8 @@ import {
   listMagiaHechizosOpciones,
   listTimelineOpciones,
   listArtefactosOpciones,
+  listRegionesOpciones,
+  listLocacionesOpciones,
 } from "@/lib/queries/adminPersonajes";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +28,8 @@ export default async function NuevoPersonajePage() {
   const magiaHechizosOpts = await listMagiaHechizosOpciones();
   const timelineOpts = await listTimelineOpciones();
   const artefactosOpts = await listArtefactosOpciones();
+  const regionesOpts = await listRegionesOpciones();
+  const locacionesOpts = await listLocacionesOpciones();
 
   return (
     <AdminShell title="Nuevo personaje">
@@ -40,6 +44,8 @@ export default async function NuevoPersonajePage() {
         timelineOpts={timelineOpts}
         artefactosOpts={artefactosOpts}
         familiasDelPersonaje={[]}
+        regionesOpts={regionesOpts}
+        locacionesOpts={locacionesOpts}
       />
     </AdminShell>
   );

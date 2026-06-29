@@ -14,6 +14,8 @@ import {
   listTimelineOpciones,
   listArtefactosOpciones,
   listFamiliasDePersonaje,
+  listRegionesOpciones,
+  listLocacionesOpciones,
 } from "@/lib/queries/adminPersonajes";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +43,8 @@ export default async function EditarPersonajePage({
   const timelineOpts = await listTimelineOpciones();
   const artefactosOpts = await listArtefactosOpciones();
   const familiasOpts = await listFamiliasDePersonaje(pid);
+  const regionesOpts = await listRegionesOpciones();
+  const locacionesOpts = await listLocacionesOpciones();
 
   const nombre = [inicial.nombre, inicial.surname].filter(Boolean).join(" ");
 
@@ -68,6 +72,8 @@ export default async function EditarPersonajePage({
         timelineOpts={timelineOpts}
         artefactosOpts={artefactosOpts}
         familiasDelPersonaje={familiasOpts}
+        regionesOpts={regionesOpts}
+        locacionesOpts={locacionesOpts}
       />
     </AdminShell>
   );

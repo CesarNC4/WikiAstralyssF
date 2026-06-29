@@ -92,6 +92,12 @@ export async function getPersonajeParaEditar(id: number) {
           relacionado: { columns: { id: true, nombre: true, surname: true } },
         },
       },
+      // Relaciones donde este PJ es el destino (lectura: "relacionado por…").
+      relacionesInversas: {
+        with: {
+          personaje: { columns: { id: true, nombre: true, surname: true } },
+        },
+      },
       naciones: { with: { nacion: { columns: { id: true, nombre: true } } } },
       razas: { with: { raza: { columns: { id: true, nombre: true } } } },
       organizaciones: { with: { organizacion: { columns: { id: true, nombre: true } } } },
@@ -153,6 +159,34 @@ export async function listOrganizacionesOpciones(): Promise<Opcion[]> {
     .from(s.organizaciones)
     .orderBy(asc(s.organizaciones.nombre));
   return rows.map((r) => ({ id: r.id, label: r.nombre }));
+}
+
+export interface OpcionRegion extends Opcion {
+  nacionId: number | null;
+}
+export interface OpcionLocacion extends Opcion {
+  regionId: number | null;
+  nacionId: number | null;
+}
+
+/** Regiones (con su nación) para el lugar de nacimiento en cascada. */
+export async function listRegionesOpciones(): Promise<OpcionRegion[]> {
+  const rows = await db
+    .select({ id: s.regiones.id, nombre: s.regiones.nombre, nacionId: s.regiones.nacionId })
+    .from(s.regiones)
+    .where(isNull(s.regiones.eliminadoEn))
+    .orderBy(asc(s.regiones.nombre));
+  return rows.map((r) => ({ id: r.id, label: r.nombre, nacionId: r.nacionId ?? null }));
+}
+
+/** Locaciones (con su región y nación) para el lugar de nacimiento en cascada. */
+export async function listLocacionesOpciones(): Promise<OpcionLocacion[]> {
+  const rows = await db
+    .select({ id: s.locaciones.id, nombre: s.locaciones.nombre, regionId: s.locaciones.regionId, nacionId: s.locaciones.nacionId })
+    .from(s.locaciones)
+    .where(isNull(s.locaciones.eliminadoEn))
+    .orderBy(asc(s.locaciones.nombre));
+  return rows.map((r) => ({ id: r.id, label: r.nombre, regionId: r.regionId ?? null, nacionId: r.nacionId ?? null }));
 }
 
 /** Técnicas reutilizables del catálogo Magia (excluye la teoría: Fundamento y Concepto). */

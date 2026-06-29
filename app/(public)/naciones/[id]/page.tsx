@@ -10,7 +10,7 @@ import { MiniGrafo, type GrafoGrupo } from "@/components/viz/MiniGrafo";
 import { Badge } from "@/components/entity/Badge";
 import { Galeria } from "@/components/fichas/Galeria";
 import { Icon } from "@/components/Icon";
-import { getNacion, getPersonajesDeNacion, getNacionFacciones, getVisibleIds } from "@/lib/queries/fichas";
+import { getNacion, getPersonajesDeNacion, getPersonajesNacidosEnNacion, getNacionFacciones, getVisibleIds } from "@/lib/queries/fichas";
 import { getNacionRelacionesExtra } from "@/lib/queries/mundoRelaciones";
 import { getNacionTerritorio } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
@@ -44,8 +44,9 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
   const n = await getNacion(Number(id)).catch(() => null);
   if (!n) notFound();
 
-  const [personajes, territorio, facciones, galeria, extra] = await Promise.all([
+  const [personajes, nacidos, territorio, facciones, galeria, extra] = await Promise.all([
     getPersonajesDeNacion(n.id).catch(() => []),
+    getPersonajesNacidosEnNacion(n.id).catch(() => []),
     getNacionTerritorio(n.id).catch(() => ({ regiones: [], locaciones: [] })),
     getNacionFacciones(n.id).catch(() => ({ organizaciones: [], razas: [] })),
     getGaleria("naciones", n.id).catch(() => []),
@@ -196,6 +197,14 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
           <section>
             <SectionHead icon="Users" title="Personajes" accent={color} />
             <LinkGrid items={personajes.map((p) => ({ id: p.id, nombre: p.nombre, img: p.imagenUrl, nota: p.tipo, href: `/personajes/${p.id}` }))} />
+          </section>
+        )}
+
+        {/* Nacidos aquí (vía lugar de nacimiento) */}
+        {nacidos.length > 0 && (
+          <section>
+            <SectionHead icon="Star" title="Nacidos aquí" accent={color} />
+            <LinkGrid items={nacidos.map((p) => ({ id: p.id, nombre: p.nombre, img: p.imagenUrl, nota: p.titulo, href: `/personajes/${p.id}` }))} />
           </section>
         )}
 
