@@ -26,7 +26,7 @@ export const CATALOGOS = {
   tipo_invocacion: ["Natural", "Ishkoriana"], // · (antes hardcodeado en el form)
 
   // ── Habilidades ──────────────────────────────────────────────────────────
-  habilidad_categoria: ["Técnica", "Pasiva", "Especial", "Definitiva"], // ✦ (migra: TECNICA → Técnica)
+  habilidad_categoria: ["Técnica", "Técnica Avanzada"], // ✦ (migra: TECNICA → Técnica)
 
   // ── Relaciones ───────────────────────────────────────────────────────────
   tipo_relacion: ["Aliado", "Rival", "Amigo", "Enemigo", "Familiar", "Mentor", "Aprendiz", "Amante", "Compañero", "Subordinado", "Superior", "Otro"], // ✦ (incluye en uso: Aprendiz, Amante)
@@ -48,11 +48,11 @@ export const CATALOGOS = {
   nacion_gobierno: ["Monarquía", "República", "Imperio", "Teocracia", "Oligarquía", "Tribal", "Confederación", "Otro"], // ✦
   nacion_clima: ["Templado", "Árido", "Tropical", "Polar", "Volcánico", "Mágico"], // ·
   nacion_terreno: ["Montañoso", "Costero", "Boscoso", "Desértico", "Llanura", "Insular"], // ·
-  nacion_elemento: ["Pyro", "Hydro", "Cryo", "Electro", "Geo", "Dendro", "Anemo (Vento)", "Sacro", "Demoníaco", "Neutro"], // ·
+  nacion_elemento: ["Pyro", "Hydro", "Cryo", "Electro", "Geo", "Dendro", "Vento", "Ausente"], // ·
 
   // ── Razas ────────────────────────────────────────────────────────────────
-  raza_clasificacion: ["Humanoide", "Bestial", "Elemental", "No-muerto", "Demoníaco", "Divino", "Híbrido", "Otro"], // ✦
-  raza_afinidad: ["Pyro", "Hydro", "Cryo", "Electro", "Geo", "Dendro", "Anemo (Vento)", "Sacro", "Demoníaco", "Neutro"], // ·
+  raza_clasificacion: ["Primordiales", "Alteradas por el Maná", "Corruptas o Malditas", "Espirituales o Místicas", "Artificiales"], // ✦
+  raza_afinidad: ["Pyro", "Hydro", "Cryo", "Electro", "Geo", "Dendro", "Vento", "Magia Oscura", "Sin afinidad natural"], // ·
   raza_dieta: ["Carnívoro", "Herbívoro", "Omnívoro", "Energía mágica"], // ·
 
   // ── Bestias ──────────────────────────────────────────────────────────────
@@ -62,8 +62,8 @@ export const CATALOGOS = {
   bestia_tamano: ["Diminuto", "Pequeño", "Mediano", "Grande", "Colosal"], // ·
 
   // ── Minerales ────────────────────────────────────────────────────────────
-  mineral_rareza: ["Común", "Poco común", "Raro", "Épico", "Legendario", "Mítico"], // ✦
-  mineral_tipo: ["Mineral", "Gema", "Metal", "Cristal", "Esencia", "Orgánico"], // ✦
+  mineral_rareza: ["Común", "Poco común", "Raro", "Épico", "Legendario", "Único"], // ✦
+  mineral_tipo: ["Naturales", "Arcanos", "Disonantes", "Sintéticos"], // ✦
   mineral_elemento: ["Pyro", "Hydro", "Cryo", "Electro", "Geo", "Dendro", "Anemo (Vento)", "Sacro", "Demoníaco", "Neutro"], // ·
 
   // ── Conceptos ────────────────────────────────────────────────────────────
@@ -71,11 +71,11 @@ export const CATALOGOS = {
 
   // ── Misiones ─────────────────────────────────────────────────────────────
   mision_tipo: ["Principal", "Secundaria", "Caza", "Escolta", "Recolección", "Exploración", "Otro"], // ✦
-  mision_riesgo: ["Bajo", "Medio", "Alto", "Extremo", "Mortal"], // ✦
+  mision_riesgo: ["E: Muy Bajo", "D: Bajo", "C: Moderado", "B: Alto", "A: Muy Alto", "S: Extremo", "SS: Catastrófico", "SSS: Existencial"], // ✦
   mision_estado: ["Disponible", "En curso", "Completada", "Fallida", "Cancelada"], // ✦
 
   // ── Lords demonio ────────────────────────────────────────────────────────
-  demonio_dominio: ["Fuego", "Hielo", "Sombra", "Sangre", "Vacío", "Caos", "Otro"], // ✦ (en uso: "Fuego Verde" — ajústalo)
+  demonio_dominio: ["Destrucción", "Distorsión", "Control", "Aberración"], // ✦
   demonio_estado: ["Vivo", "Sellado", "Derrotado", "Desaparecido"], // ✦
 
   // ── Armas y artefactos ───────────────────────────────────────────────────
@@ -99,6 +99,15 @@ export const CATALOGOS = {
 export const MAGIA_VARIANTES = {
   Elemental: ["Pyro", "Hydro", "Geo", "Dendro", "Vento", "Cryo", "Electro"], // ·
   Antigua: ["Lumino", "Umbra"], // ·
+} as const satisfies Record<string, readonly string[]>;
+
+/**
+ * Variantes de armas/artefactos de DOS niveles: tipo (de `artefacto_tipo`) →
+ * variantes. Igual que MAGIA_VARIANTES: solo los tipos con variantes aparecen aquí.
+ * Hoy solo "Arma" tiene variantes; añade más tipos si lo necesitas.
+ */
+export const ARMA_VARIANTES = {
+  Arma: ["Composición", "Activación", "Sincronización", "Amplificación", "Ignición"], // ✦
 } as const satisfies Record<string, readonly string[]>;
 
 export type CatalogoCampo = keyof typeof CATALOGOS;

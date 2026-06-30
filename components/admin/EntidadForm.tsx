@@ -41,6 +41,22 @@ export function EntidadForm({
     mark();
   };
 
+  // Campo dependiente: visible solo si su `dependsOn` se cumple con el valor actual.
+  const isVisible = (fd: FieldDef) =>
+    !fd.dependsOn || values[fd.dependsOn.field] === fd.dependsOn.equals;
+
+  // Limpia el valor de un campo dependiente cuando deja de ser visible, para no
+  // persistir datos obsoletos (p.ej. la variante de un arma si el tipo deja de ser "Arma").
+  useEffect(() => {
+    const stale = config.fields.filter((fd) => !isVisible(fd) && values[fd.name]);
+    if (stale.length === 0) return;
+    setValues((prev) => {
+      const next = { ...prev };
+      for (const fd of stale) next[fd.name] = "";
+      return next;
+    });
+  }, [values, config.fields]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [imagen, setImagen] = useState<ImageValue>({ assetId: null, url: s(inicial?.imagenUrl) || null });
   const [banner, setBanner] = useState<ImageValue>({ assetId: null, url: s(inicial?.bannerUrl) || null });
   const [estado, setEstado] = useState<EstadoPublicacion>(
@@ -118,7 +134,8 @@ export function EntidadForm({
           </Field>
           {groups
             .find((g) => g.group === "Identidad")
-            ?.fields.map((fd) => (
+            ?.fields.filter(isVisible)
+            .map((fd) => (
               <FieldRender key={fd.name} fd={fd} value={values[fd.name]} onChange={(v) => set(fd.name, v)} catalogos={catalogos} referencias={referencias} error={fe[fd.name]} />
             ))}
         </div>
@@ -130,7 +147,7 @@ export function EntidadForm({
         .map(({ group, fields }) => (
           <AccordionSection key={group} title={group}>
             <div className="grid gap-3 sm:grid-cols-2">
-              {fields.map((fd) => (
+              {fields.filter(isVisible).map((fd) => (
                 <div key={fd.name} className={fd.type === "textarea" ? "sm:col-span-2" : ""}>
                   <FieldRender fd={fd} value={values[fd.name]} onChange={(v) => set(fd.name, v)} catalogos={catalogos} referencias={referencias} error={fe[fd.name]} />
                 </div>

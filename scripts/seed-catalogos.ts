@@ -8,7 +8,7 @@
  * NO lo borra y avisa, para que lo añadas al archivo antes de mirror-ear.
  */
 import postgres from "postgres";
-import { CATALOGOS, MAGIA_VARIANTES } from "../lib/catalogos.ts";
+import { CATALOGOS, MAGIA_VARIANTES, ARMA_VARIANTES } from "../lib/catalogos.ts";
 
 /** Migraciones de valores YA guardados en registros (tabla.columna: viejo→nuevo). */
 const RECORD_MIGRATIONS: { table: string; column: string; map: Record<string, string> }[] = [
@@ -33,7 +33,10 @@ for (const [campo, valores] of Object.entries(CATALOGOS)) {
 for (const [grupo, valores] of Object.entries(MAGIA_VARIANTES)) {
   (valores as readonly string[]).forEach((valor, i) => desired.push({ campo: "magia_variante", grupo, valor, orden: i }));
 }
-const managed = new Set([...Object.keys(CATALOGOS), "magia_variante"]);
+for (const [grupo, valores] of Object.entries(ARMA_VARIANTES)) {
+  (valores as readonly string[]).forEach((valor, i) => desired.push({ campo: "arma_variante", grupo, valor, orden: i }));
+}
+const managed = new Set([...Object.keys(CATALOGOS), "magia_variante", "arma_variante"]);
 
 try {
   // 1) Migrar valores en uso en registros.

@@ -7,26 +7,45 @@ import { RANGOS } from "@/lib/poderCombate";
  * Solo `nombre` es obligatorio; el resto es opcional (coherente con la DB).
  */
 
+/**
+ * Texto opcional → string limpio o null. `.optional()` marca el campo como
+ * tolerante a CLAVE AUSENTE (Zod 4 rechaza claves faltantes aunque el valor sea
+ * undefined, salvo que el campo sea optin-opcional). Así ningún campo que el form
+ * no envíe puede bloquear el guardado.
+ */
 const str = z
   .union([z.string(), z.null(), z.undefined()])
+  .optional()
   .transform((v) => {
     const t = typeof v === "string" ? v.trim() : "";
     return t.length > 0 ? t : null;
   });
 
+/**
+ * Entero opcional con recorte (clamp), NO rechazo: un valor fuera de rango se
+ * ajusta al límite en vez de bloquear el guardado. Coherente con borrador/oculto,
+ * donde ninguna ficha debe poder quedar imposible de salvar por un dato suelto.
+ */
 const intField = (min = 0, max?: number) =>
   z.preprocess(
     (v) => {
       if (v === "" || v === null || v === undefined) return null;
       const n = Number(v);
-      return Number.isFinite(n) ? Math.trunc(n) : null;
+      if (!Number.isFinite(n)) return null;
+      let i = Math.trunc(n);
+      if (i < min) i = min;
+      if (max != null && i > max) i = max;
+      return i;
     },
-    (max != null ? z.number().int().min(min).max(max) : z.number().int().min(min)).nullable(),
+    z.number().int().nullable(),
   );
 
-/** Rango cualitativo (D…SSS) o null. Texto vacío / desconocido → null. */
+/** Rango cualitativo (D…SSS) o null. Texto vacío / desconocido → null (nunca rechaza). */
 const rangoField = z.preprocess(
-  (v) => (v === "" || v === null || v === undefined ? null : v),
+  (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    return (RANGOS as readonly string[]).includes(v as string) ? v : null;
+  },
   z.enum(RANGOS).nullable(),
 );
 
@@ -173,7 +192,8 @@ export const personajeSchema = z.object({
     (v) => {
       if (v === "" || v === null || v === undefined) return null;
       const n = Number(v);
-      return Number.isFinite(n) ? n : null;
+      if (!Number.isFinite(n)) return null;
+      return n < 0 ? 0 : n;
     },
     z.number().nonnegative().nullable(),
   ),
@@ -183,7 +203,7 @@ export const personajeSchema = z.object({
   lugarNacimientoNacionId: idField,
   lugarNacimientoRegionId: idField,
   lugarNacimientoLocacionId: idField,
-  familia: str,
+  // `familia` NO se valida ni se escribe: es solo-lectura derivado de familia_jerarquia.
   esInvocado: boolField.optional(),
   tipoInvocacion: str,
   // historia / personalidad (markdown)

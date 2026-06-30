@@ -23,6 +23,8 @@ export interface FieldDef {
   /** Sección del acordeón. */
   group: string;
   rows?: number;
+  /** Renderiza este campo solo si otro campo tiene un valor concreto (dependencia). */
+  dependsOn?: { field: string; equals: string };
 }
 
 export interface EntidadConfig {
@@ -307,6 +309,11 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "artefacto_tipo" }),
+      f("variante", "Variante", "combobox", "Identidad", {
+        catalogCampo: "arma_variante",
+        dependsOn: { field: "tipo", equals: "Arma" },
+        hint: "Solo para armas: Composición · Activación · Sincronización…",
+      }),
       f("propietarioActual", "Propietario (texto)", "text", "Datos clave", { hint: "si no tiene ficha" }),
       f("propietarioId", "Propietario (ficha)", "reference", "Datos clave", { refTarget: "personajes" }),
       f("descripcion", "Descripción", "textarea", "Contenido"),

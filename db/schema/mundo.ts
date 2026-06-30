@@ -235,6 +235,7 @@ export const armasArtefactos = pgTable("armas_artefactos", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   tipo: varchar("tipo"),
+  variante: varchar("variante"),
   descripcion: text("descripcion"),
   historia: text("historia"),
   poderEspecial: text("poder_especial"),
