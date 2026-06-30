@@ -50,11 +50,20 @@ function RelacionBloque({ entidad, ownerId, def, revalidar }: { entidad: string;
     return (id: number | null) => (id == null ? "" : m.get(id) ?? `#${id}`);
   }, [opciones]);
 
+  // ¿Esta fila la persiste el servidor? (mismo criterio que setRelacion). Las filas
+  // "en progreso" (aún sin objetivo / sin texto) se conservan en el UI para poder
+  // editarlas; el servidor las descarta hasta que tengan contenido real.
+  const seGuarda = (r: RelacionRow) =>
+    def.target ? r.targetId != null : !!(def.libre && (r.campos[def.libre.col] ?? "").trim());
+
   const persistir = async (next: RelacionRow[]) => {
     setRows(next);
     try {
       const fresh = await setRelacion(entidad, def.key, ownerId, next, revalidar);
-      setRows(fresh);
+      // Reanexa las filas en progreso que el servidor aún no guarda, para no borrar
+      // la fila que el usuario está rellenando.
+      const enProgreso = next.filter((r) => !seGuarda(r));
+      setRows([...fresh, ...enProgreso]);
     } catch {
       toast("No se pudo guardar la relación.", "error");
     }
@@ -65,7 +74,9 @@ function RelacionBloque({ entidad, ownerId, def, revalidar }: { entidad: string;
   };
   const commit = () => persistir(rows);
 
-  const addFila = () => persistir([...rows, { targetId: null, campos: {} }]);
+  // Añade una fila vacía SOLO en el cliente: no persiste hasta tener contenido (si
+  // no, el servidor la descartaría y desaparecería al instante).
+  const addFila = () => setRows((prev) => [...prev, { targetId: null, campos: {} }]);
   const quitar = (i: number) => persistir(rows.filter((_, idx) => idx !== i));
   const mover = (i: number, delta: number) => {
     const j = i + delta;

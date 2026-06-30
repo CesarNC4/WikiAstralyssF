@@ -304,7 +304,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: false,
     orderBy: "orden",
     fields: [
-      f("fechaLore", "Fecha (lore)", "text", "Identidad", { required: true, hint: "obligatorio" }),
+      f("fechaLore", "Fecha (lore)", "text", "Identidad", { hint: "p. ej. 'Año 1024' o 'Era de los Reyes'" }),
       f("importancia", "Importancia", "combobox", "Identidad", { catalogCampo: "timeline_importancia" }),
       f("categoria", "Categoría", "combobox", "Identidad", { catalogCampo: "timeline_categoria" }),
       f("capituloId", "Capítulo", "reference", "Datos clave", { refTarget: "capitulos" }),

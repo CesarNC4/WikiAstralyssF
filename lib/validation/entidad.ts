@@ -55,7 +55,7 @@ export function buildEntidadSchema(config: EntidadConfig) {
     else if (field.type === "slider") shape[field.name] = statField;
     else if (field.type === "number") shape[field.name] = intField;
     else if (field.type === "checkbox") shape[field.name] = boolField;
-    else if (field.required) shape[field.name] = z.string().trim().min(1, `${field.label} es obligatorio`);
+    // Regla de producto: solo el nombre es obligatorio; el resto siempre opcional.
     else shape[field.name] = str;
   }
   if (config.hasImage) {
