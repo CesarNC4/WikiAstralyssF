@@ -213,10 +213,23 @@ export function MapaEditor({ data }: { data: MapaAdmin }) {
           </div>
         ) : (
           <div className="space-y-3 rounded-xl border border-border-base bg-surface/40 p-4">
-            <p className="text-xs uppercase tracking-wide text-fg-muted">
-              {sel.kind === "nacion" ? "Nación (geometría)" : sel.kind === "region" ? "Región" : "Locación"}
-              {sel.id ? ` · #${sel.id}` : " · nueva"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs uppercase tracking-wide text-fg-muted">
+                {sel.kind === "nacion" ? "Nación (geometría)" : sel.kind === "region" ? "Región" : "Locación"}
+                {sel.id ? ` · #${sel.id}` : " · nueva"}
+              </p>
+              {sel.id && (
+                <a
+                  href={`/admin/${sel.kind === "nacion" ? "naciones" : sel.kind === "region" ? "regiones" : "locaciones"}/${sel.id}/editar`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto inline-flex items-center gap-1 rounded-lg border border-border-glow px-2.5 py-1 text-[11px] text-accent hover:bg-surface"
+                  title="Abrir el formulario completo (lore, imágenes, galería)"
+                >
+                  Editar ficha completa ↗
+                </a>
+              )}
+            </div>
 
             {sel.kind !== "nacion" && (
               <input value={sel.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Nombre *" className="w-full rounded-lg border border-border-base bg-deep px-3 py-2 text-sm text-fg outline-none" />

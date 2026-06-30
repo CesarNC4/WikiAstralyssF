@@ -28,7 +28,8 @@
       "Bash(curl -s -m 40 http://localhost:3000/api/_valdiag)",
       "PowerShell(node --version)",
       "PowerShell(node --env-file=.env.local scripts/seed-catalogos.ts)",
-      "PowerShell(node --env-file=.env.local scripts/_tmp-add-variante.mjs)"
+      "PowerShell(node --env-file=.env.local scripts/_tmp-add-variante.mjs)",
+      "PowerShell(node --env-file=.env.local scripts/_tmp-asset-cols.mjs)"
     ]
   }
 }

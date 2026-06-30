@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, startTransition } from "react";
+import Link from "next/link";
 import { guardarEntidad, type EntidadFormState } from "@/lib/actions/entidades";
 import type { EntidadConfig, FieldDef, RefTarget } from "@/lib/admin/fields";
 import type { OpcionRef } from "@/lib/queries/adminEntidades";
@@ -126,6 +127,12 @@ export function EntidadForm({
 
   return (
     <div className="space-y-4 pb-28">
+      {config.nota && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-glow/60 bg-deep/40 px-4 py-3 text-sm text-fg-secondary">
+          <span>{config.nota}</span>
+          <Link href="/admin/mapa" className="ml-auto shrink-0 text-accent hover:underline">Abrir Mapa →</Link>
+        </div>
+      )}
       {/* Nombre (siempre primero, obligatorio) */}
       <AccordionSection title="Identidad" defaultOpen badge={fe[config.nameField] ? <span className="text-xs text-error">!</span> : null}>
         <div className="grid gap-3 sm:grid-cols-2">

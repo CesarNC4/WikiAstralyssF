@@ -5,6 +5,8 @@ import * as s from "@/db/schema";
 /** Mapa key de entidad → tabla Drizzle (server-only). */
 export const ENTIDAD_TABLES: Record<string, PgTable> = {
   naciones: s.naciones,
+  regiones: s.regiones,
+  locaciones: s.locaciones,
   razas: s.razas,
   bestias: s.bestias,
   minerales: s.minerales,

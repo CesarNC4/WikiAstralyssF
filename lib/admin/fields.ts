@@ -44,6 +44,8 @@ export interface EntidadConfig {
   hasFicha: boolean;
   /** Columna por la que ordenar la lista del admin (default: nameField). */
   orderBy?: string;
+  /** Nota informativa que se muestra arriba del formulario (p.ej. "la geometría se edita en el Mapa"). */
+  nota?: string;
   fields: FieldDef[];
 }
 
@@ -87,6 +89,40 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
       f("historia", "Historia", "textarea", "Contenido", { rows: 8 }),
       f("estadoActual", "Estado actual", "textarea", "Contenido"),
       f("estructura", "Estructura", "textarea", "Contenido"),
+    ],
+  },
+  regiones: {
+    key: "regiones",
+    singular: "Región",
+    plural: "Regiones",
+    route: "/regiones",
+    icon: "MapPinned",
+    nameField: "nombre",
+    hasImage: true,
+    hasBanner: true,
+    hasFicha: true,
+    nota: "🗺️ El contorno en el mapa, el color y la nación a la que pertenece se editan en el Mapa.",
+    fields: [
+      f("subtitulo", "Subtítulo", "text", "Identidad"),
+      f("descripcion", "Descripción", "textarea", "Contenido"),
+      f("historia", "Historia", "textarea", "Contenido", { rows: 8 }),
+    ],
+  },
+  locaciones: {
+    key: "locaciones",
+    singular: "Locación",
+    plural: "Locaciones",
+    route: "/locaciones",
+    icon: "MapPin",
+    nameField: "nombre",
+    hasImage: true,
+    hasBanner: true,
+    hasFicha: true,
+    nota: "🗺️ El punto en el mapa, el tipo, la región/nación y el evento de cronología se editan en el Mapa.",
+    fields: [
+      f("subtitulo", "Subtítulo", "text", "Identidad"),
+      f("descripcion", "Descripción", "textarea", "Contenido"),
+      f("historia", "Historia", "textarea", "Contenido", { rows: 8 }),
     ],
   },
   razas: {
