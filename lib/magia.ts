@@ -73,14 +73,6 @@ export const NATURALEZA_LABEL: Record<string, string> = {
   "Tecnica Avanzada": "Técnica Avanzada",
 };
 
-/** Claves de naturaleza seleccionables como habilidad (técnicas). */
-export const NATURALEZAS_SELECCIONABLES = ["Tecnica", "Tecnica Avanzada"] as const;
-
-/** ¿Es teoría (Fundamento/Concepto) y por tanto NO seleccionable como habilidad? */
-export function naturalezaEsTeoria(naturaleza: string | null | undefined): boolean {
-  return naturaleza === "Fundamento" || naturaleza === "Concepto";
-}
-
 /** Busca el elemento por nombre (tolerante a acentos). */
 export function elementoMeta(sub: string | null | undefined): VisualMeta | undefined {
   return sub ? ELEMENTOS_LK.get(norm(sub)) : undefined;

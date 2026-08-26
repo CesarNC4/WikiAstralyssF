@@ -1,9 +1,7 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { mediaAssets } from "@/db/schema/media";
-import { deleteFromCloudinary } from "@/lib/cloudinary";
 import { assertAdmin } from "@/lib/actions/auth";
 
 export interface AssetRegistrado {
@@ -57,16 +55,4 @@ export async function registrarAsset(input: {
     })
     .returning({ id: mediaAssets.id, url: mediaAssets.urlPublica });
   return { id: row.id, url: row.url };
-}
-
-/** Borra un asset de la DB y de Cloudinary (best-effort). */
-export async function eliminarAsset(id: number): Promise<void> {
-  await assertAdmin();
-  const [row] = await db
-    .select({ publicId: mediaAssets.publicId })
-    .from(mediaAssets)
-    .where(eq(mediaAssets.id, id))
-    .limit(1);
-  if (row?.publicId) await deleteFromCloudinary(row.publicId).catch(() => {});
-  await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
 }

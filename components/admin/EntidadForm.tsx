@@ -185,10 +185,10 @@ export function EntidadForm({
         <AccordionSection title="Imágenes">
           <div className="flex flex-wrap gap-8">
             {config.hasImage && (
-              <ImageField label="Imagen" value={imagen} onChange={(v) => { setImagen(v); mark(); }} alt={values[config.nameField]} />
+              <ImageField label="Imagen" entidad={config.key} value={imagen} onChange={(v) => { setImagen(v); mark(); }} alt={values[config.nameField]} />
             )}
             {config.hasBanner && (
-              <ImageField label="Banner" value={banner} onChange={(v) => { setBanner(v); mark(); }} alt={values[config.nameField]} aspect="aspect-video" />
+              <ImageField label="Banner" entidad={config.key} value={banner} onChange={(v) => { setBanner(v); mark(); }} alt={values[config.nameField]} aspect="aspect-video" />
             )}
           </div>
         </AccordionSection>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { registrarAsset } from "@/lib/actions/media";
+import { carpetaDe, RUTA_FIRMA } from "@/lib/media/carpetas";
 import { useToast } from "@/components/admin/Toast";
 
 // Carga diferida: el bundle de next-cloudinary solo se descarga al usar el editor.
@@ -18,15 +19,24 @@ export interface ImageValue {
   url: string | null;
 }
 
-/** Subida de imagen a Cloudinary + registro en media_assets. */
+/**
+ * Subida de imagen a Cloudinary + registro en media_assets.
+ *
+ * La subida va firmada desde el servidor (`RUTA_FIRMA`), no con el preset a
+ * pelo: el preset viaja en el bundle y sin firma cualquiera podría subir a la
+ * cuenta. `entidad` decide la carpeta de destino.
+ */
 export function ImageField({
   label,
+  entidad,
   value,
   onChange,
   alt,
   aspect = "aspect-square",
 }: {
   label: string;
+  /** Clave de la entidad ("personajes", "naciones"…): define la carpeta. */
+  entidad: string;
   value: ImageValue;
   onChange: (v: ImageValue) => void;
   alt?: string | null;
@@ -53,7 +63,8 @@ export function ImageField({
           ) : (
             <CldUploadWidget
               uploadPreset={PRESET}
-              options={{ sources: ["local", "url"], multiple: false, maxFiles: 1 }}
+              signatureEndpoint={RUTA_FIRMA}
+              options={{ folder: carpetaDe(entidad), sources: ["local", "url"], multiple: false, maxFiles: 1 }}
               onSuccess={async (result) => {
                 const info = result?.info;
                 if (!info || typeof info === "string") return;

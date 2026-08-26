@@ -110,8 +110,6 @@ export const ARMA_VARIANTES = {
   Arma: ["Composición", "Activación", "Sincronización", "Amplificación", "Ignición"], // ✦
 } as const satisfies Record<string, readonly string[]>;
 
-export type CatalogoCampo = keyof typeof CATALOGOS;
-
 /**
  * Etiqueta inversa de una relación PJ↔PJ. Si A es "Mentor" de B, en la ficha de
  * B la relación se muestra como "Aprendiz" automáticamente. Los tipos no listados
@@ -132,10 +130,3 @@ export function etiquetaInversa(tipo: string | null | undefined): string | null 
   if (!tipo) return tipo ?? null;
   return RELACION_INVERSA[tipo] ?? tipo;
 }
-
-/** Migraciones de valores en uso (valor viejo en BD → valor canónico del archivo). */
-export const MIGRACIONES_VALOR: Record<string, Record<string, string>> = {
-  habilidad_categoria: { TECNICA: "Técnica" },
-  timeline_categoria: { Magico: "Mágico", Politico: "Político", Cosmico: "Cósmico" },
-  subtipo_relacion: { amigo: "Amigo" },
-};

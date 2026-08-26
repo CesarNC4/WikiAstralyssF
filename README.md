@@ -1,6 +1,6 @@
 # Astralys — Wiki de fantasía
 
-Wiki del mundo de **Astralys**, construida sobre la [arquitectura](./astralys-arquitectura.md).
+Wiki del mundo de **Astralys**, construida sobre la [arquitectura](./docs/arquitectura.md).
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Drizzle ORM · Supabase · Framer Motion · Zustand.
 
 ## Puesta en marcha
@@ -10,15 +10,12 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Drizzle ORM 
    pnpm install
    ```
 
-2. **Configura el entorno.** `.env.local` ya tiene la URL y la clave pública de tu
-   proyecto Supabase `wikiastralys`. **Falta la contraseña de la base de datos**
-   (es un secreto que no se puede leer por API):
+2. **Configura el entorno.** Crea `.env.local` (está en `.gitignore`: no viaja en
+   el repositorio). La lista completa de variables y de dónde sale cada una está
+   en [docs/despliegue.md](./docs/despliegue.md#2-variables-de-entorno).
 
-   - Ve a *Supabase → Project Settings → Database → Connection string*.
-   - Sustituye `[TU-DB-PASSWORD]` en `DATABASE_URL` y `DIRECT_URL`.
-
-   Sin esto, las páginas cargan pero salen vacías (las queries fallan de forma
-   controlada con `.catch`).
+   Sin `DATABASE_URL` las páginas cargan pero salen vacías: las queries fallan de
+   forma controlada con `.catch`.
 
 3. **Arranca en desarrollo:**
    ```bash
@@ -68,6 +65,8 @@ db/               Drizzle schema (por dominio), client, relations
 lib/queries/      capa de acceso a datos (server-only, filtra visibilidad)
 lib/actions/      Server Actions (auth, búsqueda)
 lib/entities.ts   registro central de secciones (nav, índices, búsqueda)
+docs/             arquitectura (el porqué) y runbook de despliegue
+scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 ```
 
 ## Estado actual
@@ -75,19 +74,32 @@ lib/entities.ts   registro central de secciones (nav, índices, búsqueda)
 - Design system cósmico (tokens Tailwind v4, fuentes Cinzel/Inter/JetBrains).
 - Capa Drizzle completa (54 tablas) + queries con filtro de visibilidad.
 - Navegación adaptativa (top nav desktop + bottom nav móvil + drawer).
-- Búsqueda global ⌘K (ILIKE multi-tabla).
+- Búsqueda global ⌘K sobre índice FTS materializado (`search_index`, mantenido
+  por triggers): tsquery en español + similitud trigram + prefijo, tolerante a
+  acentos y erratas.
 - Reproductor de música global persistente (Zustand + `<audio>` + embeds).
 - Índices de las 13 secciones + fichas (personaje con tabs; nación, organización,
   familia con árbol; genéricas para el resto) + lore por slug.
 - Timeline vertical, mapa de naciones, páginas de error temáticas.
 - SEO (metadata dinámica, sitemap, robots), ISR + revalidación.
-- Admin con Supabase Auth (login email/password, proxy de protección, dashboard).
+- Admin con Supabase Auth (login, proxy de protección, dashboard) y CRUD completo
+  por entidad: alta, edición, papelera, preview y validación con Zod.
+- Subida de imágenes a Cloudinary desde el propio panel, **firmada en el servidor**
+  y organizada en carpetas por entidad (`astralys/personajes`, `…/galeria`).
+  Los assets que dejan de estar referenciados se purgan solos de Cloudinary.
+- Mapa con Leaflet + Geoman y grafos de relaciones con React Flow.
 
-## Pendiente (roadmap §19)
+## Pendiente
 
-- Saneamiento de schema (§1): enum `estado_publicacion`, `media_assets`,
-  `pagina_secciones`, FTS materializado — migraciones **no aplicadas aún** para no
-  tocar tus datos reales.
-- Admin CRUD por entidad + Zod + preview con draft mode (§13).
-- Webhook Discord + push PWA (§14, §15) · subida a Cloudinary · `next-pwa`.
-- Visualizaciones avanzadas: React Flow, D3, Leaflet (§10).
+El plan original está en [docs/arquitectura.md](./docs/arquitectura.md) §19. De
+aquel roadmap queda por hacer:
+
+- **Notificaciones push / PWA (§15).** El `manifest.ts` está, pero no hay
+  `next-pwa` ni push.
+- **Webhook de Discord (§14).** El código está listo en `lib/discord.ts`; solo
+  falta configurar `DISCORD_WEBHOOK_URL` (vacío = no-op silencioso).
+- **Visualizaciones con D3 (§10).** React Flow y Leaflet ya están; D3 no se usó.
+
+Ya no está pendiente, aunque el documento de arquitectura lo dé por hacer: el
+saneamiento de schema §1 (enum `estado_publicacion`, `media_assets`,
+`pagina_secciones`, FTS materializado) y el admin CRUD §13 están **completos**.

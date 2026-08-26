@@ -160,8 +160,8 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
 
       <AccordionSection title="Imágenes">
         <div className="flex flex-wrap gap-8">
-          <ImageField label="Imagen" value={imagen} onChange={(v) => { setImagen(v); mark(); }} alt={titulo} />
-          <ImageField label="Banner" value={banner} onChange={(v) => { setBanner(v); mark(); }} alt={titulo} aspect="aspect-video" />
+          <ImageField label="Imagen" entidad="lore" value={imagen} onChange={(v) => { setImagen(v); mark(); }} alt={titulo} />
+          <ImageField label="Banner" entidad="lore" value={banner} onChange={(v) => { setBanner(v); mark(); }} alt={titulo} aspect="aspect-video" />
         </div>
       </AccordionSection>
 

@@ -221,11 +221,6 @@ export async function getConcepto(id: number) {
     db.select().from(s.conceptos).where(and(eq(s.conceptos.id, id), eq(s.conceptos.estadoPublicacion, "publicado"), isNull(s.conceptos.eliminadoEn))).limit(1),
   );
 }
-export async function getMagia(id: number) {
-  return firstVisible(
-    db.select().from(s.magiaFundamentos).where(and(eq(s.magiaFundamentos.id, id), eq(s.magiaFundamentos.estadoPublicacion, "publicado"), isNull(s.magiaFundamentos.eliminadoEn))).limit(1),
-  );
-}
 export async function getMision(id: number) {
   const mision = await firstVisible(
     db.select().from(s.misiones).where(and(eq(s.misiones.id, id), eq(s.misiones.estadoPublicacion, "publicado"), isNull(s.misiones.eliminadoEn))).limit(1),

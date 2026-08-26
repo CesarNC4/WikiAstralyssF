@@ -9,6 +9,7 @@ import { assertAdmin } from "@/lib/actions/auth";
 import { notificarNuevaPublicacion } from "@/lib/discord";
 import { loreSchema } from "@/lib/validation/lore";
 import { slugify } from "@/lib/utils";
+import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
 export interface LoreFormState {
   ok: boolean;
@@ -107,6 +108,7 @@ export async function guardarLore(
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 
+  await purgarEnSegundoPlano();
   revalidar(data.slug, savedId);
   if (notificar) {
     await notificarNuevaPublicacion({
@@ -173,6 +175,7 @@ export async function eliminarLoreDefinitivo(id: number): Promise<void> {
     await tx.delete(s.paginaSecciones).where(eq(s.paginaSecciones.paginaId, id));
     await tx.delete(s.paginasLore).where(eq(s.paginasLore.id, id));
   });
+  await purgarEnSegundoPlano();
   revalidatePath("/admin/lore/papelera");
   revalidatePath("/lore");
 }

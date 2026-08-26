@@ -126,8 +126,8 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
 
       <AccordionSection title="Imágenes">
         <div className="flex flex-wrap gap-8">
-          <ImageField label="Imagen / emblema" value={imagen} onChange={wrap(setImagen)} alt={campos.nombre} />
-          <ImageField label="Banner" value={banner} onChange={wrap(setBanner)} alt={campos.nombre} aspect="aspect-video" />
+          <ImageField label="Imagen / emblema" entidad="gremio" value={imagen} onChange={wrap(setImagen)} alt={campos.nombre} />
+          <ImageField label="Banner" entidad="gremio" value={banner} onChange={wrap(setBanner)} alt={campos.nombre} aspect="aspect-video" />
         </div>
       </AccordionSection>
 

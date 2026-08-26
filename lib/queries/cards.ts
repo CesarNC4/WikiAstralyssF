@@ -178,10 +178,4 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
   }
 }
 
-/** Conteo de elementos visibles de una sección (para cabeceras de índice). */
-export async function countEntity(key: EntityKey): Promise<number> {
-  const cards = await listEntityCards(key);
-  return cards.length;
-}
-
 export { sql };

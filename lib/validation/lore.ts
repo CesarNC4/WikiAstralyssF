@@ -42,5 +42,3 @@ export const loreSchema = z.object({
   estadoPublicacion: estadoSchema.default("borrador"),
   secciones: z.array(loreSeccionSchema).default([]),
 });
-
-export type LoreInput = z.infer<typeof loreSchema>;

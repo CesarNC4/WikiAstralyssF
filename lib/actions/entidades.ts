@@ -9,6 +9,7 @@ import { notificarNuevaPublicacion } from "@/lib/discord";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
+import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
 export interface EntidadFormState {
   ok: boolean;
@@ -118,6 +119,7 @@ export async function guardarEntidad(
     console.error("[guardarEntidad] asset link", key, e);
   }
 
+  await purgarEnSegundoPlano();
   revalidar(config.route, savedId);
   if (notificar) {
     await notificarNuevaPublicacion({
@@ -182,6 +184,7 @@ export async function eliminarEntidadDefinitivo(key: string, id: number): Promis
   await assertAdmin();
   const { config, table, c } = resolve(key);
   await db.delete(table).where(eq(c.id, id));
+  await purgarEnSegundoPlano();
   revalidatePath(`/admin/${key}/papelera`);
   revalidatePath(config.route);
 }

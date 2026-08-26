@@ -141,8 +141,8 @@ export function OrgForm({
 
       <AccordionSection title="Imágenes">
         <div className="flex flex-wrap gap-8">
-          <ImageField label="Imagen / escudo" value={imagen} onChange={wrap(setImagen)} alt={campos.nombre} />
-          <ImageField label="Banner" value={banner} onChange={wrap(setBanner)} alt={campos.nombre} aspect="aspect-video" />
+          <ImageField label="Imagen / escudo" entidad="organizaciones" value={imagen} onChange={wrap(setImagen)} alt={campos.nombre} />
+          <ImageField label="Banner" entidad="organizaciones" value={banner} onChange={wrap(setBanner)} alt={campos.nombre} aspect="aspect-video" />
         </div>
       </AccordionSection>
 

@@ -8,6 +8,7 @@ import type { GaleriaItem } from "@/lib/queries/galeria";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { cldOptimize } from "@/lib/utils";
+import { carpetaDe, RUTA_FIRMA } from "@/lib/media/carpetas";
 
 const CldUploadWidget = dynamic(() => import("next-cloudinary").then((m) => m.CldUploadWidget), { ssr: false });
 const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
@@ -90,7 +91,8 @@ export function GaleriaEditor({
         {PRESET ? (
           <CldUploadWidget
             uploadPreset={PRESET}
-            options={{ sources: ["local", "url"], multiple: true }}
+            signatureEndpoint={RUTA_FIRMA}
+            options={{ folder: carpetaDe(entidadTipo, "galeria"), sources: ["local", "url"], multiple: true }}
             onSuccess={async (result) => {
               const info = result?.info;
               if (!info || typeof info === "string") return;

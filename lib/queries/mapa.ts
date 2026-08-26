@@ -63,15 +63,6 @@ export async function getRegionFicha(id: number) {
   return { region, nacion: nacion ?? null, locaciones };
 }
 
-/** Regiones publicadas de una nación (para la ficha de nación). */
-export async function getRegionesDeNacion(nacionId: number) {
-  return db
-    .select({ id: s.regiones.id, nombre: s.regiones.nombre, subtitulo: s.regiones.subtitulo, imagenUrl: s.regiones.imagenUrl })
-    .from(s.regiones)
-    .where(and(eq(s.regiones.nacionId, nacionId), eq(s.regiones.estadoPublicacion, "publicado"), isNull(s.regiones.eliminadoEn)))
-    .orderBy(asc(s.regiones.nombre));
-}
-
 /** Ficha de locación: la locación + su región + su nación + evento de cronología. */
 export async function getLocacionFicha(id: number) {
   const locacion = await first(

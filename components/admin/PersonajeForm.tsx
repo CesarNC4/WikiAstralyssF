@@ -735,8 +735,8 @@ export function PersonajeForm({
       {/* Media */}
       <AccordionSection {...sec("imagenes")} title="Imágenes">
         <div className="flex flex-wrap gap-8">
-          <ImageField label="Avatar" value={imagen} onChange={wrapSetter(setImagen)} alt={f.nombre} />
-          <ImageField label="Banner" value={banner} onChange={wrapSetter(setBanner)} alt={f.nombre} aspect="aspect-video" />
+          <ImageField label="Avatar" entidad="personajes" value={imagen} onChange={wrapSetter(setImagen)} alt={f.nombre} />
+          <ImageField label="Banner" entidad="personajes" value={banner} onChange={wrapSetter(setBanner)} alt={f.nombre} aspect="aspect-video" />
         </div>
       </AccordionSection>
 

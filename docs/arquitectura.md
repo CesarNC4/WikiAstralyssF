@@ -1,11 +1,41 @@
 # Arquitectura Técnica Completa — Astralys Wiki
 
-> Documento de arquitectura de software. Decisiones de alto nivel con justificación. No contiene código de producción; los fragmentos son pseudocódigo o diagramas ilustrativos.
+> **Qué es este documento.** El diseño de arquitectura original, con las decisiones
+> de alto nivel y su justificación. Es la referencia del *porqué*: cuando dudes de
+> por qué algo está montado así, la respuesta está aquí. No contiene código de
+> producción; los fragmentos son pseudocódigo o diagramas ilustrativos.
 >
-> **Stack fijo:** Next.js 15 (App Router) · TypeScript · Tailwind · shadcn/ui · Framer Motion · Server Actions · Zod · Drizzle ORM · Supabase (Postgres + Auth + Storage + FTS) · Cloudflare R2 · React Flow · Recharts · Leaflet · D3 · Howler.js · Discord Webhooks · Sentry · Vercel Hobby · next-pwa.
+> **No describe el estado actual.** La implementación se apartó del plan en varios
+> puntos (tabla abajo). Para lo que hay hoy, mira el [README](../README.md).
 >
-> **Restricción rectora:** 100% gratuito y audiencia mayoritariamente móvil (1–5 lectores), un único admin.
+> **Restricción rectora:** 100% gratuito, audiencia mayoritariamente móvil (1–5
+> lectores), un único admin.
 
+## Stack real (2026-08-25)
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Framer Motion ·
+Server Actions · Zod · Drizzle ORM · Supabase (Postgres + Auth + FTS) · Cloudinary ·
+React Flow (`@xyflow/react`) · Leaflet + Geoman · Zustand · lucide-react.
+
+### Divergencias respecto al diseño original
+
+El resto del documento conserva la redacción original, así que al leerlo ten
+presente que estas piezas cambiaron:
+
+| El documento dice | Lo que se hizo |
+|---|---|
+| Next.js 15 | **Next.js 16** |
+| Cloudflare R2 | **Cloudinary** (subida desde el cliente con upload preset, vía `next-cloudinary`) |
+| shadcn/ui | **Componentes propios** organizados por dominio (`components/fichas`, `/admin`, `/viz`…). No existe `components/ui` |
+| Recharts (radar de stats) | **SVG propio** animado con Framer Motion (`components/fichas/personaje/StatRadar.tsx`) |
+| Howler.js (audio) | **`<audio>` nativo** + embeds, con el estado en Zustand (`components/player/MusicPlayerBar.tsx`) |
+| D3 | No se usó |
+| Sentry | No instalado |
+| next-pwa | No instalado (sigue pendiente, §15) |
+
+> Las referencias a R2, shadcn, Recharts y Howler que aparecen más adelante en el
+> texto son del diseño original: valen como razonamiento, no como descripción de
+> lo que hay en el repositorio.
 ---
 
 ## Índice

@@ -36,13 +36,3 @@ export function elementoMeta(key: string | null | undefined): ElementoMeta | nul
   const k = key.trim().toLowerCase();
   return BY_KEY.get(k) ?? BY_KEY.get(k.replace(/\s*\(.*\)\s*/, "")) ?? null;
 }
-
-export const ELEMENTO_OPCIONES = ELEMENTOS.map((e) => e.nombre);
-
-export type RelacionElemento = "afinidad" | "debilidad" | "resistencia";
-
-export const RELACION_ELEMENTO_LABEL: Record<RelacionElemento, string> = {
-  afinidad: "Afinidad",
-  debilidad: "Debilidad",
-  resistencia: "Resistencia",
-};

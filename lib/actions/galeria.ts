@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import { entidadMedia } from "@/db/schema/media";
 import { assertAdmin } from "@/lib/actions/auth";
 import { getGaleria, type GaleriaItem } from "@/lib/queries/galeria";
+import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
 /** Devuelve la galería actual de una entidad (para el editor del admin). */
 export async function listarGaleria(entidadTipo: string, entidadId: number): Promise<GaleriaItem[]> {
@@ -45,6 +46,7 @@ export async function quitarGaleriaImagen(input: {
 }): Promise<GaleriaItem[]> {
   await assertAdmin();
   await db.delete(entidadMedia).where(eq(entidadMedia.id, input.id));
+  await purgarEnSegundoPlano();
   if (input.revalidar) revalidatePath(input.revalidar);
   return getGaleria(input.entidadTipo, input.entidadId);
 }

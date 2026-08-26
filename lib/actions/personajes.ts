@@ -9,6 +9,7 @@ import { assertAdmin } from "@/lib/actions/auth";
 import { notificarNuevaPublicacion } from "@/lib/discord";
 import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje";
 import { calcularPoderDeCombate } from "@/lib/poderCombate";
+import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
 function nombreCompleto(nombre: string, surname?: string | null): string {
   return [nombre, surname].filter(Boolean).join(" ").trim();
@@ -304,6 +305,7 @@ export async function guardarPersonaje(
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 
+  await purgarEnSegundoPlano();
   revalidarPersonaje(savedId);
   if (notificar) {
     await notificarNuevaPublicacion({
@@ -382,6 +384,7 @@ export async function eliminarDefinitivo(id: number): Promise<void> {
     await tx.delete(s.personajeOrganizacion).where(eq(s.personajeOrganizacion.personajeId, id));
     await tx.delete(s.personajes).where(eq(s.personajes.id, id));
   });
+  await purgarEnSegundoPlano();
   revalidatePath("/admin/personajes/papelera");
   revalidatePath("/personajes");
 }

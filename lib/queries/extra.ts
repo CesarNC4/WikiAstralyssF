@@ -83,18 +83,3 @@ export async function getTimeline(): Promise<TimelineEventoPublico[]> {
     personajes: pjMap.get(e.id) ?? [],
   }));
 }
-
-/** Naciones para el mapa (§10.1). */
-export async function getNacionesMapa() {
-  return db
-    .select({
-      id: s.naciones.id,
-      nombre: s.naciones.nombre,
-      subtitulo: s.naciones.subtitulo,
-      imagenUrl: s.naciones.imagenUrl,
-      elemento: s.naciones.elementoFundamental,
-    })
-    .from(s.naciones)
-    .where(eq(s.naciones.estadoPublicacion, "publicado"))
-    .orderBy(asc(s.naciones.nombre));
-}

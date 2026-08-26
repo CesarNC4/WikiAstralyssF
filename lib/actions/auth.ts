@@ -2,25 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { adminActual } from "@/lib/auth/admin";
 
 /** Verifica que hay un admin autenticado (§12.1, defensa en profundidad). */
 export async function assertAdmin() {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await adminActual();
   if (!user) redirect("/admin/login");
-
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (adminEmail && user.email !== adminEmail) redirect("/admin/login");
-  return user;
-}
-
-export async function getCurrentUser() {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   return user;
 }
 

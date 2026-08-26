@@ -8,6 +8,7 @@ import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
 import { notificarNuevaPublicacion } from "@/lib/discord";
 import type { OrgPayload, FamiliaPayload, GremioPayload, Estado } from "@/lib/admin/complejas";
+import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
 export interface ComplejaFormState {
   ok: boolean;
@@ -151,6 +152,7 @@ export async function guardarOrganizacion(
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 
+  await purgarEnSegundoPlano();
   revalidarOrg(savedId);
   if (notificar) {
     await notificarNuevaPublicacion({
@@ -297,6 +299,7 @@ export async function guardarFamilia(
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 
+  await purgarEnSegundoPlano();
   revalidarFamilia(savedId);
   if (notificar) {
     await notificarNuevaPublicacion({
@@ -412,6 +415,7 @@ export async function guardarGremio(
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 
+  await purgarEnSegundoPlano();
   revalidatePath("/admin/gremio");
   return { ok: true, id: gid };
 }
@@ -503,6 +507,7 @@ export async function eliminarOrgDefinitivo(id: number): Promise<void> {
     await tx.delete(s.orgFacciones).where(eq(s.orgFacciones.organizacionId, id));
     await tx.delete(s.organizaciones).where(eq(s.organizaciones.id, id));
   });
+  await purgarEnSegundoPlano();
   revalidatePath("/admin/organizaciones/papelera");
   revalidatePath("/organizaciones");
 }
@@ -516,6 +521,7 @@ export async function eliminarFamiliaDefinitivo(id: number): Promise<void> {
     await tx.delete(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, id));
     await tx.delete(s.familias).where(eq(s.familias.id, id));
   });
+  await purgarEnSegundoPlano();
   revalidatePath("/admin/familias/papelera");
   revalidatePath("/familias");
 }

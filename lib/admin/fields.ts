@@ -378,5 +378,3 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
 export function getEntidadConfig(key: string): EntidadConfig | undefined {
   return ENTIDADES[key];
 }
-
-export const ENTIDAD_KEYS = Object.keys(ENTIDADES);
