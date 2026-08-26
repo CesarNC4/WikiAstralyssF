@@ -88,14 +88,19 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   y organizada en carpetas por entidad (`astralys/personajes`, `…/galeria`).
   Los assets que dejan de estar referenciados se purgan solos de Cloudinary.
 - Mapa con Leaflet + Geoman y grafos de relaciones con React Flow.
+- Acciones en lote y duplicado de fichas en el panel.
+- Feed RSS en `/feed.xml` con las últimas entidades publicadas.
+- PWA instalable con service worker propio (sin dependencias): navegación sin
+  conexión de lo ya visitado. El panel y las APIs nunca se cachean.
 
 ## Pendiente
 
 El plan original está en [docs/arquitectura.md](./docs/arquitectura.md) §19. De
 aquel roadmap queda por hacer:
 
-- **Notificaciones push / PWA (§15).** El `manifest.ts` está, pero no hay
-  `next-pwa` ni push.
+- **Notificaciones push (§15).** La PWA ya es instalable y funciona sin
+  conexión; faltan las notificaciones push, que necesitan claves VAPID y un
+  endpoint de suscripción.
 - **Webhook de Discord (§14).** El código está listo en `lib/discord.ts`; solo
   falta configurar `DISCORD_WEBHOOK_URL` (vacío = no-op silencioso).
 - **Visualizaciones con D3 (§10).** React Flow y Leaflet ya están; D3 no se usó.

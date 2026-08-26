@@ -78,6 +78,7 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0);
+  const [tipo, setTipo] = useState<EntityKey | "todos">("todos");
   const debounced = useDebounce(query, 220);
 
   useEffect(() => {
@@ -106,7 +107,29 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
     };
   }, [debounced]);
 
-  const grouped = useMemo(() => agruparResultados(results), [results]);
+  // Conteo por sección sobre el total, para que los chips no cambien de número
+  // al filtrar.
+  const conteos = useMemo(() => {
+    const m = new Map<EntityKey, number>();
+    for (const r of results) m.set(r.tipo, (m.get(r.tipo) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => (TIPO_ORDER.get(a[0]) ?? 99) - (TIPO_ORDER.get(b[0]) ?? 99));
+  }, [results]);
+
+  // Si la sección elegida desaparece al reescribir la búsqueda, se vuelve a
+  // "todos" por derivación: así nunca se queda un filtro fantasma ocultando
+  // resultados, y sin gastar un render extra en corregirlo.
+  const hayTipo = conteos.some(([t]) => t === tipo);
+  const tipoActivo: EntityKey | "todos" = tipo !== "todos" && !hayTipo ? "todos" : tipo;
+
+  const visibles = useMemo(
+    () => (tipoActivo === "todos" ? results : results.filter((r) => r.tipo === tipoActivo)),
+    [results, tipoActivo],
+  );
+
+  // `flatIndex` se calcula sobre lo VISIBLE: si se agrupara el total, las
+  // flechas saltarían a posiciones que el filtro ha ocultado.
+  const grouped = useMemo(() => agruparResultados(visibles), [visibles]);
+  const activo = Math.min(active, Math.max(0, visibles.length - 1));
 
   const go = (r: SearchResult) => {
     router.push(r.href);
@@ -122,12 +145,12 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((a) => Math.min(a + 1, results.length - 1));
+      setActive((a) => Math.min(a + 1, visibles.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActive((a) => Math.max(a - 1, 0));
-    } else if (e.key === "Enter" && results[active]) {
-      go(results[active]);
+    } else if (e.key === "Enter" && visibles[activo]) {
+      go(visibles[activo]);
     }
   };
 
@@ -136,6 +159,7 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
       onExitComplete={() => {
         setQuery("");
         setResults([]);
+        setTipo("todos");
       }}
     >
       {isOpen && (
@@ -167,6 +191,21 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
               </kbd>
             </div>
 
+            {results.length > 0 && conteos.length > 1 && (
+              <div className="flex flex-wrap gap-1 border-b border-border-base px-3 py-2">
+                <ChipBusqueda activo={tipoActivo === "todos"} onClick={() => { setTipo("todos"); setActive(0); }} label="Todo" n={results.length} />
+                {conteos.map(([t, n]) => (
+                  <ChipBusqueda
+                    key={t}
+                    activo={tipoActivo === t}
+                    onClick={() => { setTipo(t); setActive(0); }}
+                    label={ENTITIES[t]?.plural ?? t}
+                    n={n}
+                  />
+                ))}
+              </div>
+            )}
+
             <div className="max-h-[55vh] overflow-y-auto p-2">
               {loading && <p className="px-3 py-6 text-center text-sm text-fg-muted">Buscando…</p>}
               {!loading && debounced.trim().length >= 2 && results.length === 0 && (
@@ -193,7 +232,7 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
                         onClick={() => go(r)}
                         onMouseEnter={() => setActive(flatIndex)}
                         className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${
-                          flatIndex === active ? "bg-elevated" : "hover:bg-surface"
+                          flatIndex === activo ? "bg-elevated" : "hover:bg-surface"
                         }`}
                       >
                         <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-border-base">
@@ -226,5 +265,33 @@ function CommandPalette({ isOpen, close }: { isOpen: boolean; close: () => void 
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/** Chip de sección de la paleta ⌘K. */
+function ChipBusqueda({
+  activo,
+  onClick,
+  label,
+  n,
+}: {
+  activo: boolean;
+  onClick: () => void;
+  label: string;
+  n: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={activo}
+      className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
+        activo
+          ? "border-border-glow bg-elevated text-fg"
+          : "border-border-base text-fg-muted hover:text-fg"
+      }`}
+    >
+      {label} <span className="opacity-60">{n}</span>
+    </button>
   );
 }

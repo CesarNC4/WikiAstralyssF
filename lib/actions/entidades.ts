@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq, getTableColumns, getTableName, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, getTableName, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assertAdmin } from "@/lib/actions/auth";
 import { notificarNuevaPublicacion } from "@/lib/discord";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadTable } from "@/lib/admin/tables";
+import { REL_TABLES } from "@/lib/admin/relacionesTables";
+import { entidadMedia } from "@/db/schema/media";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
@@ -162,6 +164,132 @@ export async function cambiarEstadoEntidad(
       imagenUrl: existing.imagenUrl ?? null,
     });
   }
+}
+
+/**
+ * Aplica una acción a varias fichas de golpe desde la tabla del admin.
+ *
+ * Usa un número FIJO de consultas (tres como mucho) en vez de una por ficha:
+ * seleccionar el estado previo, actualizar el lote y sellar la primera
+ * publicación de los que la estrenan.
+ *
+ * Respeta la regla de `cambiarEstadoEntidad`: publicar por primera vez sella
+ * `publicado_primera_vez_en` y dispara el aviso a Discord, y sólo la primera.
+ * Devuelve cuántas fichas se tocaron.
+ */
+export async function accionEnLoteEntidad(
+  key: string,
+  ids: number[],
+  accion: "publicado" | "oculto" | "borrador" | "papelera",
+): Promise<number> {
+  await assertAdmin();
+  if (ids.length === 0) return 0;
+  const { config, table, c } = resolve(key);
+
+  const revalidarLote = () => {
+    revalidar(config.route);
+    for (const id of ids) revalidatePath(`${config.route}/${id}`);
+  };
+
+  if (accion === "papelera") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await db.update(table).set({ eliminadoEn: new Date() } as any).where(inArray(c.id, ids));
+    revalidarLote();
+    return ids.length;
+  }
+
+  const sel: Cols = { id: c.id, ppv: c.publicadoPrimeraVezEn, nombre: c[config.nameField] };
+  if (c.subtitulo) sel.subtitulo = c.subtitulo;
+  if (c.descripcion) sel.descripcion = c.descripcion;
+  if (c.titulo) sel.titulo = c.titulo;
+  if (c.imagenUrl) sel.imagenUrl = c.imagenUrl;
+  const filas = await db.select(sel).from(table).where(inArray(c.id, ids));
+  const estrenan = accion === "publicado" ? filas.filter((f) => !f.ppv) : [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await db.update(table).set({ estadoPublicacion: accion } as any).where(inArray(c.id, ids));
+  if (estrenan.length > 0) {
+    await db
+      .update(table)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .set({ publicadoPrimeraVezEn: new Date() } as any)
+      .where(inArray(c.id, estrenan.map((f) => Number(f.id))));
+  }
+
+  revalidarLote();
+  for (const f of estrenan) {
+    await notificarNuevaPublicacion({
+      tipo: key,
+      idOrSlug: Number(f.id),
+      nombre: String(f.nombre ?? config.singular),
+      descripcion: f.subtitulo ?? f.descripcion ?? f.titulo ?? null,
+      imagenUrl: f.imagenUrl ?? null,
+    });
+  }
+  return ids.length;
+}
+
+/**
+ * Clona una ficha completa como borrador nuevo y devuelve su id.
+ *
+ * Copia la fila, su galería (`entidad_media`) y todos sus bloques de relación
+ * registrados en `REL_TABLES`. Las imágenes NO se duplican en Cloudinary: el
+ * clon apunta a los mismos assets, que es lo correcto — son compartidos y la
+ * purga de huérfanos cuenta referencias, así que ninguno se borrará por tener
+ * dos dueños.
+ *
+ * El clon nace siempre en `borrador` y sin `publicado_primera_vez_en`, de modo
+ * que al publicarlo se comporte como una ficha nueva (incluido el aviso a
+ * Discord) y no herede el historial del original.
+ *
+ * Ninguna tabla de `ENTIDAD_TABLES` tiene `slug` hoy, así que no hay unicidad
+ * que resolver al clonar. Si alguna la gana, habrá que derivar uno libre aquí.
+ */
+export async function duplicarEntidad(key: string, id: number): Promise<number> {
+  await assertAdmin();
+  const { config, table, c } = resolve(key);
+
+  const [original] = await db.select().from(table).where(eq(c.id, id)).limit(1);
+  if (!original) throw new Error("La ficha que intentas duplicar ya no existe.");
+
+  const copia: Cols = { ...original };
+  delete copia.id;
+  if ("estadoPublicacion" in copia) copia.estadoPublicacion = "borrador";
+  if ("publicadoPrimeraVezEn" in copia) copia.publicadoPrimeraVezEn = null;
+  if ("eliminadoEn" in copia) copia.eliminadoEn = null;
+  if ("creadoEn" in copia) copia.creadoEn = new Date();
+  if ("actualizadoEn" in copia) copia.actualizadoEn = new Date();
+  copia[config.nameField] = `${original[config.nameField] ?? config.singular} (copia)`;
+
+  const [creada] = await db.insert(table).values(copia).returning({ id: c.id });
+  const nuevoId = Number(creada.id);
+
+  // Galería: se copian los vínculos, no los archivos.
+  const galeria = await db
+    .select()
+    .from(entidadMedia)
+    .where(and(eq(entidadMedia.entidadTipo, key), eq(entidadMedia.entidadId, id)));
+  if (galeria.length > 0) {
+    await db.insert(entidadMedia).values(
+      galeria.map((g) => ({ ...g, id: undefined, entidadId: nuevoId })),
+    );
+  }
+
+  // Bloques de relación declarados para esta entidad.
+  for (const [clave, def] of Object.entries(REL_TABLES)) {
+    if (!clave.startsWith(`${key}:`)) continue;
+    const rc = getTableColumns(def.table) as Cols;
+    const filtros = [eq(rc[def.ownerCol], id)];
+    if (def.tipoPolimorfico) filtros.push(eq(rc.entidadTipo, def.tipoPolimorfico));
+    const filas = await db.select().from(def.table).where(and(...filtros));
+    if (filas.length === 0) continue;
+    await db
+      .insert(def.table)
+      .values(filas.map((f) => ({ ...(f as Cols), id: undefined, [def.ownerCol]: nuevoId })));
+  }
+
+  revalidar(config.route);
+  return nuevoId;
 }
 
 export async function moverEntidadAPapelera(key: string, id: number): Promise<void> {

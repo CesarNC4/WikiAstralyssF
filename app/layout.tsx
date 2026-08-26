@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { RegistrarSW } from "@/components/pwa/RegistrarSW";
 import { Cinzel, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -43,6 +44,12 @@ export const metadata: Metadata = {
     description: SITE_DESC,
   },
   // Los iconos los aportan app/icon.tsx y app/apple-icon.tsx (generados).
+  alternates: {
+    types: {
+      // Que los lectores de feeds descubran /feed.xml sin buscarlo.
+      "application/rss+xml": [{ url: "/feed.xml", title: `${SITE_NAME} — Novedades` }],
+    },
+  },
 };
 
 export const viewport: Viewport = {
@@ -60,7 +67,10 @@ export default function RootLayout({
       lang="es"
       className={`${cinzel.variable} ${inter.variable} ${jetbrains.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-void text-fg">{children}</body>
+      <body className="min-h-full flex flex-col bg-void text-fg">
+        {children}
+        <RegistrarSW />
+      </body>
     </html>
   );
 }

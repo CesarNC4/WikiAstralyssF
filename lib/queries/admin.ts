@@ -24,7 +24,12 @@ interface DashEntity {
   icon: string;
 }
 
-const DASH_ENTITIES: DashEntity[] = [
+/**
+ * Entidades con estado de publicación y su tabla. La usa el panel y también el
+ * feed público (`lib/queries/feed.ts`): sus claves coinciden con el
+ * `entidad_tipo` de `search_index`, lo que permite cruzar fechas con títulos.
+ */
+export const DASH_ENTITIES: DashEntity[] = [
   { key: "personajes", label: "Personajes", table: "personajes", nameCol: "nombre", href: "/admin/personajes", icon: "Users" },
   { key: "naciones", label: "Naciones", table: "naciones", nameCol: "nombre", href: "/admin/naciones", icon: "Globe2" },
   { key: "organizaciones", label: "Organizaciones", table: "organizaciones", nameCol: "nombre", href: "/admin/organizaciones", icon: "Shield" },
@@ -108,16 +113,23 @@ export interface RecentItem {
  */
 export async function getRecentActivity(limit = 8): Promise<RecentItem[]> {
   const meta = new Map(DASH_ENTITIES.map((e) => [e.key, e]));
+
+  // Cada rama del UNION se ordena y recorta a `n` ANTES de unirse. Sin esto,
+  // Postgres materializa todas las filas de todas las entidades para quedarse
+  // con ocho: el coste crecía con el tamaño de la wiki. Las n globales sólo
+  // pueden salir de las n mejores de cada tabla, así que el recorte es exacto.
+  const n = Math.max(1, Math.min(50, Math.trunc(limit)));
   const parts = DASH_ENTITIES.map((e) =>
     sql.raw(
-      `select '${e.key}' as key, id, ${e.nameCol} as nombre, ` +
+      `(select '${e.key}' as key, id, ${e.nameCol} as nombre, ` +
         `estado_publicacion as estado, actualizado_en ` +
-        `from ${e.table} where eliminado_en is null`,
+        `from ${e.table} where eliminado_en is null ` +
+        `order by actualizado_en desc nulls last limit ${n})`,
     ),
   );
 
   const rows = (await db.execute(
-    sql`${sql.join(parts, sql.raw(" union all "))} order by actualizado_en desc nulls last limit ${limit}`,
+    sql`${sql.join(parts, sql.raw(" union all "))} order by actualizado_en desc nulls last limit ${n}`,
   )) as unknown as { key: string; id: number; nombre: string | null; estado: EstadoPublicacion; actualizado_en: Date }[];
 
   return rows.map((r) => {

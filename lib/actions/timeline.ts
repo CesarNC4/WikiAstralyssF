@@ -12,14 +12,25 @@ function revalidar() {
   revalidatePath("/");
 }
 
-/** Persiste el nuevo orden (lista de ids en la secuencia deseada). */
+/**
+ * Persiste el nuevo orden (lista de ids en la secuencia deseada).
+ *
+ * Una sola sentencia con `VALUES`, no una UPDATE por evento: arrastrar un ítem
+ * reordena la lista entera, así que el bucle costaba tantos viajes a la base
+ * como eventos tuviera el timeline. Al ser una sola sentencia es atómica por
+ * construcción, sin necesidad de envolverla en una transacción.
+ */
 export async function reordenarTimeline(ids: number[]): Promise<void> {
   await assertAdmin();
-  await db.transaction(async (tx) => {
-    for (let i = 0; i < ids.length; i++) {
-      await tx.update(s.timelineEventos).set({ orden: i }).where(eq(s.timelineEventos.id, ids[i]));
-    }
-  });
+  if (ids.length === 0) return;
+
+  const pares = ids.map((id, i) => sql`(${id}::int, ${i}::int)`);
+  await db.execute(sql`
+    update timeline_eventos t
+    set orden = v.orden
+    from (values ${sql.join(pares, sql`, `)}) as v(id, orden)
+    where t.id = v.id
+  `);
   revalidar();
 }
 
