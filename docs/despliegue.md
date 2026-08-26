@@ -31,12 +31,18 @@ o recréalo desde el panel de Supabase.
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Cuenta de Cloudinary. | Si usas imágenes |
 | `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Preset del widget, en modo **Signed**. | Si usas imágenes |
 | `CLOUDINARY_API_KEY` | Firma las subidas y borra los assets huérfanos. | Si usas imágenes |
-| `CLOUDINARY_API_SECRET` | Ídem. **Nunca** con prefijo `NEXT_PUBLIC_`. | Si usas imágenes |
+| `NEXT_PUBLIC_CLOUDINARY_API_KEY` | El **mismo valor**. El widget la manda en cada subida firmada. | Si usas imágenes |
+| `CLOUDINARY_API_SECRET` | Secreto de firma. **Solo servidor**, nunca `NEXT_PUBLIC_`. | Si usas imágenes |
 | `DISCORD_WEBHOOK_URL` | Aviso al publicar (§14). Vacío = no-op silencioso. | No |
 
-> El secreto de Cloudinary solo vive en el servidor. Si alguna vez lo ves con
-> prefijo `NEXT_PUBLIC_`, está expuesto en el navegador: rótalo desde el panel
-> de Cloudinary.
+> Sí, la API key va dos veces y una de ellas es pública. Es correcto: la
+> `api_key` de Cloudinary **no es un secreto** — identifica la cuenta y viaja en
+> cada subida firmada desde el navegador. El que jamás puede salir del servidor
+> es `CLOUDINARY_API_SECRET`: si alguna vez lo ves con prefijo `NEXT_PUBLIC_`,
+> rótalo desde el panel de Cloudinary.
+
+> Las variables `NEXT_PUBLIC_` se incrustan **en tiempo de compilación**. Si
+> añades o cambias una, reinicia `pnpm dev`; en producción, vuelve a desplegar.
 
 ## 3. Instalar
 

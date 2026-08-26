@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { registrarAsset } from "@/lib/actions/media";
-import { carpetaDe, RUTA_FIRMA } from "@/lib/media/carpetas";
+import { carpetaDe, faltaConfigSubida, RUTA_FIRMA } from "@/lib/media/carpetas";
 import { useToast } from "@/components/admin/Toast";
 
 // Carga diferida: el bundle de next-cloudinary solo se descarga al usar el editor.
@@ -44,6 +44,7 @@ export function ImageField({
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const falta = faltaConfigSubida();
 
   return (
     <div>
@@ -58,8 +59,8 @@ export function ImageField({
           )}
         </div>
         <div className="flex flex-col gap-2">
-          {!PRESET ? (
-            <p className="text-xs text-error">Falta NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET en .env.local.</p>
+          {falta ? (
+            <p className="text-xs text-error">Falta {falta} en .env.local.</p>
           ) : (
             <CldUploadWidget
               uploadPreset={PRESET}

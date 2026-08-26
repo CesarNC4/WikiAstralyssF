@@ -8,7 +8,7 @@ import type { GaleriaItem } from "@/lib/queries/galeria";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { cldOptimize } from "@/lib/utils";
-import { carpetaDe, RUTA_FIRMA } from "@/lib/media/carpetas";
+import { carpetaDe, faltaConfigSubida, RUTA_FIRMA } from "@/lib/media/carpetas";
 
 const CldUploadWidget = dynamic(() => import("next-cloudinary").then((m) => m.CldUploadWidget), { ssr: false });
 const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
@@ -32,6 +32,7 @@ export function GaleriaEditor({
   const toast = useToast();
   const [items, setItems] = useState<GaleriaItem[]>([]);
   const [busy, setBusy] = useState(false);
+  const falta = faltaConfigSubida();
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -88,7 +89,7 @@ export function GaleriaEditor({
         ))}
 
         {/* Botón de subida */}
-        {PRESET ? (
+        {!falta ? (
           <CldUploadWidget
             uploadPreset={PRESET}
             signatureEndpoint={RUTA_FIRMA}
@@ -128,7 +129,7 @@ export function GaleriaEditor({
             )}
           </CldUploadWidget>
         ) : (
-          <p className="col-span-full text-xs text-error">Falta NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.</p>
+          <p className="col-span-full text-xs text-error">Falta {falta} en .env.local.</p>
         )}
       </div>
       <p className="mt-2 text-xs text-fg-muted">La galería se guarda al instante (no depende del botón Guardar).</p>

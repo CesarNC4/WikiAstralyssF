@@ -13,6 +13,24 @@ export const CARPETA_RAIZ = "astralys";
 export const RUTA_FIRMA = "/api/cloudinary/firma";
 
 /**
+ * Nombre de la primera variable que falte para poder subir, o `null` si está
+ * todo. El widget lanza una excepción si le falta algo, y esa excepción sube
+ * hasta el error boundary y se lleva la página entera por delante con un 500;
+ * comprobándolo antes se avisa en la propia interfaz y el resto del formulario
+ * sigue funcionando.
+ *
+ * Las tres son `NEXT_PUBLIC_` a propósito. La `api_key` de Cloudinary no es un
+ * secreto: viaja en cada subida firmada desde el navegador. El que no puede
+ * salir del servidor es `CLOUDINARY_API_SECRET`.
+ */
+export function faltaConfigSubida(): string | null {
+  if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) return "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME";
+  if (!process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY) return "NEXT_PUBLIC_CLOUDINARY_API_KEY";
+  if (!process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET) return "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET";
+  return null;
+}
+
+/**
  * `astralys/personajes` para la imagen principal y el banner de una ficha,
  * `astralys/personajes/galeria` para las imágenes de su galería.
  *
