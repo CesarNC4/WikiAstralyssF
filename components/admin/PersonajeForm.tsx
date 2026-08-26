@@ -652,7 +652,7 @@ export function PersonajeForm({
                   {r.personajeRelacionadoId ? (
                     <div className="flex items-center gap-2 rounded-lg border border-border-base bg-surface px-3 py-2 text-sm">
                       <span className="text-fg">{r.relLabel}</span>
-                      <button type="button" className="ml-auto text-fg-muted hover:text-error" onClick={() => up({ personajeRelacionadoId: null, relLabel: "" })}>✕</button>
+                      <button type="button" className="ml-auto text-fg-muted hover:text-error" onClick={() => up({ personajeRelacionadoId: null, relLabel: "" })} aria-label={`Quitar ${r.relLabel}`}>✕</button>
                     </div>
                   ) : (
                     <MultiPicker options={personajesOpts} selectedIds={[]} placeholder="Buscar personaje…" onAdd={(id, label) => up({ personajeRelacionadoId: id, relLabel: label })} />
@@ -836,7 +836,7 @@ function Picker({
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border-base bg-surface px-3 py-2 text-sm">
         <span className="text-fg">{label}</span>
-        <button type="button" className="ml-auto text-fg-muted hover:text-error" onClick={onClear}>✕</button>
+        <button type="button" className="ml-auto text-fg-muted hover:text-error" onClick={onClear} aria-label={`Quitar ${label}`}>✕</button>
       </div>
     );
   }
@@ -865,7 +865,7 @@ function Pertenencia<T extends { label: string }>({
             <span className="text-sm text-fg">{it.label}</span>
             <div className="ml-auto flex items-center gap-2">
               {extra(it, (patch) => onChange(items.map((x, idx) => (idx === i ? { ...x, ...patch } : x))))}
-              <button type="button" className="text-fg-muted hover:text-error" onClick={() => onChange(items.filter((_, idx) => idx !== i))}>✕</button>
+              <button type="button" className="text-fg-muted hover:text-error" onClick={() => onChange(items.filter((_, idx) => idx !== i))} aria-label={`Quitar ${it.label}`}>✕</button>
             </div>
           </div>
         ))}

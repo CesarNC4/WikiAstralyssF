@@ -168,7 +168,7 @@ export async function getCapitulosDePersonaje(personajeId: number) {
     .select({ id: s.capitulos.id, numero: s.capitulos.numero, titulo: s.capitulos.titulo, rol: s.capituloPersonaje.rolEnCapitulo })
     .from(s.capituloPersonaje)
     .innerJoin(s.capitulos, eq(s.capituloPersonaje.capituloId, s.capitulos.id))
-    .where(eq(s.capituloPersonaje.personajeId, personajeId))
+    .where(and(eq(s.capituloPersonaje.personajeId, personajeId), eq(s.capitulos.estadoPublicacion, "publicado")))
     .orderBy(asc(s.capitulos.numero));
 }
 
@@ -367,9 +367,15 @@ export async function getFamiliaFicha(id: number) {
         madreId: s.familiaArbol.madreId,
         estado: s.familiaArbol.estado,
         destacado: s.familiaArbol.destacado,
-        personajeId: s.familiaArbol.personajeId,
+        // Del join filtrado, no de la FK: si el personaje no está publicado queda
+        // null y el nodo del árbol deja de enlazar a una ficha que daría 404.
+        personajeId: s.personajes.id,
       })
       .from(s.familiaArbol)
+      .leftJoin(
+        s.personajes,
+        and(eq(s.familiaArbol.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado")),
+      )
       .where(eq(s.familiaArbol.familiaId, id))
       .orderBy(asc(s.familiaArbol.generacion)),
     db
@@ -386,7 +392,10 @@ export async function getFamiliaFicha(id: number) {
         rangoPeso: s.familiaRangos.peso,
       })
       .from(s.familiaJerarquia)
-      .leftJoin(s.personajes, eq(s.familiaJerarquia.personajeId, s.personajes.id))
+      .leftJoin(
+        s.personajes,
+        and(eq(s.familiaJerarquia.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado")),
+      )
       .leftJoin(s.familiaRangos, eq(s.familiaJerarquia.rangoId, s.familiaRangos.id))
       .where(eq(s.familiaJerarquia.familiaId, id))
       .orderBy(asc(s.familiaJerarquia.orden)),
@@ -429,7 +438,10 @@ export async function getGremioFicha() {
         rangoPeso: s.gremioRangos.peso,
       })
       .from(s.gremioJerarquia)
-      .leftJoin(s.personajes, eq(s.gremioJerarquia.personajeId, s.personajes.id))
+      .leftJoin(
+        s.personajes,
+        and(eq(s.gremioJerarquia.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado")),
+      )
       .leftJoin(s.gremioRangos, eq(s.gremioJerarquia.rangoId, s.gremioRangos.id))
       .where(eq(s.gremioJerarquia.gremioId, gid))
       .orderBy(asc(s.gremioJerarquia.orden)),

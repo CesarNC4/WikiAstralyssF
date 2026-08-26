@@ -49,7 +49,7 @@ export async function getBestiaRelaciones(bestiaId: number) {
       .select({ id: s.regiones.id, nombre: s.regiones.nombre, color: s.regiones.color, poligono: s.regiones.poligono, centroX: s.regiones.centroX, centroY: s.regiones.centroY, nota: s.bestiaRegion.nota })
       .from(s.bestiaRegion)
       .innerJoin(s.regiones, eq(s.bestiaRegion.regionId, s.regiones.id))
-      .where(and(eq(s.bestiaRegion.bestiaId, bestiaId), isNull(s.regiones.eliminadoEn))),
+      .where(and(eq(s.bestiaRegion.bestiaId, bestiaId), eq(s.regiones.estadoPublicacion, "publicado"), isNull(s.regiones.eliminadoEn))),
     db
       .select({ id: s.minerales.id, nombre: s.minerales.nombre, imagenUrl: s.minerales.imagenUrl, rarezaMineral: s.minerales.rareza, rareza: s.bestiaDrop.rareza, nota: s.bestiaDrop.nota, orden: s.bestiaDrop.orden })
       .from(s.bestiaDrop)

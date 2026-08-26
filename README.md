@@ -72,7 +72,7 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 ## Estado actual
 
 - Design system cósmico (tokens Tailwind v4, fuentes Cinzel/Inter/JetBrains).
-- Capa Drizzle completa (54 tablas) + queries con filtro de visibilidad.
+- Capa Drizzle completa (70 tablas) + queries con filtro de visibilidad.
 - Navegación adaptativa (top nav desktop + bottom nav móvil + drawer).
 - Búsqueda global ⌘K sobre índice FTS materializado (`search_index`, mantenido
   por triggers): tsquery en español + similitud trigram + prefijo, tolerante a

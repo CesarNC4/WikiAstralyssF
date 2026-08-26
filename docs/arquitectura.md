@@ -25,10 +25,11 @@ presente que estas piezas cambiaron:
 | El documento dice | Lo que se hizo |
 |---|---|
 | Next.js 15 | **Next.js 16** |
-| Cloudflare R2 | **Cloudinary** (subida desde el cliente con upload preset, vía `next-cloudinary`) |
+| Cloudflare R2 | **Cloudinary**. La subida sale del navegador vía `next-cloudinary` pero va **firmada en el servidor** (`/api/cloudinary/firma`), organizada en carpetas por entidad, y los assets sin referencias se purgan solos (`lib/media/purga.ts`) |
 | shadcn/ui | **Componentes propios** organizados por dominio (`components/fichas`, `/admin`, `/viz`…). No existe `components/ui` |
 | Recharts (radar de stats) | **SVG propio** animado con Framer Motion (`components/fichas/personaje/StatRadar.tsx`) |
 | Howler.js (audio) | **`<audio>` nativo** + embeds, con el estado en Zustand (`components/player/MusicPlayerBar.tsx`) |
+| `db/types.ts` (§2.5) | No existe, y no se usa `InferSelectModel`. Cada módulo de `lib/queries` deriva sus tipos del retorno de su propia query (`Awaited<ReturnType<typeof …>>`) |
 | D3 | No se usó |
 | Sentry | No instalado |
 | next-pwa | No instalado (sigue pendiente, §15) |
@@ -36,6 +37,7 @@ presente que estas piezas cambiaron:
 > Las referencias a R2, shadcn, Recharts y Howler que aparecen más adelante en el
 > texto son del diseño original: valen como razonamiento, no como descripción de
 > lo que hay en el repositorio.
+
 ---
 
 ## Índice
