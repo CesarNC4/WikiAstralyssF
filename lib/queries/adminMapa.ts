@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, isNull } from "drizzle-orm";
+import { asc, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 

@@ -17,6 +17,35 @@ type Referencias = Partial<Record<RefTarget, OpcionRef[]>>;
 
 const s = (v: unknown) => (v == null ? "" : String(v));
 
+/**
+ * Vacía los campos dependientes cuyo `dependsOn` no se cumple, para no persistir
+ * datos obsoletos: `submit()` serializa `values` entero, así que un campo oculto
+ * con valor viejo llegaría igual a la base de datos (p.ej. la variante de un arma
+ * si el tipo deja de ser "Arma").
+ *
+ * Se aplica al construir el estado inicial y en cada cambio, de modo que `values`
+ * está siempre normalizado. Antes lo hacía un `useEffect` que corregía el estado
+ * después del render, lo que costaba un render extra por cada cambio de
+ * visibilidad y disparaba `react-hooks/set-state-in-effect`.
+ *
+ * Repite hasta estabilizar, porque vaciar un campo puede ocultar otro que dependa
+ * de él. Termina siempre: cada pasada solo vacía campos, nunca los rellena.
+ */
+function limpiarDependientes(values: Record<string, string>, fields: FieldDef[]) {
+  let next = values;
+  for (;;) {
+    let cambiado = false;
+    for (const fd of fields) {
+      if (!fd.dependsOn || !next[fd.name]) continue;
+      if (next[fd.dependsOn.field] === fd.dependsOn.equals) continue;
+      if (next === values) next = { ...values };
+      next[fd.name] = "";
+      cambiado = true;
+    }
+    if (!cambiado) return next;
+  }
+}
+
 export function EntidadForm({
   config,
   inicial,
@@ -35,28 +64,16 @@ export function EntidadForm({
   const [values, setValues] = useState<Record<string, string>>(() => {
     const v: Record<string, string> = { [config.nameField]: s(inicial?.[config.nameField]) };
     for (const fd of config.fields) v[fd.name] = s(inicial?.[fd.name]);
-    return v;
+    return limpiarDependientes(v, config.fields);
   });
   const set = (name: string, val: string) => {
-    setValues((prev) => ({ ...prev, [name]: val }));
+    setValues((prev) => limpiarDependientes({ ...prev, [name]: val }, config.fields));
     mark();
   };
 
   // Campo dependiente: visible solo si su `dependsOn` se cumple con el valor actual.
   const isVisible = (fd: FieldDef) =>
     !fd.dependsOn || values[fd.dependsOn.field] === fd.dependsOn.equals;
-
-  // Limpia el valor de un campo dependiente cuando deja de ser visible, para no
-  // persistir datos obsoletos (p.ej. la variante de un arma si el tipo deja de ser "Arma").
-  useEffect(() => {
-    const stale = config.fields.filter((fd) => !isVisible(fd) && values[fd.name]);
-    if (stale.length === 0) return;
-    setValues((prev) => {
-      const next = { ...prev };
-      for (const fd of stale) next[fd.name] = "";
-      return next;
-    });
-  }, [values, config.fields]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [imagen, setImagen] = useState<ImageValue>({ assetId: null, url: s(inicial?.imagenUrl) || null });
   const [banner, setBanner] = useState<ImageValue>({ assetId: null, url: s(inicial?.bannerUrl) || null });
