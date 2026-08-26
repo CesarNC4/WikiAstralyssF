@@ -1,0 +1,17 @@
+# ── Política de seguridad de dependencias ────────────────────────────────
+# Ningún paquete puede ejecutar código al instalarse salvo que aparezca aquí
+# con `true`. Se aprueban uno a uno con `pnpm approve-builds`.
+#
+# Los tres de abajo están denegados a propósito: sus binarios nativos llegan
+# como optionalDependencies normales (verificadas por hash en pnpm-lock.yaml),
+# así que su script de instalación es prescindible. Verificado: tsc, eslint,
+# esbuild, sharp y `next build` funcionan con los tres desactivados.
+allowBuilds:
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
+
+# Cuarentena: rechaza cualquier versión publicada hace menos de 7 días
+# (10080 min). Casi todo el malware de npm se detecta y retira en horas,
+# así que esto lo filtra antes de que llegue a tu disco.
+minimumReleaseAge: 10080

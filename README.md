@@ -7,7 +7,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Drizzle ORM 
 
 1. **Instala dependencias** (ya hecho si tienes `node_modules`):
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. **Configura el entorno.** `.env.local` ya tiene la URL y la clave pública de tu
@@ -22,7 +22,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Drizzle ORM 
 
 3. **Arranca en desarrollo:**
    ```bash
-   npm run dev
+   pnpm dev
    ```
    Abre http://localhost:3000
 
@@ -30,11 +30,33 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Drizzle ORM 
 
 | Script | Qué hace |
 |---|---|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Build de producción |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run db:pull` | Introspecciona la DB a Drizzle (requiere `DIRECT_URL`) |
-| `npm run db:studio` | Drizzle Studio |
+| `pnpm dev` | Servidor de desarrollo |
+| `pnpm build` | Build de producción |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm db:pull` | Introspecciona la DB a Drizzle (requiere `DIRECT_URL`) |
+| `pnpm db:studio` | Drizzle Studio |
+
+## Seguridad de dependencias
+
+El proyecto usa **pnpm** (fijado en `packageManager`), no npm. `npm install`
+ejecuta los *lifecycle scripts* de cualquiera de las ~590 dependencias
+transitivas sin preguntar, que es el vector de los ataques de cadena de
+suministro de npm. pnpm los **bloquea por defecto**.
+
+La política vive en `pnpm-workspace.yaml`:
+
+- **`allowBuilds`** — lista blanca explícita: ningún paquete ejecuta código al
+  instalarse salvo que aparezca aquí con `true`. Hoy hay tres denegados a
+  propósito (`esbuild`, `sharp`, `unrs-resolver`): sus binarios nativos llegan
+  como `optionalDependencies` normales, verificadas por hash en el lockfile,
+  así que su script sobra. Comprobado: `typecheck`, `lint` y `build` pasan.
+- **`minimumReleaseAge: 10080`** — cuarentena de 7 días. Rechaza versiones
+  recién publicadas, que es la ventana en la que el malware sigue vivo antes
+  de ser detectado y retirado.
+
+Si al instalar sale `ERR_PNPM_IGNORED_BUILDS`, **no lo apruebes a ciegas**:
+mira qué hace el script y decide con `pnpm approve-builds <pkg>` para permitir
+o `pnpm approve-builds '!<pkg>'` para denegar.
 
 ## Estructura
 

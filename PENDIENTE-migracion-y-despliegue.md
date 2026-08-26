@@ -25,13 +25,13 @@ En otro equipo sin Node: descarga el **ZIP** "Windows Binary (.zip)" de nodejs.o
 
 ## 1. Instalar dependencias (una vez por equipo)
 ```
-npm install
+pnpm install
 ```
 `node_modules` está en `.gitignore`: no viaja en el commit, hay que instalarlo en cada equipo.
 
 ## 2. Verificar tipos (opcional, no toca nada)
 ```
-npm run typecheck
+pnpm typecheck
 ```
 
 ## 3. Correr la migración de la base de datos
