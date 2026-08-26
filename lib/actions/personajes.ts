@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
@@ -193,6 +193,13 @@ async function guardarHijos(
       nota: o.nota,
       orden: ordenOb++,
     });
+    // Un artefacto sin dueño lo adopta quien lo porta. Antes esto sólo pasaba al
+    // crear el objeto aquí mismo, así que vincular uno ya existente lo dejaba con
+    // portador y sin propietario, y los dos datos se separaban en silencio.
+    await tx
+      .update(s.armasArtefactos)
+      .set({ propietarioId: personajeId })
+      .where(and(eq(s.armasArtefactos.id, artId), isNull(s.armasArtefactos.propietarioId)));
   }
 
   await tx.delete(s.relaciones).where(eq(s.relaciones.personajeId, personajeId));
@@ -223,12 +230,39 @@ async function guardarHijos(
     );
   }
 
-  await tx.delete(s.personajeOrganizacion).where(eq(s.personajeOrganizacion.personajeId, personajeId));
-  if (data.organizaciones.length) {
-    await tx.insert(s.personajeOrganizacion).values(
-      data.organizaciones.map((o) => ({
-        personajeId,
+  // Las organizaciones viven en `org_jerarquia`, compartida con el editor de la
+  // propia organización, que guarda ahí rango, facción y orden. Por eso este
+  // bloque NO puede borrar y reinsertar como los de arriba: se sincroniza por
+  // diferencias para no tirar lo que se escribió desde el otro lado.
+  const orgActuales = await tx
+    .select({ id: s.orgJerarquia.id, organizacionId: s.orgJerarquia.organizacionId })
+    .from(s.orgJerarquia)
+    .where(eq(s.orgJerarquia.personajeId, personajeId));
+
+  const deseadas = new Map<number, (typeof data.organizaciones)[number]>();
+  for (const o of data.organizaciones) deseadas.set(o.organizacionId, o);
+
+  const vistas = new Set<number>();
+  for (const fila of orgActuales) {
+    const quiere = deseadas.get(fila.organizacionId);
+    if (!quiere || vistas.has(fila.organizacionId)) {
+      // Ya no pertenece (o es una fila repetida de la misma organización).
+      await tx.delete(s.orgJerarquia).where(eq(s.orgJerarquia.id, fila.id));
+      continue;
+    }
+    vistas.add(fila.organizacionId);
+    await tx
+      .update(s.orgJerarquia)
+      .set({ rol: quiere.rol, tipo: quiere.tipo, descripcion: quiere.descripcion })
+      .where(eq(s.orgJerarquia.id, fila.id));
+  }
+
+  const nuevas = data.organizaciones.filter((o) => !vistas.has(o.organizacionId));
+  if (nuevas.length) {
+    await tx.insert(s.orgJerarquia).values(
+      nuevas.map((o) => ({
         organizacionId: o.organizacionId,
+        personajeId,
         rol: o.rol,
         tipo: o.tipo,
         descripcion: o.descripcion,
@@ -381,7 +415,7 @@ export async function eliminarDefinitivo(id: number): Promise<void> {
     await tx.delete(s.relaciones).where(eq(s.relaciones.personajeId, id));
     await tx.delete(s.personajeNacion).where(eq(s.personajeNacion.personajeId, id));
     await tx.delete(s.personajeRaza).where(eq(s.personajeRaza.personajeId, id));
-    await tx.delete(s.personajeOrganizacion).where(eq(s.personajeOrganizacion.personajeId, id));
+    await tx.delete(s.orgJerarquia).where(eq(s.orgJerarquia.personajeId, id));
     await tx.delete(s.personajes).where(eq(s.personajes.id, id));
   });
   await purgarEnSegundoPlano();

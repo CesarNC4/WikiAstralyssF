@@ -11,6 +11,7 @@ import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { RelacionesEditor } from "@/components/admin/blocks/RelacionEditor";
+import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 import { Field, TextInput, NumberInput, Select, MarkdownField, ReferenceField, SliderInput } from "@/components/admin/fields";
 
 type Referencias = Partial<Record<RefTarget, OpcionRef[]>>;
@@ -143,7 +144,10 @@ export function EntidadForm({
   const fe = state?.fieldErrors ?? {};
 
   return (
-    <div className="space-y-4 pb-28">
+    // Dos columnas en pantallas anchas: la ficha a la izquierda y el panel de
+    // conexiones fijo a la derecha, visible mientras editas el resto.
+    <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
+      <div className="space-y-4">
       {config.nota && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-glow/60 bg-deep/40 px-4 py-3 text-sm text-fg-secondary">
           <span>{config.nota}</span>
@@ -194,12 +198,20 @@ export function EntidadForm({
         </AccordionSection>
       )}
 
-      {/* Relaciones N:M (solo al editar: necesitan un id de entidad existente) */}
+      {/* Sub-listas de texto propias de la ficha (solo al editar: necesitan id) */}
       {id && <RelacionesEditor entidad={config.key} ownerId={id} revalidar={`${config.route}/${id}`} />}
 
       {/* Galería (solo al editar: necesita un id de entidad existente) */}
       {id && config.hasImage && (
         <GaleriaEditor entidadTipo={config.key} entidadId={id} revalidar={`${config.route}/${id}`} alt={values[config.nameField]} />
+      )}
+
+      </div>
+
+      {id && (
+        <div className="mt-4 xl:sticky xl:top-4 xl:mt-0 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:pr-1">
+          <PanelConexiones entidad={config.key} ownerId={id} />
+        </div>
       )}
 
       {/* Barra de acciones */}

@@ -8,6 +8,7 @@ export * from "./lore";
 export * from "./narrativa";
 export * from "./media";
 export * from "./relacionesNM";
+export * from "./vinculos";
 export * from "./jerarquias";
 export * from "./mapa";
 export * from "./admin";

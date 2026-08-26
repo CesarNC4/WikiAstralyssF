@@ -142,6 +142,36 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
         href: `/lore/${r.slug}`,
       }));
     }
+    case "capitulos": {
+      const rows = await db
+        .select({ id: s.capitulos.id, numero: s.capitulos.numero, titulo: s.capitulos.titulo, libro: s.capitulos.libro, tipo: s.capitulos.tipo })
+        .from(s.capitulos)
+        .where(and(eq(s.capitulos.estadoPublicacion, "publicado"), isNull(s.capitulos.eliminadoEn)))
+        .orderBy(asc(s.capitulos.numero));
+      return rows.map((r) => ({
+        id: r.id,
+        titulo: r.titulo,
+        subtitulo: r.libro ? `${r.libro} · Cap. ${r.numero}` : `Capítulo ${r.numero}`,
+        imagenUrl: null,
+        href: `/capitulos/${r.id}`,
+        badge: r.tipo,
+      }));
+    }
+    case "arcos": {
+      const rows = await db
+        .select({ id: s.tramaArcos.id, titulo: s.tramaArcos.nombre, libro: s.tramaArcos.libro, tipo: s.tramaArcos.tipo })
+        .from(s.tramaArcos)
+        .where(and(eq(s.tramaArcos.estadoPublicacion, "publicado"), isNull(s.tramaArcos.eliminadoEn)))
+        .orderBy(asc(s.tramaArcos.orden), asc(s.tramaArcos.nombre));
+      return rows.map((r) => ({
+        id: r.id,
+        titulo: r.titulo,
+        subtitulo: r.libro,
+        imagenUrl: null,
+        href: `/arcos/${r.id}`,
+        badge: r.tipo,
+      }));
+    }
     case "misiones": {
       const rows = await db
         .select({ id: s.misiones.id, titulo: s.misiones.nombre, subtitulo: s.misiones.tipo, badge: s.misiones.nivelRiesgo, estado: s.misiones.estado })

@@ -58,6 +58,11 @@ export const orgRangos = pgTable("org_rangos", {
   peso: integer("peso"),
 });
 
+/**
+ * Miembros de una organización: organigrama y pertenencia a la vez. `nombre` se
+ * usa cuando el miembro no tiene ficha propia; `rol`, `tipo` y `descripcion`
+ * llegaron al absorber `personaje_organizacion`.
+ */
 export const orgJerarquia = pgTable("org_jerarquia", {
   id: serial("id").primaryKey(),
   organizacionId: integer("organizacion_id").notNull(),
@@ -67,6 +72,9 @@ export const orgJerarquia = pgTable("org_jerarquia", {
   tituloApodo: varchar("titulo_apodo"),
   faccionId: integer("faccion_id"),
   orden: integer("orden"),
+  rol: varchar("rol"),
+  tipo: varchar("tipo"),
+  descripcion: varchar("descripcion"),
 });
 
 export const orgHistorial = pgTable("org_historial", {

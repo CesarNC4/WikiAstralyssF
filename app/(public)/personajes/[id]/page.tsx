@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PersonajeFichaBody } from "@/components/fichas/PersonajeFichaBody";
 import { getPersonajeFicha, getVisibleIds } from "@/lib/queries/fichas";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -38,5 +39,13 @@ export default async function PersonajePage({
   const { id } = await params;
   const p = await getPersonajeFicha(Number(id)).catch(() => null);
   if (!p) notFound();
-  return <PersonajeFichaBody p={p} />;
+  return (
+    <>
+      <PersonajeFichaBody p={p} />
+      {/* Conexiones generadas desde el registro de relaciones. */}
+      <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
+        <Conexiones entidad="personajes" id={p.id} nombre={p.nombre} imagen={p.imagenUrl} />
+      </div>
+    </>
+  );
 }

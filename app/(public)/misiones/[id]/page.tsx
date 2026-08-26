@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { Badge } from "@/components/entity/Badge";
 import { getMision, getVisibleIds } from "@/lib/queries/fichas";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -53,6 +54,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       )}
 
       <ProseFields fields={[{ label: "Descripción", value: x.descripcion }, { label: "Objetivo", value: x.objetivo }, { label: "Recompensa", value: x.recompensa }]} />
+      {/* Conexiones generadas desde el registro de relaciones. */}
+      <Conexiones entidad="misiones" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} />
     </FichaShell>
   );
 }

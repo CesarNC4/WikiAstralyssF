@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { Badge } from "@/components/entity/Badge";
 import { getLordDemonio, getVisibleIds } from "@/lib/queries/fichas";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -57,6 +58,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           { label: "Poder especial", value: x.poderEspecial },
         ]}
       />
+      {/* Conexiones generadas desde el registro de relaciones. */}
+      <Conexiones entidad="demonios" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} />
     </FichaShell>
   );
 }

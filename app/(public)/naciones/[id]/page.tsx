@@ -16,6 +16,7 @@ import { getNacionTerritorio } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
 import { STATS_POR_ENTIDAD, tieneStats } from "@/lib/stats";
 import { TIPOS_LOCACION, type TipoLocacionKey } from "@/lib/mapa";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 const DIPLO_COLOR: Record<string, string> = {
   Aliada: "#5fb98f", Rival: "#e0a44a", Neutral: "#9aa3b2", Vasalla: "#5b8def", "En guerra": "#ef6f6f",
@@ -247,6 +248,9 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
           ].filter((g) => g.nodos.length > 0);
           return grupos.length > 0 ? <MiniGrafo centro={{ label: n.nombre, img: n.imagenUrl }} grupos={grupos} accent={color} /> : null;
         })()}
+
+        {/* Conexiones generadas desde el registro de relaciones. */}
+        <Conexiones entidad="naciones" id={n.id} nombre={n.nombre} imagen={n.imagenUrl} conGrafo={false} />
 
         {galeria.length > 0 && <Galeria images={galeria} />}
       </div>

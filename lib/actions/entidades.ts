@@ -9,6 +9,7 @@ import { notificarNuevaPublicacion } from "@/lib/discord";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { REL_TABLES } from "@/lib/admin/relacionesTables";
+import { clonarVinculos } from "@/lib/relaciones/consultas";
 import { entidadMedia } from "@/db/schema/media";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
@@ -275,18 +276,20 @@ export async function duplicarEntidad(key: string, id: number): Promise<number> 
     );
   }
 
-  // Bloques de relación declarados para esta entidad.
+  // Sub-listas de texto propias de la ficha (los usos de un mineral).
   for (const [clave, def] of Object.entries(REL_TABLES)) {
     if (!clave.startsWith(`${key}:`)) continue;
     const rc = getTableColumns(def.table) as Cols;
-    const filtros = [eq(rc[def.ownerCol], id)];
-    if (def.tipoPolimorfico) filtros.push(eq(rc.entidadTipo, def.tipoPolimorfico));
-    const filas = await db.select().from(def.table).where(and(...filtros));
+    const filas = await db.select().from(def.table).where(eq(rc[def.ownerCol], id));
     if (filas.length === 0) continue;
     await db
       .insert(def.table)
       .values(filas.map((f) => ({ ...(f as Cols), id: undefined, [def.ownerCol]: nuevoId })));
   }
+
+  // Conexiones con otras fichas. Sin esto, duplicar obligaría a rehacer a mano
+  // justo el trabajo que el sistema de relaciones existe para ahorrar.
+  await clonarVinculos(key, id, nuevoId);
 
   revalidar(config.route);
   return nuevoId;

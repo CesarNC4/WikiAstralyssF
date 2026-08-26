@@ -65,6 +65,7 @@ db/               Drizzle schema (por dominio), client, relations
 lib/queries/      capa de acceso a datos (server-only, filtra visibilidad)
 lib/actions/      Server Actions (auth, búsqueda)
 lib/entities.ts   registro central de secciones (nav, índices, búsqueda)
+lib/relaciones/   registro de relaciones: cada arista del mundo, declarada una vez
 docs/             arquitectura (el porqué) y runbook de despliegue
 scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 ```
@@ -87,8 +88,23 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - Subida de imágenes a Cloudinary desde el propio panel, **firmada en el servidor**
   y organizada en carpetas por entidad (`astralys/personajes`, `…/galeria`).
   Los assets que dejan de estar referenciados se purgan solos de Cloudinary.
-- Mapa con Leaflet + Geoman y grafos de relaciones con React Flow.
-- Acciones en lote y duplicado de fichas en el panel.
+- **Conectividad bidireccional.** Cada relación se declara una sola vez en
+  `lib/relaciones/registro.ts` y de ahí salen el editor de las dos fichas, los
+  bloques públicos de ambas y las aristas del grafo: **55 declaraciones producen
+  206 bloques**. Vincular un personaje a una organización desde cualquiera de las
+  dos fichas es la misma fila en la base. Ver [docs/relaciones.md](./docs/relaciones.md).
+- Panel de conexiones fijo en el admin mientras editas, con buscador de fichas
+  con contexto, vinculación en lote y creación de borradores al vuelo.
+- Notas privadas del autor y visibilidad por campo: ocultar un dato al público
+  sin borrarlo.
+- Mapa con Leaflet + Geoman, grafo global en `/atlas` y mini-grafo por ficha,
+  ambos alimentados por el registro de relaciones.
+- Acciones en lote y duplicado de fichas en el panel. Duplicar arrastra también
+  las conexiones de la ficha original.
+- Dominio narrativo gestionable: capítulos, actos, arcos, hojas de trama e hilos.
+  Capítulos y arcos tienen ficha pública e índice propio; las hojas y los hilos se
+  quedan en el panel porque guardan giros y notas de autor.
+- Canciones y catálogo de elementos gestionables desde el panel.
 - Feed RSS en `/feed.xml` con las últimas entidades publicadas.
 - PWA instalable con service worker propio (sin dependencias): navegación sin
   conexión de lo ya visitado. El panel y las APIs nunca se cachean.

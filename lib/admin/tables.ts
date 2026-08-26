@@ -17,6 +17,15 @@ export const ENTIDAD_TABLES: Record<string, PgTable> = {
   demonios: s.lordDemonio,
   artefactos: s.armasArtefactos,
   economia: s.sistemaMonetario,
+  // Narrativa, canciones y catálogo elemental: entraron al admin genérico al
+  // recibir estado de publicación y columnas de auditoría.
+  capitulos: s.capitulos,
+  actos: s.actos,
+  arcos: s.tramaArcos,
+  hojas: s.tramaHojas,
+  hilos: s.hiloNarrativo,
+  canciones: s.canciones,
+  elementos: s.elementos,
 };
 
 export function getEntidadTable(key: string): PgTable | undefined {

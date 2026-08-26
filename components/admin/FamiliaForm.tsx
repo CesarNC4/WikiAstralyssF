@@ -13,6 +13,7 @@ import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
 import type { Opcion } from "@/components/admin/blocks/shared";
+import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 
 // React Flow accede a `window`: cargar solo en cliente.
 const ArbolEditor = dynamic(() => import("@/components/admin/blocks/ArbolEditor").then((m) => m.ArbolEditor), {
@@ -110,7 +111,10 @@ export function FamiliaForm({
   };
 
   return (
-    <div className="space-y-4 pb-28">
+    // Dos columnas en pantallas anchas: la ficha y, a la derecha, el panel de
+    // conexiones fijo mientras editas.
+    <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
+      <div className="space-y-4">
       <AccordionSection title="Identidad" defaultOpen>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre *" error={fe.nombre}><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Casa Valeria" /></Field>
@@ -170,6 +174,14 @@ export function FamiliaForm({
           <ImageField label="Banner" entidad="familias" value={banner} onChange={wrap(setBanner)} alt={campos.nombre} aspect="aspect-video" />
         </div>
       </AccordionSection>
+
+      </div>
+
+      {id && (
+        <div className="mt-4 xl:sticky xl:top-4 xl:mt-0 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:pr-1">
+          <PanelConexiones entidad="familias" ownerId={id} />
+        </div>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">

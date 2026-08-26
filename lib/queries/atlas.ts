@@ -1,9 +1,27 @@
 import "server-only";
-import { and, eq, isNull } from "drizzle-orm";
+import { eq, sql, getTableColumns, getTableName } from "drizzle-orm";
+import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { relacionesDelAtlas, CUALQUIERA } from "@/lib/relaciones/registro";
+import { tablaDe } from "@/lib/relaciones/tablas";
+import { entityByKey } from "@/lib/entities";
 
-export type AtlasTipo = "naciones" | "razas" | "bestias" | "minerales" | "organizaciones";
+/**
+ * Grafo global del mundo, construido a partir del registro de relaciones.
+ *
+ * Antes estaba cableado a mano: cinco tipos de nodo y cinco de arista, sin
+ * personajes pese a ser la sección más poblada. Ahora cada relación declarada
+ * aporta sus aristas sola.
+ *
+ * Se resuelve en **dos consultas**. Una primera versión hacía una por relación y
+ * otra por entidad —más de cuarenta— y contra esta base, donde una consulta
+ * trivial ronda el medio segundo, la página tardaba minutos. Ahora las aristas
+ * salen de un único UNION ALL y los nodos de `search_index`, que ya guarda
+ * título, imagen, URL y estado de publicación de todas las entidades.
+ */
+
+export type AtlasTipo = string;
 
 export interface AtlasNodo {
   id: string;
@@ -12,51 +30,157 @@ export interface AtlasNodo {
   img: string | null;
   href: string;
 }
+
 export interface AtlasArista {
   a: string;
   b: string;
   tipo: string;
 }
 
-const VIS = { estadoPublicacion: "publicado" } as const;
+/** Leyenda del grafo: qué tipos hay y cómo se pintan. */
+export interface AtlasTipoMeta {
+  key: AtlasTipo;
+  label: string;
+  color: string;
+  icon: string;
+}
 
-/** Nodos + aristas del grafo global del mundo (solo publicados). */
-export async function getAtlas(): Promise<{ nodos: AtlasNodo[]; aristas: AtlasArista[] }> {
-  const [naciones, razas, bestias, minerales, organizaciones] = await Promise.all([
-    db.select({ id: s.naciones.id, nombre: s.naciones.nombre, img: s.naciones.imagenUrl }).from(s.naciones).where(and(eq(s.naciones.estadoPublicacion, VIS.estadoPublicacion), isNull(s.naciones.eliminadoEn))),
-    db.select({ id: s.razas.id, nombre: s.razas.nombre, img: s.razas.imagenUrl, padre: s.razas.razaPadreId }).from(s.razas).where(and(eq(s.razas.estadoPublicacion, VIS.estadoPublicacion), isNull(s.razas.eliminadoEn))),
-    db.select({ id: s.bestias.id, nombre: s.bestias.nombre, img: s.bestias.imagenUrl }).from(s.bestias).where(and(eq(s.bestias.estadoPublicacion, VIS.estadoPublicacion), isNull(s.bestias.eliminadoEn))),
-    db.select({ id: s.minerales.id, nombre: s.minerales.nombre, img: s.minerales.imagenUrl }).from(s.minerales).where(and(eq(s.minerales.estadoPublicacion, VIS.estadoPublicacion), isNull(s.minerales.eliminadoEn))),
-    db.select({ id: s.organizaciones.id, nombre: s.organizaciones.nombre, img: s.organizaciones.imagenUrl }).from(s.organizaciones).where(eq(s.organizaciones.estadoPublicacion, VIS.estadoPublicacion)),
+/** Color por entidad. Los tokens del diseño son clases; aquí hace falta el hex. */
+const COLOR: Record<string, string> = {
+  personajes: "#8b7bff",
+  naciones: "#7b5cff",
+  razas: "#9b8cff",
+  bestias: "#ef6f6f",
+  minerales: "#6fc3d6",
+  organizaciones: "#5b8def",
+  familias: "#e0a44a",
+  artefactos: "#d8a05f",
+  locaciones: "#5fb98f",
+  regiones: "#4f9d7e",
+  misiones: "#e6b450",
+  conceptos: "#c08bff",
+  magia: "#a78bfa",
+  lore: "#8ab4f8",
+  demonios: "#e05252",
+  timeline: "#9aa3b2",
+};
+
+type Cols = Record<string, PgColumn>;
+const columna = (t: PgTable, clave: string) => (getTableColumns(t) as unknown as Cols)[clave].name;
+
+const nid = (tipo: string, id: number | string) => `${tipo}:${id}`;
+
+interface AristaBruta {
+  at: string;
+  a: number;
+  bt: string;
+  b: number;
+  tipo: string;
+}
+
+/**
+ * Una sola sentencia con todas las aristas del mundo: cada relación aporta una
+ * rama del UNION ALL, así que declarar una relación nueva la mete en el grafo
+ * sin tocar nada de aquí.
+ */
+function consultaDeAristas() {
+  const ramas = [];
+
+  for (const rel of relacionesDelAtlas()) {
+    if (rel.medio === "vinculo") continue; // van juntas en una rama aparte
+    if (rel.a.entidad === CUALQUIERA || rel.b.entidad === CUALQUIERA) continue;
+    const def = tablaDe(rel.id);
+    if (!def) continue;
+
+    const tabla = sql.identifier(getTableName(def.tabla));
+    const colA = sql.identifier(columna(def.tabla, def.colA));
+    const colB = sql.identifier(columna(def.tabla, def.colB));
+    const filtro = def.filtroA
+      ? sql` and ${sql.identifier(columna(def.tabla, def.filtroA.col))} = ${def.filtroA.valor}`
+      : sql``;
+
+    ramas.push(sql`
+      select ${rel.a.entidad}::text as at, ${colA}::int as a,
+             ${rel.b.entidad}::text as bt, ${colB}::int as b,
+             ${rel.id}::text as tipo
+        from ${tabla}
+       where ${colA} is not null and ${colB} is not null${filtro}`);
+  }
+
+  const genericas = relacionesDelAtlas()
+    .filter((r) => r.medio === "vinculo")
+    .map((r) => r.relacion ?? r.id);
+  if (genericas.length > 0) {
+    ramas.push(sql`
+      select origen_tipo as at, origen_id as a, destino_tipo as bt, destino_id as b, relacion as tipo
+        from vinculo
+       where relacion in (${sql.join(genericas.map((x) => sql`${x}`), sql`, `)})`);
+  }
+
+  // El linaje de sub-razas es una referencia simple, no una tabla N:M, pero en
+  // el grafo cuenta igual.
+  ramas.push(sql`
+    select 'razas'::text as at, id::int as a, 'razas'::text as bt, raza_padre_id::int as b, 'linaje'::text as tipo
+      from razas where raza_padre_id is not null`);
+
+  return sql.join(ramas, sql` union all `);
+}
+
+export async function getAtlas(): Promise<{
+  nodos: AtlasNodo[];
+  aristas: AtlasArista[];
+  tipos: AtlasTipoMeta[];
+}> {
+  const [brutas, fichas] = await Promise.all([
+    db.execute(consultaDeAristas()) as unknown as Promise<AristaBruta[]>,
+    db
+      .select({
+        tipo: s.searchIndex.entidadTipo,
+        id: s.searchIndex.entidadId,
+        label: s.searchIndex.titulo,
+        img: s.searchIndex.imagenUrl,
+        href: s.searchIndex.url,
+      })
+      .from(s.searchIndex)
+      .where(eq(s.searchIndex.estadoPublicacion, "publicado")),
   ]);
 
-  const nodos: AtlasNodo[] = [
-    ...naciones.map((n): AtlasNodo => ({ id: `n${n.id}`, tipo: "naciones", label: n.nombre, img: n.img, href: `/naciones/${n.id}` })),
-    ...razas.map((r): AtlasNodo => ({ id: `r${r.id}`, tipo: "razas", label: r.nombre, img: r.img, href: `/razas/${r.id}` })),
-    ...bestias.map((b): AtlasNodo => ({ id: `b${b.id}`, tipo: "bestias", label: b.nombre, img: b.img, href: `/bestias/${b.id}` })),
-    ...minerales.map((m): AtlasNodo => ({ id: `m${m.id}`, tipo: "minerales", label: m.nombre, img: m.img, href: `/minerales/${m.id}` })),
-    ...organizaciones.map((o): AtlasNodo => ({ id: `o${o.id}`, tipo: "organizaciones", label: o.nombre, img: o.img, href: `/organizaciones/${o.id}` })),
-  ];
-  const existe = new Set(nodos.map((n) => n.id));
-
-  const [nr, no, bn, bd, diplo] = await Promise.all([
-    db.select({ a: s.nacionRaza.nacionId, b: s.nacionRaza.razaId }).from(s.nacionRaza),
-    db.select({ a: s.nacionOrganizacion.nacionId, b: s.nacionOrganizacion.organizacionId }).from(s.nacionOrganizacion),
-    db.select({ a: s.bestiaNacion.bestiaId, b: s.bestiaNacion.nacionId }).from(s.bestiaNacion),
-    db.select({ a: s.bestiaDrop.bestiaId, b: s.bestiaDrop.mineralId }).from(s.bestiaDrop),
-    db.select({ a: s.nacionDiplomacia.nacionId, b: s.nacionDiplomacia.otraNacionId }).from(s.nacionDiplomacia),
-  ]);
+  // `search_index` es la única fuente de nodos: si una ficha no está ahí, el
+  // público no puede verla y sus aristas tampoco deben dibujarse.
+  const visible = new Map<string, AtlasNodo>();
+  for (const f of fichas) {
+    const clave = nid(f.tipo, f.id);
+    visible.set(clave, { id: clave, tipo: f.tipo, label: f.label, img: f.img, href: f.href });
+  }
 
   const aristas: AtlasArista[] = [];
-  const push = (a: string, b: string, tipo: string) => {
-    if (existe.has(a) && existe.has(b) && a !== b) aristas.push({ a, b, tipo });
-  };
-  nr.forEach((e) => push(`n${e.a}`, `r${e.b}`, "habita"));
-  no.forEach((e) => push(`n${e.a}`, `o${e.b}`, "organizacion"));
-  bn.forEach((e) => push(`b${e.a}`, `n${e.b}`, "habitat"));
-  bd.forEach((e) => push(`b${e.a}`, `m${e.b}`, "drop"));
-  diplo.forEach((e) => push(`n${e.a}`, `n${e.b}`, "diplomacia"));
-  razas.forEach((r) => { if (r.padre) push(`r${r.id}`, `r${r.padre}`, "linaje"); });
+  const vistas = new Set<string>();
+  const usados = new Set<string>();
 
-  return { nodos, aristas };
+  for (const e of brutas) {
+    const a = nid(e.at, e.a);
+    const b = nid(e.bt, e.b);
+    if (a === b || !visible.has(a) || !visible.has(b)) continue;
+    // Una relación recíproca guarda dos filas; en el grafo es una sola arista.
+    const clave = a < b ? `${a}|${b}|${e.tipo}` : `${b}|${a}|${e.tipo}`;
+    if (vistas.has(clave)) continue;
+    vistas.add(clave);
+    aristas.push({ a, b, tipo: e.tipo });
+    usados.add(a);
+    usados.add(b);
+  }
+
+  // Sólo entran las fichas que conectan con algo: doscientos puntos sueltos no
+  // dicen nada y hacen ilegible lo que sí está conectado.
+  const nodos = [...usados].map((k) => visible.get(k)!);
+
+  const conNodos = new Set(nodos.map((n) => n.tipo));
+  const tipos: AtlasTipoMeta[] = [...conNodos]
+    .map((key) => {
+      const meta = entityByKey(key);
+      return { key, label: meta?.plural ?? key, color: COLOR[key] ?? "#9aa3b2", icon: meta?.icon ?? "Circle" };
+    })
+    .sort((x, y) => x.label.localeCompare(y.label));
+
+  return { nodos, aristas, tipos };
 }

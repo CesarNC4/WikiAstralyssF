@@ -1,5 +1,6 @@
 import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
 import { estadoPublicacion } from "./enums";
+import { auditColumns } from "./_audit";
 
 /** Dominio Media: canciones y sus tablas de unión con narrativa/personajes. */
 
@@ -13,6 +14,7 @@ export const canciones = pgTable("canciones", {
   imagenUrl: varchar("imagen_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  ...auditColumns(),
 });
 
 // ── Catálogo de medios centralizado (§1, problema 3) ──

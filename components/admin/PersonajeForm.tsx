@@ -10,6 +10,7 @@ import { useToast } from "@/components/admin/Toast";
 import { AccordionSection, Repeater, MultiPicker } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
+import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 import { StatRadar } from "@/components/fichas/personaje/StatRadar";
 import { cn } from "@/lib/utils";
 import {
@@ -388,7 +389,7 @@ export function PersonajeForm({
   ];
 
   return (
-    <div className="lg:grid lg:grid-cols-[180px_1fr] lg:gap-6">
+    <div className="lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[180px_minmax(0,1fr)_20rem]">
       {/* Índice de secciones (lateral fijo) */}
       <aside className="hidden lg:block">
         <nav className="sticky top-4 space-y-0.5">
@@ -745,6 +746,15 @@ export function PersonajeForm({
         <GaleriaEditor entidadTipo="personajes" entidadId={inicial.id} revalidar={`/personajes/${inicial.id}`} alt={f.nombre} />
       )}
 
+      </div>
+
+      {/* Conexiones con el resto del mundo, visibles mientras editas. */}
+      {inicial?.id && (
+        <div className="mt-4 pb-28 xl:sticky xl:top-4 xl:mt-0 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:pr-1">
+          <PanelConexiones entidad="personajes" ownerId={inicial.id} />
+        </div>
+      )}
+
       {/* Barra de acciones fija */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
@@ -783,7 +793,6 @@ export function PersonajeForm({
             </button>
           </div>
         </div>
-      </div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { Field, TextInput, MarkdownField } from "@/components/admin/fields";
+import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 
 type Tipo = "texto" | "cita" | "tabla";
 interface Seccion {
@@ -107,7 +108,10 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
   const fe = state?.fieldErrors ?? {};
 
   return (
-    <div className="space-y-4 pb-28">
+    // Dos columnas en pantallas anchas: la ficha y, a la derecha, el panel de
+    // conexiones fijo mientras editas.
+    <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
+      <div className="space-y-4">
       <AccordionSection title="Cabecera" defaultOpen>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Título *" error={fe.titulo}><TextInput value={titulo} onChange={setTitulo} placeholder="El despertar cósmico" /></Field>
@@ -164,6 +168,14 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
           <ImageField label="Banner" entidad="lore" value={banner} onChange={(v) => { setBanner(v); mark(); }} alt={titulo} aspect="aspect-video" />
         </div>
       </AccordionSection>
+
+      </div>
+
+      {id && (
+        <div className="mt-4 xl:sticky xl:top-4 xl:mt-0 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:pr-1">
+          <PanelConexiones entidad="lore" ownerId={id} />
+        </div>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">

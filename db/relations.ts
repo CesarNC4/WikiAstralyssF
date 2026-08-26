@@ -23,7 +23,6 @@ import {
 import {
   personajeNacion,
   personajeRaza,
-  personajeOrganizacion,
   personajeEvento,
   personajeObjeto,
 } from "./schema/relacionesNM";
@@ -58,7 +57,8 @@ export const personajesRelations = relations(personajes, ({ one, many }) => ({
   canciones: many(personajeCancion),
   naciones: many(personajeNacion),
   razas: many(personajeRaza),
-  organizaciones: many(personajeOrganizacion),
+  // La pertenencia a organizaciones vive en org_jerarquia desde la unificación.
+  organizaciones: many(orgJerarquia),
   imagenAsset: one(mediaAssets, {
     fields: [personajes.imagenAssetId],
     references: [mediaAssets.id],
@@ -164,17 +164,6 @@ export const personajeRazaRelations = relations(personajeRaza, ({ one }) => ({
   }),
 }));
 
-export const personajeOrganizacionRelations = relations(personajeOrganizacion, ({ one }) => ({
-  personaje: one(personajes, {
-    fields: [personajeOrganizacion.personajeId],
-    references: [personajes.id],
-  }),
-  organizacion: one(organizaciones, {
-    fields: [personajeOrganizacion.organizacionId],
-    references: [organizaciones.id],
-  }),
-}));
-
 // ── Mundo: relaciones inversas para fichas ───────────────
 export const nacionesRelations = relations(naciones, ({ many }) => ({
   personajes: many(personajeNacion),
@@ -182,7 +171,6 @@ export const nacionesRelations = relations(naciones, ({ many }) => ({
 }));
 
 export const organizacionesRelations = relations(organizaciones, ({ many }) => ({
-  miembros: many(personajeOrganizacion),
   facciones: many(orgFacciones),
   rangos: many(orgRangos),
   jerarquia: many(orgJerarquia),

@@ -1,4 +1,6 @@
-import { pgTable, serial, integer, varchar, text, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { estadoPublicacion } from "./enums";
+import { auditColumns } from "./_audit";
 
 /**
  * Catálogo elemental unificado (§overhaul mundo). Un único origen de verdad
@@ -14,6 +16,9 @@ export const elementos = pgTable("elementos", {
   icono: varchar("icono"),
   descripcion: text("descripcion"),
   orden: integer("orden").notNull().default(0),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  ...auditColumns(),
 });
 
 /**

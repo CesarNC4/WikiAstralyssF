@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FamiliaFichaBody } from "@/components/fichas/FamiliaFichaBody";
 import { getFamiliaFicha, getVisibleIds } from "@/lib/queries/fichas";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -25,5 +26,13 @@ export default async function FamiliaPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const data = await getFamiliaFicha(Number(id)).catch(() => null);
   if (!data) notFound();
-  return <FamiliaFichaBody familia={data.familia} arbol={data.arbol} jerarquia={data.jerarquia} facciones={data.facciones} />;
+  return (
+    <>
+      <FamiliaFichaBody familia={data.familia} arbol={data.arbol} jerarquia={data.jerarquia} facciones={data.facciones} />
+      {/* Conexiones generadas desde el registro de relaciones. */}
+      <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
+        <Conexiones entidad="familias" id={data.familia.id} nombre={data.familia.nombre} imagen={data.familia.imagenUrl} />
+      </div>
+    </>
+  );
 }

@@ -9,6 +9,7 @@ import { Icon } from "@/components/Icon";
 import { getLocacionFicha, getVisibleLocacionIds } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
 import { TIPOS_LOCACION, type TipoLocacionKey } from "@/lib/mapa";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -119,6 +120,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             )}
           </div>
         )}
+
+        {/* Conexiones generadas desde el registro de relaciones. */}
+        <Conexiones entidad="locaciones" id={data.locacion.id} nombre={data.locacion.nombre} imagen={data.locacion.imagenUrl} />
 
         {galeria.length > 0 && <Galeria images={galeria} />}
       </div>

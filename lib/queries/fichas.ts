@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, asc, desc, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { aplicarVisibilidad } from "@/lib/queries/visibilidad";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 /** Ficha completa de personaje con todas sus relaciones (§5.2). */
@@ -192,38 +193,52 @@ export async function getNacionFacciones(nacionId: number) {
 // ── Getters simples por id (prosa) ───────────────────────
 async function firstVisible<T extends { id: unknown }>(
   rows: Promise<T[]>,
+  /**
+   * Entidad de la fila. Al indicarla se aplican los campos que el autor haya
+   * marcado como ocultos, que es el único punto por el que pasan todas las
+   * fichas simples antes de llegar al público.
+   */
+  entidadTipo?: string,
 ): Promise<T | undefined> {
-  return (await rows)[0];
+  const fila = (await rows)[0];
+  if (!fila || !entidadTipo) return fila;
+  return aplicarVisibilidad(entidadTipo, fila as unknown as Record<string, unknown>) as Promise<T | undefined>;
 }
 
 export async function getNacion(id: number) {
   return firstVisible(
     db.select().from(s.naciones).where(and(eq(s.naciones.id, id), eq(s.naciones.estadoPublicacion, "publicado"), isNull(s.naciones.eliminadoEn))).limit(1),
+    "naciones",
   );
 }
 export async function getRaza(id: number) {
   return firstVisible(
     db.select().from(s.razas).where(and(eq(s.razas.id, id), eq(s.razas.estadoPublicacion, "publicado"), isNull(s.razas.eliminadoEn))).limit(1),
+    "razas",
   );
 }
 export async function getBestia(id: number) {
   return firstVisible(
     db.select().from(s.bestias).where(and(eq(s.bestias.id, id), eq(s.bestias.estadoPublicacion, "publicado"), isNull(s.bestias.eliminadoEn))).limit(1),
+    "bestias",
   );
 }
 export async function getMineral(id: number) {
   return firstVisible(
     db.select().from(s.minerales).where(and(eq(s.minerales.id, id), eq(s.minerales.estadoPublicacion, "publicado"), isNull(s.minerales.eliminadoEn))).limit(1),
+    "minerales",
   );
 }
 export async function getConcepto(id: number) {
   return firstVisible(
     db.select().from(s.conceptos).where(and(eq(s.conceptos.id, id), eq(s.conceptos.estadoPublicacion, "publicado"), isNull(s.conceptos.eliminadoEn))).limit(1),
+    "conceptos",
   );
 }
 export async function getMision(id: number) {
   const mision = await firstVisible(
     db.select().from(s.misiones).where(and(eq(s.misiones.id, id), eq(s.misiones.estadoPublicacion, "publicado"), isNull(s.misiones.eliminadoEn))).limit(1),
+    "misiones",
   );
   if (!mision) return null;
   // Encargante: ficha de personaje si la tiene; si no, nombre libre.
@@ -241,12 +256,14 @@ export async function getMision(id: number) {
 export async function getLordDemonio(id: number) {
   return firstVisible(
     db.select().from(s.lordDemonio).where(and(eq(s.lordDemonio.id, id), eq(s.lordDemonio.estadoPublicacion, "publicado"), isNull(s.lordDemonio.eliminadoEn))).limit(1),
+    "demonios",
   );
 }
 
 export async function getArtefacto(id: number) {
   const artefacto = await firstVisible(
     db.select().from(s.armasArtefactos).where(and(eq(s.armasArtefactos.id, id), eq(s.armasArtefactos.estadoPublicacion, "publicado"), isNull(s.armasArtefactos.eliminadoEn))).limit(1),
+    "artefactos",
   );
   if (!artefacto) return null;
   // Propietario con ficha si lo tiene; si no, el nombre libre.
@@ -274,6 +291,7 @@ export async function getSistemaMonetario() {
 export async function getPaginaLore(slug: string) {
   return firstVisible(
     db.select().from(s.paginasLore).where(and(eq(s.paginasLore.slug, slug), eq(s.paginasLore.estadoPublicacion, "publicado"))).limit(1),
+    "lore",
   );
 }
 
@@ -299,15 +317,17 @@ export async function getPaginaLoreConSecciones(slug: string) {
 export async function getOrganizacionFicha(id: number) {
   const org = await firstVisible(
     db.select().from(s.organizaciones).where(and(eq(s.organizaciones.id, id), eq(s.organizaciones.estadoPublicacion, "publicado"))).limit(1),
+    "organizaciones",
   );
   if (!org) return null;
 
-  const [jerRaw, facciones, historial, vinculados] = await Promise.all([
+  const [jerRaw, facciones, historial] = await Promise.all([
     db
       .select({
         id: s.orgJerarquia.id,
         nombreLibre: s.orgJerarquia.nombre,
         tituloApodo: s.orgJerarquia.tituloApodo,
+        rol: s.orgJerarquia.rol,
         orden: s.orgJerarquia.orden,
         personajeId: s.personajes.id,
         personajeNombre: s.personajes.nombre,
@@ -316,44 +336,48 @@ export async function getOrganizacionFicha(id: number) {
         rangoPeso: s.orgRangos.peso,
       })
       .from(s.orgJerarquia)
-      .leftJoin(s.personajes, eq(s.orgJerarquia.personajeId, s.personajes.id))
+      // La condición va en el ON, no en el WHERE: así el miembro sin ficha
+      // publicada deja de enlazar pero la fila del organigrama sobrevive, igual
+      // que los miembros escritos a mano en `nombre`.
+      .leftJoin(
+        s.personajes,
+        and(
+          eq(s.orgJerarquia.personajeId, s.personajes.id),
+          eq(s.personajes.estadoPublicacion, "publicado"),
+          isNull(s.personajes.eliminadoEn),
+        ),
+      )
       .leftJoin(s.orgRangos, eq(s.orgJerarquia.rangoId, s.orgRangos.id))
       .where(eq(s.orgJerarquia.organizacionId, id))
       .orderBy(asc(s.orgJerarquia.orden)),
     db.select().from(s.orgFacciones).where(eq(s.orgFacciones.organizacionId, id)),
     db.select().from(s.orgHistorial).where(eq(s.orgHistorial.organizacionId, id)).orderBy(asc(s.orgHistorial.orden)),
-    // Miembros vinculados desde la ficha de personaje (personaje_organizacion).
-    db
-      .select({ id: s.personajes.id, nombre: s.personajes.nombre, imagenUrl: s.personajes.imagenUrl, rol: s.personajeOrganizacion.rol })
-      .from(s.personajeOrganizacion)
-      .innerJoin(s.personajes, eq(s.personajeOrganizacion.personajeId, s.personajes.id))
-      .where(and(eq(s.personajeOrganizacion.organizacionId, id), eq(s.personajes.estadoPublicacion, "publicado"), isNull(s.personajes.eliminadoEn)))
-      .orderBy(asc(s.personajes.nombre)),
   ]);
 
-  const jerarquia: FichaJerarquia[] = jerRaw.map((j) => ({
-    id: j.id,
-    nombre: j.personajeNombre ?? j.nombreLibre ?? null,
-    tituloApodo: j.tituloApodo,
-    tituloNobiliario: null,
-    tituloFamilia: null,
-    rango: j.rango,
-    rangoPeso: j.rangoPeso,
-    personajeId: j.personajeId,
-    personajeImg: j.personajeImg,
-  }));
+  // Una fila sin ficha publicada y sin nombre escrito a mano no tiene nada que
+  // mostrar: era un enlace a un personaje que el público no puede ver.
+  const jerarquia: FichaJerarquia[] = jerRaw
+    .filter((j) => j.personajeNombre ?? j.nombreLibre)
+    .map((j) => ({
+      id: j.id,
+      nombre: j.personajeNombre ?? j.nombreLibre ?? null,
+      tituloApodo: j.tituloApodo ?? j.rol,
+      tituloNobiliario: null,
+      tituloFamilia: null,
+      rango: j.rango,
+      rangoPeso: j.rangoPeso,
+      personajeId: j.personajeId,
+      personajeImg: j.personajeImg,
+    }));
 
-  // Vinculados que no están ya en la jerarquía manual (evita duplicar).
-  const enJerarquia = new Set(jerRaw.map((j) => j.personajeId).filter(Boolean));
-  const vinculadosUnicos = vinculados.filter((v) => !enJerarquia.has(v.id));
-
-  return { org, jerarquia, facciones, historial, vinculados: vinculadosUnicos };
+  return { org, jerarquia, facciones, historial };
 }
 
 // ── Familia (con árbol y jerarquía) ──────────────────────
 export async function getFamiliaFicha(id: number) {
   const familia = await firstVisible(
     db.select().from(s.familias).where(and(eq(s.familias.id, id), eq(s.familias.estadoPublicacion, "publicado"))).limit(1),
+    "familias",
   );
   if (!familia) return null;
 
@@ -462,8 +486,65 @@ export async function getGremioFicha() {
 }
 
 // ── generateStaticParams helpers (ids visibles) ──────────
+// ── Narrativa ────────────────────────────────────────────
+export async function getCapitulo(id: number) {
+  return firstVisible(
+    db
+      .select()
+      .from(s.capitulos)
+      .where(and(eq(s.capitulos.id, id), eq(s.capitulos.estadoPublicacion, "publicado"), isNull(s.capitulos.eliminadoEn)))
+      .limit(1),
+    "capitulos",
+  );
+}
+
+/** Actos publicados de un capítulo, en su orden. */
+export async function getActosDeCapitulo(capituloId: number) {
+  return db
+    .select({ id: s.actos.id, nombre: s.actos.nombre, descripcion: s.actos.descripcion, estado: s.actos.estado })
+    .from(s.actos)
+    .where(and(eq(s.actos.capituloId, capituloId), eq(s.actos.estadoPublicacion, "publicado"), isNull(s.actos.eliminadoEn)))
+    .orderBy(asc(s.actos.numeroOrden));
+}
+
+export async function getArco(id: number) {
+  return firstVisible(
+    db
+      .select()
+      .from(s.tramaArcos)
+      .where(and(eq(s.tramaArcos.id, id), eq(s.tramaArcos.estadoPublicacion, "publicado"), isNull(s.tramaArcos.eliminadoEn)))
+      .limit(1),
+    "arcos",
+  );
+}
+
+/**
+ * Capítulos que toca un arco, a través de sus hojas de trama. Las hojas en sí no
+ * se publican —guardan giros y secretos— pero sí sirven para decir en qué
+ * capítulos transcurre el arco.
+ */
+export async function getCapitulosDeArco(arcoId: number) {
+  return db
+    .selectDistinct({
+      id: s.capitulos.id,
+      numero: s.capitulos.numero,
+      titulo: s.capitulos.titulo,
+      libro: s.capitulos.libro,
+    })
+    .from(s.tramaHojas)
+    .innerJoin(s.capitulos, eq(s.tramaHojas.capituloId, s.capitulos.id))
+    .where(
+      and(
+        eq(s.tramaHojas.arcoId, arcoId),
+        eq(s.capitulos.estadoPublicacion, "publicado"),
+        isNull(s.capitulos.eliminadoEn),
+      ),
+    )
+    .orderBy(asc(s.capitulos.numero));
+}
+
 export async function getVisibleIds(
-  key: "personajes" | "naciones" | "organizaciones" | "familias" | "razas" | "bestias" | "minerales" | "conceptos" | "magia" | "misiones" | "demonios" | "artefactos",
+  key: "personajes" | "naciones" | "organizaciones" | "familias" | "razas" | "bestias" | "minerales" | "conceptos" | "magia" | "misiones" | "demonios" | "artefactos" | "capitulos" | "arcos",
 ): Promise<number[]> {
   const table = {
     personajes: s.personajes,
@@ -478,6 +559,8 @@ export async function getVisibleIds(
     misiones: s.misiones,
     demonios: s.lordDemonio,
     artefactos: s.armasArtefactos,
+    capitulos: s.capitulos,
+    arcos: s.tramaArcos,
   }[key];
   const rows = await db
     .select({ id: table.id })

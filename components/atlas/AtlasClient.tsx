@@ -3,15 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
-import type { AtlasNodo, AtlasArista, AtlasTipo } from "@/lib/queries/atlas";
-
-const TIPO_META: Record<AtlasTipo, { label: string; color: string; icon: string }> = {
-  naciones: { label: "Naciones", color: "#7b5cff", icon: "Globe2" },
-  razas: { label: "Razas", color: "#9b8cff", icon: "Rabbit" },
-  bestias: { label: "Bestias", color: "#ef6f6f", icon: "PawPrint" },
-  minerales: { label: "Minerales", color: "#6fc3d6", icon: "Gem" },
-  organizaciones: { label: "Organizaciones", color: "#5b8def", icon: "Building2" },
-};
+import type { AtlasNodo, AtlasArista, AtlasTipo, AtlasTipoMeta } from "@/lib/queries/atlas";
 
 interface Pos { x: number; y: number; }
 
@@ -72,9 +64,17 @@ function simular(nodos: AtlasNodo[], aristas: AtlasArista[]): Record<string, Pos
   return out;
 }
 
-export function AtlasClient({ nodos, aristas }: { nodos: AtlasNodo[]; aristas: AtlasArista[] }) {
+export function AtlasClient({ nodos, aristas, tipos }: { nodos: AtlasNodo[]; aristas: AtlasArista[]; tipos: AtlasTipoMeta[] }) {
   const router = useRouter();
-  const [activos, setActivos] = useState<Record<AtlasTipo, boolean>>({ naciones: true, razas: true, bestias: true, minerales: true, organizaciones: true });
+  // La leyenda viene del registro de relaciones, no de una lista fija: al
+  // declarar una relación con una entidad nueva, su filtro aparece aquí solo.
+  const TIPO_META = useMemo(
+    () => Object.fromEntries(tipos.map((t) => [t.key, t])) as Record<AtlasTipo, AtlasTipoMeta>,
+    [tipos],
+  );
+  const [activos, setActivos] = useState<Record<AtlasTipo, boolean>>(
+    () => Object.fromEntries(tipos.map((t) => [t.key, true])),
+  );
   const [hover, setHover] = useState<string | null>(null);
   const [view, setView] = useState({ k: 1, tx: 0, ty: 0 });
   const drag = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
@@ -82,7 +82,7 @@ export function AtlasClient({ nodos, aristas }: { nodos: AtlasNodo[]; aristas: A
   // Layout determinista: misma salida en SSR y cliente (sin mismatch).
   const pos = useMemo(() => simular(nodos, aristas), [nodos, aristas]);
 
-  const visibles = useMemo(() => new Set(nodos.filter((n) => activos[n.tipo]).map((n) => n.id)), [nodos, activos]);
+  const visibles = useMemo(() => new Set(nodos.filter((n) => activos[n.tipo] ?? true).map((n) => n.id)), [nodos, activos]);
   const vecinos = useMemo(() => {
     if (!hover) return null;
     const set = new Set<string>([hover]);
@@ -109,9 +109,9 @@ export function AtlasClient({ nodos, aristas }: { nodos: AtlasNodo[]; aristas: A
     <div className="relative overflow-hidden rounded-2xl border border-border-base bg-deep">
       {/* Filtros */}
       <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
-        {(Object.keys(TIPO_META) as AtlasTipo[]).map((t) => {
+        {tipos.map(({ key: t }) => {
           const m = TIPO_META[t];
-          const on = activos[t];
+          const on = activos[t] ?? true;
           return (
             <button
               key={t}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { RazaFichaBody } from "@/components/fichas/RazaFichaBody";
 import { getRaza, getVisibleIds } from "@/lib/queries/fichas";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -22,5 +23,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const x = await getRaza(Number(id)).catch(() => null);
   if (!x) notFound();
 
-  return <RazaFichaBody raza={x} />;
+  return (
+    <>
+      <RazaFichaBody raza={x} />
+      {/* Conexiones generadas desde el registro de relaciones. */}
+      <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
+        <Conexiones entidad="razas" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} conGrafo={false} />
+      </div>
+    </>
+  );
 }

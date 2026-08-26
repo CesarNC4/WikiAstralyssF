@@ -1,5 +1,6 @@
 import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
 import { estadoPublicacion } from "./enums";
+import { auditColumns } from "./_audit";
 
 /** Dominio Narrativa: capítulos, actos, arcos, hojas, hilos. */
 
@@ -19,6 +20,7 @@ export const capitulos = pgTable("capitulos", {
   fechaLore: varchar("fecha_lore"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  ...auditColumns(),
 });
 
 export const actos = pgTable("actos", {
@@ -32,6 +34,7 @@ export const actos = pgTable("actos", {
   fechaFinLore: varchar("fecha_fin_lore"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  ...auditColumns(),
 });
 
 export const tramaArcos = pgTable("trama_arcos", {
@@ -42,6 +45,9 @@ export const tramaArcos = pgTable("trama_arcos", {
   tipo: varchar("tipo"),
   color: varchar("color"),
   orden: integer("orden"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  ...auditColumns(),
 });
 
 export const tramaHojas = pgTable("trama_hojas", {
@@ -57,6 +63,9 @@ export const tramaHojas = pgTable("trama_hojas", {
   secretosRevelados: text("secretos_revelados"),
   consecuencias: text("consecuencias"),
   notasPrivadas: text("notas_privadas"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  ...auditColumns(),
 });
 
 export const hiloNarrativo = pgTable("hilo_narrativo", {
@@ -71,4 +80,7 @@ export const hiloNarrativo = pgTable("hilo_narrativo", {
   notasAutor: text("notas_autor"),
   pistasEntregadas: text("pistas_entregadas"),
   orden: integer("orden"),
+  estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
+  publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
+  ...auditColumns(),
 });

@@ -21,6 +21,8 @@ export type EntityKey =
   | "magia"
   | "lore"
   | "misiones"
+  | "capitulos"
+  | "arcos"
   | "demonios"
   | "artefactos"
   | "economia"
@@ -203,6 +205,28 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     tagline: "Contratos, encargos y aventuras.",
     hasIndex: true,
   },
+  capitulos: {
+    key: "capitulos",
+    plural: "Capítulos",
+    singular: "Capítulo",
+    route: "/capitulos",
+    accent: "text-primary-glow",
+    icon: "BookOpen",
+    group: "lore",
+    tagline: "La historia contada capítulo a capítulo.",
+    hasIndex: true,
+  },
+  arcos: {
+    key: "arcos",
+    plural: "Arcos",
+    singular: "Arco",
+    route: "/arcos",
+    accent: "text-accent",
+    icon: "Waypoints",
+    group: "lore",
+    tagline: "Las grandes líneas que atraviesan la trama.",
+    hasIndex: true,
+  },
   demonios: {
     key: "demonios",
     plural: "Lords Demonio",
@@ -315,7 +339,7 @@ export const NAV_GROUPS: { id: EntityGroup; label: string; keys: EntityKey[] }[]
     label: "Mundo",
     keys: ["naciones", "razas", "organizaciones", "familias", "gremio", "bestias", "minerales", "demonios", "artefactos"],
   },
-  { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "misiones", "economia"] },
+  { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "capitulos", "arcos", "misiones", "economia"] },
   { id: "explorar", label: "Explorar", keys: ["timeline", "mapa", "compendio", "atlas"] },
 ];
 

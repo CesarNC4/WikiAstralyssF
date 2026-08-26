@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { Badge } from "@/components/entity/Badge";
 import { getConcepto, getVisibleIds } from "@/lib/queries/fichas";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -38,6 +39,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     >
       <FieldGrid fields={[{ label: "Categoría", value: x.categoria }]} />
       <ProseFields fields={[{ label: "Descripción", value: x.descripcion }, { label: "Contenido", value: x.contenido }]} />
+      {/* Conexiones generadas desde el registro de relaciones. */}
+      <Conexiones entidad="conceptos" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} />
     </FichaShell>
   );
 }

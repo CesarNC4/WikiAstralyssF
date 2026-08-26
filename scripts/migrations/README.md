@@ -17,6 +17,8 @@ no rompe nada, pero tampoco hace falta.
 | `migrate-magia-estructurada.mjs` | Pasó la magia del personaje a columnas estructuradas (tipo/variante) parseando el texto `"Tipo (Variante)"`. Aditiva: no borró las columnas de texto. |
 | `migrate-lugar-nacimiento.mjs` | Añadió `lugar_nacimiento_nacion_id` / `_region_id` / `_locacion_id` a `personajes`. |
 | `migrate-personaje-stats.mjs` | Eliminó `personajes.subtitulo`, añadió `estadisticas.poder_de_combate` y renombró la naturaleza de magia `Hechizo` → `Tecnica`. **Aplicada el 2026-06-26.** |
+| `migrate-conectividad.mjs` | Frente E: unificó `personaje_organizacion` dentro de `org_jerarquia`, creó la tabla genérica `vinculo` y añadió **57 claves foráneas** y 36 índices que faltaban (la base pasó de 75 a 130). Comprueba que no haya filas huérfanas antes de escribir nada y aborta si las encuentra. **Aplicada el 2026-08-26.** |
+| `migrate-narrativa-admin.mjs` | Frente E: dio estado de publicación y columnas de auditoría a `capitulos`, `actos`, `trama_arcos`, `trama_hojas`, `hilo_narrativo`, `canciones` y `elementos` para que el admin genérico pudiera gestionarlas, y enganchó capítulos y arcos al buscador. **Aplicada el 2026-08-26.** |
 
 ## Si necesitas ejecutar una
 

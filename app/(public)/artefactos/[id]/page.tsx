@@ -5,6 +5,7 @@ import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShe
 import { Badge } from "@/components/entity/Badge";
 import { EntityImage } from "@/components/media/EntityImage";
 import { getArtefacto, getVisibleIds } from "@/lib/queries/fichas";
+import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
 
@@ -66,6 +67,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           { label: "Poder especial", value: x.poderEspecial },
         ]}
       />
+      {/* Conexiones generadas desde el registro de relaciones. */}
+      <Conexiones entidad="artefactos" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} />
     </FichaShell>
   );
 }

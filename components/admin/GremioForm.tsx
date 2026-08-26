@@ -12,6 +12,7 @@ import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
 import { HistorialEditor } from "@/components/admin/blocks/HistorialEditor";
 import type { Opcion } from "@/components/admin/blocks/shared";
+import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 
 const v = (x: unknown) => (x == null ? "" : String(x));
 
@@ -91,7 +92,10 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
   };
 
   return (
-    <div className="space-y-4 pb-28">
+    // Dos columnas en pantallas anchas: la ficha y, a la derecha, el panel de
+    // conexiones fijo mientras editas.
+    <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
+      <div className="space-y-4">
       <AccordionSection title="Identidad" defaultOpen>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre"><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Gremio de Aventureros" /></Field>
@@ -130,6 +134,14 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
           <ImageField label="Banner" entidad="gremio" value={banner} onChange={wrap(setBanner)} alt={campos.nombre} aspect="aspect-video" />
         </div>
       </AccordionSection>
+
+      </div>
+
+      {id && (
+        <div className="mt-4 xl:sticky xl:top-4 xl:mt-0 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:pr-1">
+          <PanelConexiones entidad="gremio" ownerId={id} />
+        </div>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">

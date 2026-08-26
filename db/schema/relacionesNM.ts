@@ -43,14 +43,14 @@ export const personajeRaza = pgTable("personaje_raza", {
   nota: varchar("nota"),
 });
 
-export const personajeOrganizacion = pgTable("personaje_organizacion", {
-  id: serial("id").primaryKey(),
-  personajeId: integer("personaje_id").notNull(),
-  organizacionId: integer("organizacion_id").notNull(),
-  rol: varchar("rol"),
-  tipo: varchar("tipo"),
-  descripcion: varchar("descripcion"),
-});
+/**
+ * `personaje_organizacion` se unificó dentro de `org_jerarquia` (migración
+ * `migrate-conectividad.mjs`). Familias y gremio ya derivaban la pertenencia de
+ * su tabla de jerarquía; organizaciones era la excepción y obligaba a
+ * deduplicar miembros al pintar la ficha. La pertenencia de un personaje a una
+ * organización vive ahora en `org_jerarquia`, con `rol`, `tipo` y `descripcion`.
+ */
+
 
 export const nacionOrganizacion = pgTable("nacion_organizacion", {
   id: serial("id").primaryKey(),
