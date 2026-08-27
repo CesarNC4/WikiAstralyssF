@@ -65,8 +65,8 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
           subtitulo: s.razas.subtitulo,
           imagenUrl: s.razas.imagenUrl,
           badge: s.razas.clasificacion,
-          afinidad: s.razas.afinidad,
           vida: s.razas.esperanzaVida,
+          rareza: s.razas.rareza,
         })
         .from(s.razas)
         .where(and(eq(s.razas.estadoPublicacion, "publicado"), isNull(s.razas.eliminadoEn)))
@@ -78,7 +78,7 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
         imagenUrl: r.imagenUrl,
         badge: r.badge,
         href: `/razas/${r.id}`,
-        facets: { clasificacion: r.badge, afinidad: r.afinidad, vida: r.vida },
+        facets: { clasificacion: r.badge, vida: r.vida, rareza: r.rareza },
       }));
     }
     case "bestias": {

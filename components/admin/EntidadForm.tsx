@@ -12,7 +12,9 @@ import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { RelacionesEditor } from "@/components/admin/blocks/RelacionEditor";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
-import { Field, TextInput, NumberInput, Select, MarkdownField, ReferenceField, SliderInput } from "@/components/admin/fields";
+import { Field, TextInput, NumberInput, Select, MultiSelect, MarkdownField, ReferenceField, SliderInput, type MapaCatalogos, type OpcionCatalogo } from "@/components/admin/fields";
+import { crearOpcion } from "@/lib/actions/catalogos";
+import { MAGIA_FAMILIA_ELEMENTAL } from "@/lib/catalogos";
 
 type Referencias = Partial<Record<RefTarget, OpcionRef[]>>;
 
@@ -51,11 +53,14 @@ export function EntidadForm({
   config,
   inicial,
   catalogos,
+  elementos = [],
   referencias = {},
 }: {
   config: EntidadConfig;
   inicial: Record<string, unknown> | null;
-  catalogos: Record<string, string[]>;
+  catalogos: MapaCatalogos;
+  /** El catálogo elemental, agrupado por familia. Viene de la tabla `elementos`. */
+  elementos?: OpcionCatalogo[];
   referencias?: Referencias;
 }) {
   const toast = useToast();
@@ -64,9 +69,29 @@ export function EntidadForm({
 
   const [values, setValues] = useState<Record<string, string>>(() => {
     const v: Record<string, string> = { [config.nameField]: s(inicial?.[config.nameField]) };
-    for (const fd of config.fields) v[fd.name] = s(inicial?.[fd.name]);
+    for (const fd of config.fields) {
+      if (fd.type === "multi") continue;
+      v[fd.name] = fd.type === "checkbox" ? String(inicial?.[fd.name] === true) : s(inicial?.[fd.name]);
+    }
     return limpiarDependientes(v, config.fields);
   });
+
+  // Los campos de varios valores llevan estado propio: `values` es de textos y
+  // una lista no cabe ahí sin inventarse un separador que algún día aparecería
+  // dentro de un valor.
+  const [multis, setMultis] = useState<Record<string, string[]>>(() => {
+    const m: Record<string, string[]> = {};
+    for (const fd of config.fields) {
+      if (fd.type !== "multi") continue;
+      const raw = inicial?.[fd.name];
+      m[fd.name] = Array.isArray(raw) ? raw.map(String) : [];
+    }
+    return m;
+  });
+  const setMulti = (name: string, val: string[]) => {
+    setMultis((prev) => ({ ...prev, [name]: val }));
+    mark();
+  };
   const set = (name: string, val: string) => {
     setValues((prev) => limpiarDependientes({ ...prev, [name]: val }, config.fields));
     mark();
@@ -75,6 +100,25 @@ export function EntidadForm({
   // Campo dependiente: visible solo si su `dependsOn` se cumple con el valor actual.
   const isVisible = (fd: FieldDef) =>
     !fd.dependsOn || values[fd.dependsOn.field] === fd.dependsOn.equals;
+
+  /**
+   * Qué grupo del catálogo se ofrece en un campo que depende de otro.
+   *
+   * `undefined` significa "sin dependencia: enséñalo todo, agrupado". `null`
+   * significa "depende de un campo que aún está vacío", y entonces el
+   * desplegable se queda a propósito sin opciones en vez de ofrecer las de
+   * todos los grupos mezcladas, que es justo lo que pasaba antes en Magia.
+   */
+  const grupoDe = (fd: FieldDef): string | null | undefined => {
+    if (fd.familia) return fd.familia;
+    if (!fd.dependeDe) return undefined;
+    const padre = values[fd.dependeDe];
+    if (!padre) return null;
+    // El elemento de una magia no depende de la escuela sino de su familia:
+    // "Antigua" ofrece los Antiguos (Lumino, Umbra).
+    if (fd.type === "elemento") return MAGIA_FAMILIA_ELEMENTAL[padre] ?? null;
+    return padre;
+  };
 
   const [imagen, setImagen] = useState<ImageValue>({ assetId: null, url: s(inicial?.imagenUrl) || null });
   const [banner, setBanner] = useState<ImageValue>({ assetId: null, url: s(inicial?.bannerUrl) || null });
@@ -110,7 +154,7 @@ export function EntidadForm({
   const id = inicial?.id as number | undefined;
 
   const submit = () => {
-    const payload: Record<string, unknown> = { ...values, estadoPublicacion: estado };
+    const payload: Record<string, unknown> = { ...values, ...multis, estadoPublicacion: estado };
     if (config.hasImage) {
       payload.imagenUrl = imagen.url;
       payload.imagenAssetId = imagen.assetId;
@@ -164,7 +208,7 @@ export function EntidadForm({
             .find((g) => g.group === "Identidad")
             ?.fields.filter(isVisible)
             .map((fd) => (
-              <FieldRender key={fd.name} fd={fd} value={values[fd.name]} onChange={(v) => set(fd.name, v)} catalogos={catalogos} referencias={referencias} error={fe[fd.name]} />
+              <FieldRender key={fd.name} fd={fd} value={values[fd.name]} onChange={(v) => set(fd.name, v)} multi={multis[fd.name] ?? []} onMulti={(v) => setMulti(fd.name, v)} catalogos={catalogos} elementos={elementos} referencias={referencias} grupoActivo={grupoDe(fd)} error={fe[fd.name]} />
             ))}
         </div>
       </AccordionSection>
@@ -176,8 +220,8 @@ export function EntidadForm({
           <AccordionSection key={group} title={group}>
             <div className="grid gap-3 sm:grid-cols-2">
               {fields.filter(isVisible).map((fd) => (
-                <div key={fd.name} className={fd.type === "textarea" ? "sm:col-span-2" : ""}>
-                  <FieldRender fd={fd} value={values[fd.name]} onChange={(v) => set(fd.name, v)} catalogos={catalogos} referencias={referencias} error={fe[fd.name]} />
+                <div key={fd.name} className={fd.type === "textarea" || fd.type === "multi" ? "sm:col-span-2" : ""}>
+                  <FieldRender fd={fd} value={values[fd.name]} onChange={(v) => set(fd.name, v)} multi={multis[fd.name] ?? []} onMulti={(v) => setMulti(fd.name, v)} catalogos={catalogos} elementos={elementos} referencias={referencias} grupoActivo={grupoDe(fd)} error={fe[fd.name]} />
                 </div>
               ))}
             </div>
@@ -246,18 +290,33 @@ function FieldRender({
   fd,
   value,
   onChange,
+  multi,
+  onMulti,
   catalogos,
+  elementos,
   referencias,
+  grupoActivo,
   error,
 }: {
   fd: FieldDef;
   value: string;
   onChange: (v: string) => void;
-  catalogos: Record<string, string[]>;
+  multi: string[];
+  onMulti: (v: string[]) => void;
+  catalogos: MapaCatalogos;
+  elementos: OpcionCatalogo[];
   referencias: Referencias;
+  grupoActivo?: string | null;
   error?: string;
 }) {
   const label = fd.required ? `${fd.label} *` : fd.label;
+
+  // "Añadir al vuelo": lo que escribas queda en el catálogo y disponible para
+  // todas las fichas, así que no ensucia como lo haría un campo de texto libre.
+  const crear = fd.catalogCampo
+    ? (valor: string, grupo: string | null) => crearOpcion(fd.catalogCampo!, valor, grupo)
+    : undefined;
+
   if (fd.type === "textarea") {
     return (
       <Field label={label} hint={fd.hint} error={error}>
@@ -279,10 +338,50 @@ function FieldRender({
       </Field>
     );
   }
+  if (fd.type === "checkbox") {
+    return (
+      <Field label={label} hint={fd.hint} error={error}>
+        <label className="flex cursor-pointer items-center gap-2 py-2 text-sm text-fg-secondary">
+          <input
+            type="checkbox"
+            checked={value === "true"}
+            onChange={(e) => onChange(e.target.checked ? "true" : "false")}
+            className="h-4 w-4 rounded border-border-base bg-surface accent-[var(--accent)]"
+          />
+          {fd.label}
+        </label>
+      </Field>
+    );
+  }
+  if (fd.type === "multi") {
+    return (
+      <Field label={label} hint={fd.hint} error={error}>
+        <MultiSelect
+          values={multi}
+          onChange={onMulti}
+          options={catalogos[fd.catalogCampo ?? ""] ?? []}
+          onCrear={crear}
+        />
+      </Field>
+    );
+  }
+  if (fd.type === "elemento") {
+    return (
+      <Field label={label} hint={fd.hint} error={error}>
+        <Select value={value} onChange={onChange} options={elementos} grupoActivo={grupoActivo} />
+      </Field>
+    );
+  }
   if (fd.type === "combobox") {
     return (
       <Field label={label} hint={fd.hint} error={error}>
-        <Select value={value} onChange={onChange} options={catalogos[fd.catalogCampo ?? ""] ?? []} />
+        <Select
+          value={value}
+          onChange={onChange}
+          options={catalogos[fd.catalogCampo ?? ""] ?? []}
+          grupoActivo={grupoActivo}
+          onCrear={crear}
+        />
       </Field>
     );
   }

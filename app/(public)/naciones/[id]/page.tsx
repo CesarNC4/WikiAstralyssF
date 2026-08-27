@@ -15,7 +15,7 @@ import { getNacionRelacionesExtra } from "@/lib/queries/mundoRelaciones";
 import { getNacionTerritorio } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
 import { STATS_POR_ENTIDAD, tieneStats } from "@/lib/stats";
-import { TIPOS_LOCACION, type TipoLocacionKey } from "@/lib/mapa";
+import { estiloLocacion } from "@/lib/mapa";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 const DIPLO_COLOR: Record<string, string> = {
@@ -60,7 +60,7 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
     .map((l) => ({
       x: l.x as number,
       y: l.y as number,
-      color: TIPOS_LOCACION[l.tipo as TipoLocacionKey]?.color,
+      color: estiloLocacion(l.tipo).color,
       href: `/locaciones/${l.id}`,
       label: l.nombre,
     }));
@@ -136,7 +136,7 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
             { label: "Idioma", value: n.idioma },
             { label: "Población", value: n.poblacion },
             { label: "Clima", value: n.clima },
-            { label: "Terreno", value: n.terreno },
+            { label: "Terreno", value: n.terreno?.join(" · ") ?? null },
           ]}
         />
 

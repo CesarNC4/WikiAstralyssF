@@ -4,7 +4,7 @@ import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { EntidadForm } from "@/components/admin/EntidadForm";
 import { getEntidadConfig } from "@/lib/admin/fields";
-import { getEntidadParaEditar, getCatalogosPorCampos, getReferenciasDeConfig } from "@/lib/queries/adminEntidades";
+import { getEntidadParaEditar, getCatalogosPorCampos, getElementosCatalogo, getReferenciasDeConfig } from "@/lib/queries/adminEntidades";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +17,12 @@ export default async function EditarEntidadPage({ params }: { params: Promise<{ 
   const row = await getEntidadParaEditar(entidad, Number(id));
   if (!row) notFound();
 
-  const campos = config.fields.filter((f) => f.type === "combobox" && f.catalogCampo).map((f) => f.catalogCampo!);
-  const [catalogos, referencias] = await Promise.all([
+  const campos = config.fields
+    .filter((f) => (f.type === "combobox" || f.type === "multi") && f.catalogCampo)
+    .map((f) => f.catalogCampo!);
+  const [catalogos, elementos, referencias] = await Promise.all([
     getCatalogosPorCampos(campos),
+    getElementosCatalogo(),
     getReferenciasDeConfig(config),
   ]);
   const nombre = String(row[config.nameField] ?? "");
@@ -35,7 +38,7 @@ export default async function EditarEntidadPage({ params }: { params: Promise<{ 
         ) : null
       }
     >
-      <EntidadForm config={config} inicial={row} catalogos={catalogos} referencias={referencias} />
+      <EntidadForm config={config} inicial={row} catalogos={catalogos} elementos={elementos} referencias={referencias} />
     </AdminShell>
   );
 }

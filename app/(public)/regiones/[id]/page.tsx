@@ -9,7 +9,7 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { Icon } from "@/components/Icon";
 import { getRegionFicha, getVisibleRegionIds } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
-import { TIPOS_LOCACION, type TipoLocacionKey } from "@/lib/mapa";
+import { estiloLocacion } from "@/lib/mapa";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -39,7 +39,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     .map((l) => ({
       x: l.x as number,
       y: l.y as number,
-      color: TIPOS_LOCACION[l.tipo as TipoLocacionKey]?.color,
+      color: estiloLocacion(l.tipo).color,
       href: `/locaciones/${l.id}`,
       label: l.nombre,
     }));
@@ -84,7 +84,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <SectionHead icon="MapPin" title="Locaciones" accent={color} />
             <div className="grid gap-3 sm:grid-cols-2">
               {locaciones.map((l) => {
-                const meta = TIPOS_LOCACION[l.tipo as TipoLocacionKey];
+                const meta = estiloLocacion(l.tipo);
                 return (
                   <Link key={l.id} href={`/locaciones/${l.id}`} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3 hover:border-border-glow">
                     <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg">
@@ -93,7 +93,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                     <span className="min-w-0">
                       <span className="block truncate text-sm text-fg">{l.nombre}</span>
                       <span className="inline-flex items-center gap-1 text-xs" style={{ color: meta?.color }}>
-                        <Icon name={meta?.icon ?? "Star"} size={12} /> {meta?.label}
+                        <Icon name={meta.icon} size={12} /> {l.tipo}
                       </span>
                     </span>
                   </Link>

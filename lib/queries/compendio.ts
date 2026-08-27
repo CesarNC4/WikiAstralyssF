@@ -27,7 +27,7 @@ export async function getCompendio() {
       id: b.id,
       nombre: b.nombre,
       imagenUrl: b.imagenUrl,
-      attrs: { nivelAmenaza: b.nivelAmenaza, categoria: b.categoria, tamano: b.tamano, dieta: b.dieta },
+      attrs: { nivelAmenaza: b.nivelAmenaza, naturaleza: b.naturaleza, tamano: b.tamano, dieta: b.dieta },
       stats: {
         statFuerza: num(b.statFuerza), statVelocidad: num(b.statVelocidad), statResistencia: num(b.statResistencia), statPoderMagico: num(b.statPoderMagico),
         statPeligrosidad: num(b.statPeligrosidad), statRareza: num(b.statRareza), statTerritorialidad: num(b.statTerritorialidad),
@@ -37,7 +37,7 @@ export async function getCompendio() {
       id: m.id,
       nombre: m.nombre,
       imagenUrl: m.imagenUrl,
-      attrs: { rareza: m.rareza, tipo: m.tipo, elemento: m.elemento },
+      attrs: { rareza: m.rareza, tipo: m.tipo, composicion: m.composicion },
       stats: {
         statDureza: num(m.statDureza), statPureza: num(m.statPureza), statConductividad: num(m.statConductividad),
         statRareza: num(m.statRareza), statValor: num(m.statValor), statDemanda: num(m.statDemanda), statAbundancia: num(m.statAbundancia),
@@ -47,7 +47,7 @@ export async function getCompendio() {
       id: r.id,
       nombre: r.nombre,
       imagenUrl: r.imagenUrl,
-      attrs: { clasificacion: r.clasificacion, afinidad: r.afinidad, dieta: r.dieta },
+      attrs: { clasificacion: r.clasificacion, estado: r.estado, dieta: r.dieta },
       stats: {
         statLongevidad: num(r.statLongevidad), statAfinidadMagica: num(r.statAfinidadMagica), statFuerza: num(r.statFuerza), statAgilidad: num(r.statAgilidad), statAdaptabilidad: num(r.statAdaptabilidad),
         statDispersion: num(r.statDispersion), statPurezaLinaje: num(r.statPurezaLinaje),

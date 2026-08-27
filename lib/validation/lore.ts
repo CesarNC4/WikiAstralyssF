@@ -16,7 +16,7 @@ const idField = z.preprocess(
   z.number().int().positive().nullable(),
 );
 
-export const seccionTipoSchema = z.enum(["texto", "cita", "tabla"]);
+export const seccionTipoSchema = z.enum(["texto", "cita", "tabla", "lista", "aviso", "cronologia", "separador"]);
 export const estadoSchema = z.enum(["borrador", "publicado", "oculto"]);
 
 export const loreSeccionSchema = z.object({

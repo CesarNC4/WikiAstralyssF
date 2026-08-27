@@ -8,7 +8,10 @@ export const canciones = pgTable("canciones", {
   id: serial("id").primaryKey(),
   titulo: varchar("titulo").notNull(),
   artista: varchar("artista"),
-  tipoFuente: varchar("tipo_fuente"), // 'LOCAL' | 'YOUTUBE' | 'SPOTIFY' | 'SOUNDCLOUD'
+  /** Del catalogo `cancion_fuente`: Local, YouTube, Spotify... */
+  tipoFuente: varchar("tipo_fuente"),
+  /** Para que es la cancion: tema de personaje, de batalla, ambiente... */
+  uso: varchar("uso"),
   url: varchar("url"),
   notas: text("notas"),
   imagenUrl: varchar("imagen_url"),

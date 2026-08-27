@@ -19,6 +19,7 @@ no rompe nada, pero tampoco hace falta.
 | `migrate-personaje-stats.mjs` | Eliminó `personajes.subtitulo`, añadió `estadisticas.poder_de_combate` y renombró la naturaleza de magia `Hechizo` → `Tecnica`. **Aplicada el 2026-06-26.** |
 | `migrate-conectividad.mjs` | Frente E: unificó `personaje_organizacion` dentro de `org_jerarquia`, creó la tabla genérica `vinculo` y añadió **57 claves foráneas** y 36 índices que faltaban (la base pasó de 75 a 130). Comprueba que no haya filas huérfanas antes de escribir nada y aborta si las encuentra. **Aplicada el 2026-08-26.** |
 | `migrate-narrativa-admin.mjs` | Frente E: dio estado de publicación y columnas de auditoría a `capitulos`, `actos`, `trama_arcos`, `trama_hojas`, `hilo_narrativo`, `canciones` y `elementos` para que el admin genérico pudiera gestionarlas, y enganchó capítulos y arcos al buscador. **Aplicada el 2026-08-26.** |
+| `migrate-selects.mjs` | Frente F: la reforma de los desplegables. Añade **35 columnas**, retira cuatro que sobraban (`bestias.categoria`, `armas_artefactos.propietario_actual`, y las afinidades sueltas de razas y minerales, que se mudan a `entidad_elemento`), convierte `naciones.terreno` en lista, saca `locaciones.tipo` del enum rígido de cuatro valores y migra los valores ya guardados a su forma nueva. **Corre en ensayo por defecto**: sin `--aplicar` hace todo el trabajo dentro de una transacción que revierte al final y te enseña qué cambiaría. |
 
 ## Si necesitas ejecutar una
 
@@ -35,9 +36,16 @@ basta con correrlas una vez desde cualquier equipo.
 
 ## Lo que sí sigue vivo
 
-En `scripts/` (un nivel arriba) quedan las dos utilidades que se usan de forma
+En `scripts/` (un nivel arriba) quedan las utilidades que se usan de forma
 recurrente, y esas no son migraciones:
 
-- **`seed-catalogos.ts`** — sincroniza la tabla `catalogos` con la fuente única
-  `lib/catalogos.ts`. Ejecútalo cada vez que edites ese archivo.
+- **`seed-catalogos.ts`** — siembra la tabla `catalogos` y la tabla `elementos`
+  desde `lib/catalogos.ts` y `lib/elementos.ts`. **Es aditivo**: inserta lo que
+  falta y corrige el orden, pero no borra nada. Antes era un espejo estricto, y
+  eso ahora destruiría lo que hayas añadido desde `/admin/catalogos`.
+- **`verificar-relaciones.mjs`** — comprueba que el registro de relaciones cuadra
+  con las tablas y columnas reales.
+- **`verificar-catalogos.mjs`** — comprueba que los catálogos cuadran: que las
+  columnas declaradas existan, que ningún desplegable se quede sin opciones y que
+  ninguna ficha guarde un valor fuera de su catálogo.
 - **`test-db.mjs`** — diagnóstico de conexión a la base (DNS + credenciales).

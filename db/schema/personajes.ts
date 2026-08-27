@@ -24,7 +24,12 @@ export const personajes = pgTable("personajes", {
   edad: varchar("edad"),
   genero: varchar("genero"),
   altura: doublePrecision("altura"),
+  /** Del catalogo; el matiz va en ocupacionDetalle. */
   ocupacion: varchar("ocupacion"),
+  /** "Ex Princesa", "Escriba del Consejo": lo que la lista no puede recoger. */
+  ocupacionDetalle: varchar("ocupacion_detalle"),
+  /** Vivo, fallecido, sellado... Lo lee tambien el arbol genealogico. */
+  estadoVital: varchar("estado_vital"),
   rangoAventurero: varchar("rango_aventurero"),
   lugarNacimiento: varchar("lugar_nacimiento"),
   // Lugar de nacimiento en 3 niveles (todos opcionales): nación → región → locación.
@@ -113,7 +118,15 @@ export const relaciones = pgTable("relaciones", {
   nombreExterno: varchar("nombre_externo"),
   tipoRelacion: varchar("tipo_relacion"),
   descripcion: text("descripcion"),
+  /** Depende de `tipoRelacion`: cada tipo tiene sus subtipos. */
   subtipoRelacion: varchar("subtipo_relacion"),
+  /**
+   * Que siente cada lado. Son dos columnas y no una porque el afecto NO es
+   * reciproco: A puede sentir amor y B odio. `afecto` es lo que siente
+   * `personajeId`; `afectoReciproco`, lo que siente el relacionado.
+   */
+  afecto: varchar("afecto"),
+  afectoReciproco: varchar("afecto_reciproco"),
 });
 
 export const personajeNarrativa = pgTable("personaje_narrativa", {

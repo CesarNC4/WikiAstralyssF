@@ -39,24 +39,20 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       galeriaId={x.id}
       badges={<>{x.tipo && <Badge tone="accent">{x.tipo}</Badge>}{x.variante && <Badge>{x.variante}</Badge>}</>}
     >
-      <FieldGrid fields={[{ label: "Tipo", value: x.tipo }, { label: "Variante", value: x.variante }]} />
+      <FieldGrid fields={[{ label: "Tipo", value: x.tipo }, { label: "Variante", value: x.variante }, { label: "Rareza", value: x.rareza }]} />
 
-      {(x.propietario || x.propietarioActual) && (
+      {x.propietario && (
         <section className="mb-8">
           <h2 className="mb-3 font-display text-xl text-accent">Propietario</h2>
-          {x.propietario ? (
-            <Link
-              href={`/personajes/${x.propietario.id}`}
-              className="inline-flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-2 pr-4 hover:border-border-glow"
-            >
-              <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                <EntityImage src={x.propietario.imagenUrl} alt={x.propietario.nombre} name={x.propietario.nombre} sizes="40px" />
-              </span>
-              <span className="text-sm text-fg">{x.propietario.nombre}</span>
-            </Link>
-          ) : (
-            <p className="text-fg-secondary">{x.propietarioActual}</p>
-          )}
+          <Link
+            href={`/personajes/${x.propietario.id}`}
+            className="inline-flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-2 pr-4 hover:border-border-glow"
+          >
+            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+              <EntityImage src={x.propietario.imagenUrl} alt={x.propietario.nombre} name={x.propietario.nombre} sizes="40px" />
+            </span>
+            <span className="text-sm text-fg">{x.propietario.nombre}</span>
+          </Link>
         </section>
       )}
 

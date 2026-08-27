@@ -10,7 +10,7 @@ import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { Field, TextInput, MarkdownField } from "@/components/admin/fields";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 
-type Tipo = "texto" | "cita" | "tabla";
+type Tipo = "texto" | "cita" | "tabla" | "lista" | "aviso" | "cronologia" | "separador";
 interface Seccion {
   id?: number;
   titulo: string;
@@ -25,6 +25,21 @@ interface LoreInicial {
   pagina: Record<string, unknown>;
   secciones: { id: number; titulo: string | null; contenido: string | null; tipo: string; estadoPublicacion: EstadoPublicacion }[];
 }
+
+/**
+ * Bloques que puede tener una página de lore. El valor guardado es el de
+ * siempre (minúsculas, sin tildes) para no invalidar las secciones ya escritas;
+ * la etiqueta es lo único que cambia.
+ */
+const TIPOS_SECCION = [
+  { valor: "texto", label: "Texto" },
+  { valor: "cita", label: "Cita" },
+  { valor: "tabla", label: "Tabla" },
+  { valor: "lista", label: "Lista" },
+  { valor: "aviso", label: "Aviso / Nota" },
+  { valor: "cronologia", label: "Cronología" },
+  { valor: "separador", label: "Separador" },
+] as const;
 
 export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
   const toast = useToast();
@@ -131,9 +146,11 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="text-xs text-fg-muted">#{i + 1}</span>
                 <select value={sec.tipo} onChange={(e) => updateSec(i, { tipo: e.target.value as Tipo })} className="rounded-lg border border-border-base bg-surface px-2 py-1 text-xs text-fg">
-                  <option value="texto">Texto</option>
-                  <option value="cita">Cita</option>
-                  <option value="tabla">Tabla</option>
+                  {TIPOS_SECCION.map((t) => (
+                    <option key={t.valor} value={t.valor}>
+                      {t.label}
+                    </option>
+                  ))}
                 </select>
                 <select value={sec.estado} onChange={(e) => updateSec(i, { estado: e.target.value as EstadoPublicacion })} className="rounded-lg border border-border-base bg-surface px-2 py-1 text-xs text-fg">
                   <option value="borrador">Borrador</option>

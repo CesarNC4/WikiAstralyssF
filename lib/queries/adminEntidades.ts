@@ -2,8 +2,11 @@ import "server-only";
 import { and, asc, count, desc, eq, getTableColumns, ilike, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import { catalogos } from "@/db/schema/admin";
+import { elementos } from "@/db/schema/elementos";
+import type { OpcionCatalogo } from "@/components/admin/fields";
 import { capitulos } from "@/db/schema/narrativa";
 import { naciones, razas, sistemaMonetario } from "@/db/schema/mundo";
+import { regiones, locaciones } from "@/db/schema/mapa";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { getEntidadConfig, type EntidadConfig, type RefTarget } from "@/lib/admin/fields";
 import { listPersonajesOpciones } from "@/lib/queries/adminPersonajes";
@@ -34,11 +37,35 @@ export async function getOpcionesReferencia(target: RefTarget): Promise<OpcionRe
     const rows = await db.select({ id: razas.id, label: razas.nombre }).from(razas).where(isNull(razas.eliminadoEn)).orderBy(asc(razas.nombre));
     return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
   }
+  if (target === "regiones") {
+    const rows = await db.select({ id: regiones.id, label: regiones.nombre }).from(regiones).where(isNull(regiones.eliminadoEn)).orderBy(asc(regiones.nombre));
+    return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
+  }
+  if (target === "locaciones") {
+    const rows = await db.select({ id: locaciones.id, label: locaciones.nombre }).from(locaciones).where(isNull(locaciones.eliminadoEn)).orderBy(asc(locaciones.nombre));
+    return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
+  }
   if (target === "monedas") {
     const rows = await db.select({ id: sistemaMonetario.id, label: sistemaMonetario.nombre }).from(sistemaMonetario).where(isNull(sistemaMonetario.eliminadoEn)).orderBy(asc(sistemaMonetario.nombre));
     return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
   }
   return [];
+}
+
+/**
+ * El catálogo elemental, en forma de opciones agrupadas por familia.
+ *
+ * Los elementos no viven en `catalogos` sino en su propia tabla, porque son más
+ * que una etiqueta: tienen color, icono y ficha, y las fichas se vinculan a
+ * ellos. Aquí se traducen a la misma forma que el resto de desplegables.
+ */
+export async function getElementosCatalogo(): Promise<OpcionCatalogo[]> {
+  const rows = await db
+    .select({ nombre: elementos.nombre, familia: elementos.familia, orden: elementos.orden })
+    .from(elementos)
+    .where(isNull(elementos.eliminadoEn))
+    .orderBy(asc(elementos.orden), asc(elementos.nombre));
+  return rows.map((r) => ({ valor: r.nombre, grupo: r.familia }));
 }
 
 /** Carga las opciones de todos los campos reference de una entidad. */
@@ -136,16 +163,22 @@ export async function getEntidadParaEditar(key: string, id: number): Promise<Rec
   return (row as Record<string, unknown>) ?? null;
 }
 
-/** Carga valores de catálogo para una lista de campos (combobox). */
-export async function getCatalogosPorCampos(campos: string[]): Promise<Record<string, string[]>> {
-  const out: Record<string, string[]> = {};
+/**
+ * Carga las opciones de catálogo de una lista de campos.
+ *
+ * Devuelve también el , que antes se descartaba. Ese descarte era un
+ * fallo con consecuencias visibles: en la ficha de Magia salían las variantes de
+ * todas las escuelas mezcladas, porque la dependencia vive justo en el grupo.
+ */
+export async function getCatalogosPorCampos(campos: string[]): Promise<Record<string, OpcionCatalogo[]>> {
+  const out: Record<string, OpcionCatalogo[]> = {};
   for (const campo of campos) out[campo] = [];
   if (campos.length === 0) return out;
   const rows = await db
-    .select({ campo: catalogos.campo, valor: catalogos.valor })
+    .select({ campo: catalogos.campo, valor: catalogos.valor, grupo: catalogos.grupo })
     .from(catalogos)
     .where(inArray(catalogos.campo, campos))
-    .orderBy(asc(catalogos.orden), asc(catalogos.valor));
-  for (const r of rows) (out[r.campo] ??= []).push(r.valor);
+    .orderBy(asc(catalogos.grupo), asc(catalogos.orden), asc(catalogos.valor));
+  for (const r of rows) (out[r.campo] ??= []).push({ valor: r.valor, grupo: r.grupo });
   return out;
 }

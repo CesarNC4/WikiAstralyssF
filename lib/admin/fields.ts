@@ -4,9 +4,29 @@
  * renderiza el formulario, la tabla y el preview de cada entidad simple.
  */
 
-export type FieldType = "text" | "textarea" | "number" | "combobox" | "checkbox" | "reference" | "slider";
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  /** Desplegable de catálogo. */
+  | "combobox"
+  /** Varios valores del mismo catálogo (columna de lista en la base). */
+  | "multi"
+  /** Desplegable alimentado por la tabla `elementos`, agrupado por familia. */
+  | "elemento"
+  | "checkbox"
+  | "reference"
+  | "slider";
 
-export type RefTarget = "personajes" | "capitulos" | "magia" | "naciones" | "razas" | "monedas";
+export type RefTarget =
+  | "personajes"
+  | "capitulos"
+  | "magia"
+  | "naciones"
+  | "razas"
+  | "monedas"
+  | "regiones"
+  | "locaciones";
 
 export interface FieldDef {
   /** Clave de columna en Drizzle (camelCase). */
@@ -25,6 +45,17 @@ export interface FieldDef {
   rows?: number;
   /** Renderiza este campo solo si otro campo tiene un valor concreto (dependencia). */
   dependsOn?: { field: string; equals: string };
+  /**
+   * Nombre del campo cuyo valor decide qué opciones se ofrecen aquí: la variante
+   * de un artefacto depende de su tipo, y el subtipo de una relación de su tipo.
+   * El valor del campo padre se compara con el `grupo` del catálogo.
+   */
+  dependeDe?: string;
+  /**
+   * Para `elemento`: familia a la que se limita el desplegable. Si en
+   * `dependeDe` se pasa otro campo, la familia sale de la escuela elegida allí.
+   */
+  familia?: string;
 }
 
 export interface EntidadConfig {
@@ -74,11 +105,11 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
       f("capital", "Capital", "text", "Datos clave"),
       f("idioma", "Idioma", "text", "Datos clave"),
       f("poblacion", "Población", "text", "Datos clave"),
-      f("elementoFundamental", "Elemento fundamental", "combobox", "Datos clave", { catalogCampo: "nacion_elemento" }),
+      f("elementoFundamental", "Elemento fundamental", "elemento", "Datos clave"),
       f("conceptoDivino", "Concepto divino", "text", "Datos clave"),
       f("diosFundador", "Dios fundador", "text", "Datos clave"),
-      f("clima", "Clima", "combobox", "Geografía", { catalogCampo: "nacion_clima" }),
-      f("terreno", "Terreno", "combobox", "Geografía", { catalogCampo: "nacion_terreno" }),
+      f("clima", "Clima", "combobox", "Geografía", { catalogCampo: "clima" }),
+      f("terreno", "Terreno", "multi", "Geografía", { catalogCampo: "terreno", hint: "Una nación puede ser montañosa y costera a la vez." }),
       f("recursosNaturales", "Recursos naturales", "textarea", "Geografía"),
       f("poderMilitarNivel", "Militar", "slider", "Poder (0-100)"),
       f("poderEconomicoNivel", "Económico", "slider", "Poder (0-100)"),
@@ -101,9 +132,13 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasImage: true,
     hasBanner: true,
     hasFicha: true,
-    nota: "🗺️ El contorno en el mapa, el color y la nación a la que pertenece se editan en el Mapa.",
+    nota: "🗺️ El contorno en el mapa y el color se editan en el Mapa. La nación a la que pertenece se detecta sola por la geometría.",
     fields: [
       f("subtitulo", "Subtítulo", "text", "Identidad"),
+      f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "region_tipo" }),
+      f("estado", "Control", "combobox", "Identidad", { catalogCampo: "region_estado" }),
+      f("clima", "Clima", "combobox", "Geografía", { catalogCampo: "clima", hint: "Puede ser distinto al de su nación." }),
+      f("terreno", "Terreno", "multi", "Geografía", { catalogCampo: "terreno" }),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("historia", "Historia", "textarea", "Contenido", { rows: 8 }),
     ],
@@ -118,9 +153,12 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasImage: true,
     hasBanner: true,
     hasFicha: true,
-    nota: "🗺️ El punto en el mapa, el tipo, la región/nación y el evento de cronología se editan en el Mapa.",
+    nota: "🗺️ El punto en el mapa y el evento de cronología se editan en el Mapa. La región y la nación se detectan solas por la posición.",
     fields: [
       f("subtitulo", "Subtítulo", "text", "Identidad"),
+      f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "locacion_tipo" }),
+      f("escala", "Escala", "combobox", "Identidad", { catalogCampo: "locacion_escala", hint: "Decide a qué nivel de zoom aparece el pin en el mapa." }),
+      f("estado", "Conservación", "combobox", "Datos clave", { catalogCampo: "locacion_estado" }),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("historia", "Historia", "textarea", "Contenido", { rows: 8 }),
     ],
@@ -137,12 +175,14 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("clasificacion", "Clasificación", "combobox", "Identidad", { catalogCampo: "raza_clasificacion" }),
-      f("afinidad", "Afinidad elemental", "combobox", "Identidad", { catalogCampo: "raza_afinidad", hint: "Afinidad principal (Pyro, Hydro…). Debilidades/resistencias se editan abajo." }),
+      f("estado", "Estado de la raza", "combobox", "Identidad", { catalogCampo: "raza_estado" }),
+      f("rareza", "Frecuencia", "combobox", "Identidad", { catalogCampo: "rareza" }),
       f("subtitulo", "Subtítulo", "text", "Identidad"),
       f("razaPadreId", "Deriva de (raza padre)", "reference", "Identidad", { refTarget: "razas", hint: "para sub-razas / variantes / mestizajes" }),
-      f("esperanzaVida", "Esperanza de vida", "text", "Datos clave"),
+      f("longevidad", "Longevidad", "combobox", "Datos clave", { catalogCampo: "raza_longevidad", hint: "El tramo sirve para filtrar; el detalle va en el campo de al lado." }),
+      f("esperanzaVida", "Esperanza de vida (detalle)", "text", "Datos clave"),
       f("poblacionEstimada", "Población estimada", "text", "Datos clave"),
-      f("dieta", "Dieta", "combobox", "Datos clave", { catalogCampo: "raza_dieta" }),
+      f("dieta", "Dieta", "combobox", "Datos clave", { catalogCampo: "dieta" }),
       f("statLongevidad", "Longevidad", "slider", "Atributos (0-100)"),
       f("statAfinidadMagica", "Afinidad mágica", "slider", "Atributos (0-100)"),
       f("statFuerza", "Fuerza física", "slider", "Atributos (0-100)"),
@@ -174,10 +214,12 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("subtitulo", "Subtítulo", "text", "Identidad"),
-      f("categoria", "Categoría", "combobox", "Identidad", { catalogCampo: "bestia_categoria", hint: "Común · Jefe · Legendaria · Divina" }),
+      f("naturaleza", "Naturaleza", "combobox", "Identidad", { catalogCampo: "bestia_naturaleza", hint: "Qué es: bestia, no-muerta, constructo, aberración…" }),
       f("nivelAmenaza", "Nivel de amenaza", "combobox", "Datos clave", { catalogCampo: "bestia_nivel_amenaza" }),
-      f("dieta", "Dieta", "combobox", "Datos clave", { catalogCampo: "bestia_dieta", hint: "Carnívoro · Herbívoro · Omnívoro…" }),
-      f("tamano", "Tamaño", "combobox", "Datos clave", { catalogCampo: "bestia_tamano", hint: "Diminuto · Pequeño · Mediano · Grande · Colosal" }),
+      f("dieta", "Dieta", "combobox", "Datos clave", { catalogCampo: "dieta" }),
+      f("tamano", "Tamaño", "combobox", "Datos clave", { catalogCampo: "bestia_tamano" }),
+      f("comportamientoTipo", "Comportamiento", "combobox", "Datos clave", { catalogCampo: "bestia_comportamiento", hint: "El resumen; el detalle va en el texto de abajo." }),
+      f("biomas", "Biomas", "multi", "Datos clave", { catalogCampo: "bestia_habitat" }),
       f("statFuerza", "Fuerza", "slider", "Combate (0-100)"),
       f("statVelocidad", "Velocidad", "slider", "Combate (0-100)"),
       f("statResistencia", "Resistencia", "slider", "Combate (0-100)"),
@@ -203,10 +245,12 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasBanner: true,
     hasFicha: true,
     fields: [
-      f("rareza", "Rareza", "combobox", "Identidad", { catalogCampo: "mineral_rareza" }),
-      f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "mineral_tipo" }),
-      f("elemento", "Afinidad elemental", "combobox", "Identidad", { catalogCampo: "mineral_elemento", hint: "Pyro, Hydro, Cryo… (catálogo unificado)" }),
-      f("origen", "Origen", "text", "Datos clave"),
+      f("rareza", "Rareza", "combobox", "Identidad", { catalogCampo: "rareza" }),
+      f("tipo", "Origen", "combobox", "Identidad", { catalogCampo: "mineral_tipo", hint: "De dónde sale: natural, arcano, disonante o sintético." }),
+      f("composicion", "Composición", "combobox", "Identidad", { catalogCampo: "mineral_composicion", hint: "De qué está hecho." }),
+      f("estadoFisico", "Estado físico", "combobox", "Datos clave", { catalogCampo: "mineral_estado_fisico" }),
+      f("estado", "Disponibilidad", "combobox", "Datos clave", { catalogCampo: "mineral_estado" }),
+      f("origen", "Origen (detalle)", "text", "Datos clave"),
       f("valorMonedaId", "Moneda de referencia", "reference", "Datos clave", { refTarget: "monedas" }),
       f("valorCantidad", "Valor (cantidad)", "number", "Datos clave", { hint: "p.ej. 250 (en la moneda elegida)" }),
       f("statDureza", "Dureza", "slider", "Gema (0-100)"),
@@ -233,6 +277,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("categoria", "Categoría", "combobox", "Identidad", { catalogCampo: "concepto_categoria" }),
+      f("destacado", "Concepto clave", "checkbox", "Identidad", { hint: "Lo sube arriba del índice." }),
       f("orden", "Orden", "number", "Identidad", { hint: "para ordenar el índice" }),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("contenido", "Contenido", "textarea", "Contenido", { rows: 10 }),
@@ -251,16 +296,20 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     fields: [
       f("naturaleza", "Naturaleza", "combobox", "Identidad", {
         catalogCampo: "magia_naturaleza",
-        hint: "Teoría: Fundamento · Concepto. Seleccionables: Tecnica · Tecnica Avanzada",
+        hint: "Teoría: Fundamento · Concepto. Seleccionables: Técnica · Técnica Avanzada",
       }),
       f("tipo", "Tipo / escuela", "combobox", "Identidad", {
         catalogCampo: "magia_tipo",
-        hint: "Solo técnicas: Elemental, Demoniaca…",
+        hint: "Elemental, Rúnica, Oscura, Ritual, Demoníaca, Antigua",
       }),
-      f("subcategoria", "Elemento", "combobox", "Identidad", {
-        catalogCampo: "magia_variante",
-        hint: "Pyro, Hydro, Cryo, Electro, Geo, Dendro, Vento…",
+      // El elemento sale del catálogo elemental, filtrado por la familia que
+      // corresponde a la escuela elegida arriba. Antes salían todos mezclados.
+      f("subcategoria", "Elemento", "elemento", "Identidad", {
+        dependeDe: "tipo",
+        hint: "Depende de la escuela: Elemental da los siete, Antigua da Lumino y Umbra…",
       }),
+      f("coste", "Coste / riesgo", "combobox", "Datos clave", { catalogCampo: "magia_coste" }),
+      f("legalidad", "Legalidad", "combobox", "Datos clave", { catalogCampo: "magia_legalidad" }),
       f("fundamentoPadreId", "Deriva de (fundamento)", "reference", "Identidad", { refTarget: "magia" }),
       f("orden", "Orden", "number", "Identidad", { hint: "para ordenar el índice" }),
       f("descripcion", "Descripción", "textarea", "Contenido"),
@@ -282,7 +331,13 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
       f("nivelRiesgo", "Nivel de riesgo", "combobox", "Identidad", { catalogCampo: "mision_riesgo" }),
       f("estado", "Estado", "combobox", "Identidad", { catalogCampo: "mision_estado" }),
       f("rangoMinimo", "Rango mínimo", "combobox", "Identidad", { catalogCampo: "rango_aventurero" }),
-      f("ubicacion", "Ubicación", "text", "Datos clave"),
+      f("tamanoGrupo", "Grupo recomendado", "combobox", "Identidad", { catalogCampo: "mision_grupo" }),
+      // La ubicación enlazada hace que la misión aparezca sola en la ficha del
+      // lugar; el texto queda para sitios que todavía no tienen ficha.
+      f("ubicacionNacionId", "Nación", "reference", "Ubicación", { refTarget: "naciones" }),
+      f("ubicacionRegionId", "Región", "reference", "Ubicación", { refTarget: "regiones" }),
+      f("ubicacionLocacionId", "Locación", "reference", "Ubicación", { refTarget: "locaciones" }),
+      f("ubicacion", "Ubicación (sin ficha)", "text", "Ubicación", { hint: "para lugares que aún no tienen ficha" }),
       f("fechaLore", "Fecha (lore)", "text", "Datos clave"),
       f("personajeId", "Encargada por", "reference", "Datos clave", { refTarget: "personajes", hint: "personaje con ficha" }),
       f("encarganteNombre", "Encargante (sin ficha)", "text", "Datos clave", { hint: "si el encargante no tiene ficha" }),
@@ -305,6 +360,8 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     orderBy: "orden",
     fields: [
       f("fechaLore", "Fecha (lore)", "text", "Identidad", { hint: "p. ej. 'Año 1024' o 'Era de los Reyes'" }),
+      f("era", "Era", "combobox", "Identidad", { catalogCampo: "era" }),
+      f("anioLore", "Año", "number", "Identidad", { hint: "Solo el número, negativo si es antes del año cero. Sirve para ordenar." }),
       f("importancia", "Importancia", "combobox", "Identidad", { catalogCampo: "timeline_importancia" }),
       f("categoria", "Categoría", "combobox", "Identidad", { catalogCampo: "timeline_categoria" }),
       f("capituloId", "Capítulo", "reference", "Datos clave", { refTarget: "capitulos" }),
@@ -324,8 +381,10 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     fields: [
       f("titulo", "Título", "text", "Identidad"),
       f("dominio", "Dominio", "combobox", "Identidad", { catalogCampo: "demonio_dominio" }),
-      f("eraAparicion", "Era de aparición", "text", "Datos clave"),
-      f("estado", "Estado", "combobox", "Datos clave", { catalogCampo: "demonio_estado" }),
+      f("era", "Era de aparición", "combobox", "Datos clave", { catalogCampo: "era" }),
+      f("anioLore", "Año", "number", "Datos clave", { hint: "Negativo si es antes del año cero." }),
+      f("eraAparicion", "Era (detalle libre)", "text", "Datos clave"),
+      f("estado", "Estado", "combobox", "Datos clave", { catalogCampo: "estado_vital" }),
       f("derrotadoPor", "Derrotado por", "text", "Datos clave"),
       f("descripcionFisica", "Descripción física", "textarea", "Contenido"),
       f("devilTrigger", "Devil Trigger", "textarea", "Contenido"),
@@ -345,13 +404,15 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: true,
     fields: [
       f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "artefacto_tipo" }),
+      // Cada tipo tiene sus propias variantes: las de un arma no valen para una
+      // armadura. El desplegable se filtra por el tipo elegido arriba.
       f("variante", "Variante", "combobox", "Identidad", {
-        catalogCampo: "arma_variante",
-        dependsOn: { field: "tipo", equals: "Arma" },
-        hint: "Solo para armas: Composición · Activación · Sincronización…",
+        catalogCampo: "artefacto_variante",
+        dependeDe: "tipo",
+        hint: "Depende del tipo elegido.",
       }),
-      f("propietarioActual", "Propietario (texto)", "text", "Datos clave", { hint: "si no tiene ficha" }),
-      f("propietarioId", "Propietario (ficha)", "reference", "Datos clave", { refTarget: "personajes" }),
+      f("rareza", "Rareza", "combobox", "Identidad", { catalogCampo: "rareza" }),
+      f("propietarioId", "Propietario", "reference", "Datos clave", { refTarget: "personajes", hint: "Se refleja solo en la ficha del personaje." }),
       f("descripcion", "Descripción", "textarea", "Contenido"),
       f("historia", "Historia", "textarea", "Contenido", { rows: 6 }),
       f("poderEspecial", "Poder especial", "textarea", "Contenido"),
@@ -368,7 +429,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasBanner: false,
     hasFicha: false,
     fields: [
-      f("denominacion", "Denominación", "text", "Identidad"),
+      f("denominacion", "Denominación", "combobox", "Identidad", { catalogCampo: "moneda_denominacion" }),
       f("valorRelativo", "Valor relativo", "text", "Datos clave", { hint: "p.ej. 1 oro = 100 plata" }),
       f("descripcion", "Descripción", "textarea", "Contenido"),
     ],
@@ -391,11 +452,13 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     orderBy: "numero",
     fields: [
       f("numero", "Número", "text", "Identidad", { required: true, hint: "admite '12', '12b' o 'Interludio'" }),
-      f("libro", "Libro", "text", "Identidad"),
+      f("libro", "Libro", "combobox", "Identidad", { catalogCampo: "libro" }),
       f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "capitulo_tipo" }),
-      f("tipoTemporal", "Tipo temporal", "combobox", "Datos clave", { catalogCampo: "capitulo_tipo_temporal" }),
+      f("tipoTemporal", "Tipo temporal", "combobox", "Datos clave", { catalogCampo: "tipo_temporal" }),
       f("marcoNarrativo", "Marco narrativo", "text", "Datos clave"),
-      f("narrador", "Narrador", "text", "Datos clave"),
+      f("narradorPersonajeId", "Narrador (ficha)", "reference", "Datos clave", { refTarget: "personajes" }),
+      f("narradorTipo", "Cómo narra", "combobox", "Datos clave", { catalogCampo: "narrador_tipo" }),
+      f("narrador", "Narrador (sin ficha)", "text", "Datos clave", { hint: "si el narrador no tiene ficha" }),
       f("fechaLore", "Fecha (lore)", "text", "Datos clave"),
       f("paraleloACapituloId", "Paralelo al capítulo", "reference", "Datos clave", { refTarget: "capitulos" }),
       f("discordUrl", "Enlace en Discord", "text", "Datos clave"),
@@ -417,7 +480,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     fields: [
       f("capituloId", "Capítulo", "reference", "Identidad", { refTarget: "capitulos" }),
       f("numeroOrden", "Orden", "number", "Identidad"),
-      f("estado", "Estado", "text", "Datos clave"),
+      f("estado", "Estado", "combobox", "Datos clave", { catalogCampo: "estado_narrativo" }),
       f("fechaInicioLore", "Inicio (lore)", "text", "Datos clave"),
       f("fechaFinLore", "Fin (lore)", "text", "Datos clave"),
       f("descripcion", "Descripción", "textarea", "Contenido", { rows: 6 }),
@@ -435,8 +498,8 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: false,
     orderBy: "orden",
     fields: [
-      f("libro", "Libro", "text", "Identidad"),
-      f("tipo", "Tipo", "text", "Identidad"),
+      f("libro", "Libro", "combobox", "Identidad", { catalogCampo: "libro" }),
+      f("tipo", "Tipo temporal", "combobox", "Identidad", { catalogCampo: "tipo_temporal", hint: "El mismo eje que usan los capítulos." }),
       f("color", "Color", "text", "Identidad", { hint: "hex, para distinguirlo en la trama" }),
       f("orden", "Orden", "number", "Identidad"),
       f("descripcion", "Descripción", "textarea", "Contenido", { rows: 6 }),
@@ -457,7 +520,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     fields: [
       f("capituloId", "Capítulo", "reference", "Identidad", { refTarget: "capitulos" }),
       f("orden", "Orden", "number", "Identidad"),
-      f("estado", "Estado", "text", "Identidad"),
+      f("estado", "Estado", "combobox", "Identidad", { catalogCampo: "estado_narrativo" }),
       f("conflictoCentral", "Conflicto central", "textarea", "Contenido", { rows: 4 }),
       f("giroArgumental", "Giro argumental", "textarea", "Contenido", { rows: 4 }),
       f("secretosRevelados", "Secretos revelados", "textarea", "Contenido", { rows: 4 }),
@@ -477,7 +540,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: false,
     orderBy: "orden",
     fields: [
-      f("estado", "Estado", "text", "Identidad"),
+      f("estado", "Estado", "combobox", "Identidad", { catalogCampo: "estado_narrativo" }),
       f("orden", "Orden", "number", "Identidad"),
       f("capituloAperturaId", "Capítulo de apertura", "reference", "Datos clave", { refTarget: "capitulos" }),
       f("capituloCierreId", "Capítulo de cierre", "reference", "Datos clave", { refTarget: "capitulos" }),
@@ -500,7 +563,8 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: false,
     fields: [
       f("artista", "Artista", "text", "Identidad"),
-      f("tipoFuente", "Fuente", "combobox", "Datos clave", { catalogCampo: "cancion_fuente", hint: "LOCAL · YOUTUBE · SPOTIFY · SOUNDCLOUD" }),
+      f("tipoFuente", "Fuente", "combobox", "Datos clave", { catalogCampo: "cancion_fuente" }),
+      f("uso", "Uso", "combobox", "Identidad", { catalogCampo: "cancion_uso", hint: "Tema de personaje, de batalla, ambiente…" }),
       f("url", "Enlace", "text", "Datos clave"),
       f("notas", "Notas", "textarea", "Contenido"),
     ],
@@ -519,6 +583,10 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     nota: "Catálogo compartido: estos elementos alimentan las afinidades, debilidades y resistencias de todas las fichas.",
     fields: [
       f("slug", "Slug", "text", "Identidad", { required: true, hint: "identificador estable, en minúsculas" }),
+      f("familia", "Familia", "combobox", "Identidad", {
+        catalogCampo: "elemento_familia",
+        hint: "Agrupa el desplegable, filtra en la web y decide qué variantes ofrece cada escuela de magia.",
+      }),
       f("color", "Color", "text", "Identidad", { hint: "hex, p. ej. #7b5cff" }),
       f("icono", "Icono", "text", "Identidad", { hint: "nombre de lucide-react" }),
       f("orden", "Orden", "number", "Identidad"),

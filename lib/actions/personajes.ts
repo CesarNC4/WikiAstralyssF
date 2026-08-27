@@ -55,6 +55,8 @@ function scalars(data: PersonajeInput) {
     genero: data.genero,
     altura: data.altura,
     ocupacion: data.ocupacion,
+    ocupacionDetalle: data.ocupacionDetalle,
+    estadoVital: data.estadoVital,
     rangoAventurero: data.rangoAventurero,
     lugarNacimiento: data.lugarNacimiento,
     lugarNacimientoNacionId: data.lugarNacimientoNacionId,
@@ -211,6 +213,8 @@ async function guardarHijos(
         nombreExterno: r.nombreExterno,
         tipoRelacion: r.tipoRelacion,
         subtipoRelacion: r.subtipoRelacion,
+        afecto: r.afecto,
+        afectoReciproco: r.afectoReciproco,
         descripcion: r.descripcion,
       })),
     );

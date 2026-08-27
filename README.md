@@ -66,6 +66,7 @@ lib/queries/      capa de acceso a datos (server-only, filtra visibilidad)
 lib/actions/      Server Actions (auth, búsqueda)
 lib/entities.ts   registro central de secciones (nav, índices, búsqueda)
 lib/relaciones/   registro de relaciones: cada arista del mundo, declarada una vez
+lib/catalogos.ts  semilla de las listas de los desplegables (la tabla `catalogos` manda)
 docs/             arquitectura (el porqué) y runbook de despliegue
 scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 ```
@@ -95,6 +96,16 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   dos fichas es la misma fila en la base. Ver [docs/relaciones.md](./docs/relaciones.md).
 - Panel de conexiones fijo en el admin mientras editas, con buscador de fichas
   con contexto, vinculación en lote y creación de borradores al vuelo.
+- **Catálogos editables.** Las listas de todos los desplegables se editan desde
+  `/admin/catalogos` sin tocar código: añadir una opción, reordenarla o
+  renombrarla — y renombrar arrastra el valor en las fichas que lo usaban. Se
+  puede escribir un valor nuevo en el propio desplegable y queda en el catálogo.
+  Ver [docs/catalogos.md](./docs/catalogos.md).
+- Desplegables dependientes: la variante de un artefacto depende de su tipo, el
+  subtipo de una relación de su tipo, y el elemento de una magia de su escuela.
+- **Mapa por capas.** Cuatro niveles (base, naciones, regiones, locaciones) con
+  solo uno interactivo a la vez, así los polígonos dejan de pisarse. La región de
+  una locación y la nación de una región se deducen de la geometría al guardar.
 - Notas privadas del autor y visibilidad por campo: ocultar un dato al público
   sin borrarlo.
 - Mapa con Leaflet + Geoman, grafo global en `/atlas` y mini-grafo por ficha,

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import type { ElementoTag } from "@/components/viz/ElementoBadges";
@@ -37,6 +37,49 @@ export async function getElementosDe(entidadTipo: string, entidadId: number): Pr
   return out;
 }
 
+/**
+ * Afinidades de varias fichas de golpe, para índices y comparadores.
+ *
+ * Razas y minerales guardaban su afinidad en una columna suelta además de en
+ * `entidad_elemento`; al quedarse solo con la tabla pueden tener varias, pero
+ * una lista no puede permitirse una consulta por fila. Esto las trae todas en
+ * una y devuelve el mapa por id.
+ */
+export async function getAfinidadesDe(
+  entidadTipo: string,
+  ids: number[],
+): Promise<Map<number, ElementoTag[]>> {
+  const out = new Map<number, ElementoTag[]>();
+  if (ids.length === 0) return out;
+
+  const rows = await db
+    .select({
+      entidadId: s.entidadElemento.entidadId,
+      orden: s.entidadElemento.orden,
+      slug: s.elementos.slug,
+      nombre: s.elementos.nombre,
+      color: s.elementos.color,
+      icono: s.elementos.icono,
+    })
+    .from(s.entidadElemento)
+    .innerJoin(s.elementos, eq(s.entidadElemento.elementoId, s.elementos.id))
+    .where(
+      and(
+        eq(s.entidadElemento.entidadTipo, entidadTipo),
+        eq(s.entidadElemento.relacion, "afinidad"),
+        inArray(s.entidadElemento.entidadId, ids),
+      ),
+    )
+    .orderBy(asc(s.entidadElemento.orden), asc(s.elementos.orden));
+
+  for (const r of rows) {
+    const lista = out.get(r.entidadId) ?? [];
+    lista.push({ slug: r.slug, nombre: r.nombre, color: r.color, icono: r.icono });
+    out.set(r.entidadId, lista);
+  }
+  return out;
+}
+
 // ── Bestias ─────────────────────────────────────────────────────────────────
 export async function getBestiaRelaciones(bestiaId: number) {
   const [naciones, regiones, drops, relacionadas, elementos] = await Promise.all([
@@ -68,7 +111,7 @@ export async function getBestiaRelaciones(bestiaId: number) {
 
 // ── Minerales ────────────────────────────────────────────────────────────────
 export async function getMineralRelaciones(mineralId: number) {
-  const [artefactos, usos, soltadoPor, moneda] = await Promise.all([
+  const [artefactos, usos, soltadoPor, moneda, elementos] = await Promise.all([
     db
       .select({ id: s.armasArtefactos.id, nombre: s.armasArtefactos.nombre, imagenUrl: s.armasArtefactos.imagenUrl, tipo: s.armasArtefactos.tipo, nota: s.mineralArtefacto.nota })
       .from(s.mineralArtefacto)
@@ -85,8 +128,9 @@ export async function getMineralRelaciones(mineralId: number) {
       .innerJoin(s.bestias, eq(s.bestiaDrop.bestiaId, s.bestias.id))
       .where(and(eq(s.bestiaDrop.mineralId, mineralId), eq(s.bestias.estadoPublicacion, "publicado"), isNull(s.bestias.eliminadoEn))),
     getMonedaDeMineral(mineralId),
+    getElementosDe("minerales", mineralId),
   ]);
-  return { artefactos, usos, soltadoPor, moneda };
+  return { artefactos, usos, soltadoPor, moneda, elementos };
 }
 
 async function getMonedaDeMineral(mineralId: number) {

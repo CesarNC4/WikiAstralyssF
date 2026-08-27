@@ -14,6 +14,7 @@ interface OrgRow {
   tipo: string | null;
   sede: string | null;
   estado: string | null;
+  legalidad: string | null;
   descripcion: string | null;
   objetivo: string | null;
   ideologia: string | null;
@@ -77,7 +78,7 @@ export async function OrgFichaBody({
       <div className="mx-auto max-w-5xl space-y-12 px-4 py-10">
         {/* Panel de facción */}
         <div className="rounded-2xl border border-border-base bg-surface/40 p-5">
-          <FieldGrid fields={[{ label: "Tipo", value: org.tipo }, { label: "Sede", value: org.sede }, { label: "Estado", value: org.estado }]} />
+          <FieldGrid fields={[{ label: "Tipo", value: org.tipo }, { label: "Sede", value: org.sede }, { label: "Estado", value: org.estado }, { label: "Legalidad", value: org.legalidad }]} />
           {facciones.length > 0 && (
             <div className="mt-1">
               <p className="mb-2 text-[11px] uppercase tracking-wider text-fg-muted">Facciones</p>

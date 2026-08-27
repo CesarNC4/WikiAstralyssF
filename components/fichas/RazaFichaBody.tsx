@@ -15,7 +15,9 @@ interface RazaRow {
   nombre: string;
   subtitulo: string | null;
   clasificacion: string | null;
-  afinidad: string | null;
+  estado: string | null;
+  longevidad: string | null;
+  rareza: string | null;
   esperanzaVida: string | null;
   poblacionEstimada: string | null;
   dieta: string | null;
@@ -40,7 +42,10 @@ export async function RazaFichaBody({ raza }: { raza: RazaRow }) {
     getGaleria("razas", raza.id).catch(() => []),
     getRazaRelaciones(raza.id, raza.razaPadreId).catch(() => null),
   ]);
-  const el = elementoMeta(raza.afinidad);
+  // La afinidad vive en `entidad_elemento` y puede ser más de una; el color
+  // de la ficha lo marca la primera.
+  const afinidades = rel?.elementos.afinidad ?? [];
+  const el = elementoMeta(afinidades[0]?.slug);
   const color = el?.color ?? "#9b8cff";
 
   const grupos: GrafoGrupo[] = rel
@@ -76,7 +81,10 @@ export async function RazaFichaBody({ raza }: { raza: RazaRow }) {
             { label: "Esperanza de vida", value: raza.esperanzaVida },
             { label: "Población", value: raza.poblacionEstimada },
             { label: "Dieta", value: raza.dieta },
-            { label: "Afinidad", value: el?.nombre ?? raza.afinidad },
+            { label: "Afinidad", value: afinidades.map((a) => a.nombre).join(" · ") || null },
+            { label: "Estado", value: raza.estado },
+            { label: "Longevidad", value: raza.longevidad },
+            { label: "Frecuencia", value: raza.rareza },
             ...(rel?.padre ? [{ label: "Deriva de", value: rel.padre.nombre }] : []),
           ]}
         />

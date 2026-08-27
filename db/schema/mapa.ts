@@ -1,5 +1,5 @@
 import { pgTable, serial, integer, varchar, text, timestamp, doublePrecision, jsonb } from "drizzle-orm/pg-core";
-import { estadoPublicacion, tipoLocacion } from "./enums";
+import { estadoPublicacion } from "./enums";
 import { auditColumns } from "./_audit";
 
 /**
@@ -15,6 +15,10 @@ export const regiones = pgTable("regiones", {
   nacionId: integer("nacion_id"),
   nombre: varchar("nombre").notNull(),
   subtitulo: varchar("subtitulo"),
+  tipo: varchar("tipo"),
+  clima: varchar("clima"),
+  terreno: text("terreno").array(),
+  estado: varchar("estado"),
   descripcion: text("descripcion"),
   historia: text("historia"),
   /** Polígono: array de pares [x, y] normalizados 0..1. */
@@ -34,9 +38,14 @@ export const locaciones = pgTable("locaciones", {
   id: serial("id").primaryKey(),
   regionId: integer("region_id"),
   nacionId: integer("nacion_id"),
-  tipo: tipoLocacion("tipo").notNull().default("interes"),
+  /** Del catalogo `locacion_tipo`. Antes era un enum de Postgres de 4 valores. */
+  tipo: varchar("tipo"),
   nombre: varchar("nombre").notNull(),
   subtitulo: varchar("subtitulo"),
+  /** Conservacion: en pie, en ruinas, destruida... */
+  estado: varchar("estado"),
+  /** Escala del asentamiento. Filtra que pines se ven en el mapa. */
+  escala: varchar("escala"),
   descripcion: text("descripcion"),
   historia: text("historia"),
   x: doublePrecision("x"),

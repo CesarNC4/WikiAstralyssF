@@ -28,6 +28,12 @@ export interface CampoVinculo {
   name: string;
   label: string;
   tipo: "text" | "select" | "checkbox";
+  /**
+   * Catálogo del que salen las opciones. Se prefiere a `opciones`: así la lista
+   * se edita desde /admin/catalogos sin tocar código ni desplegar.
+   */
+  catalogo?: string;
+  /** Lista fija, para relaciones cuyo matiz no tiene sentido que edites. */
   opciones?: string[];
   /** Se muestra junto al nombre en las listas compactas. */
   destacado?: boolean;

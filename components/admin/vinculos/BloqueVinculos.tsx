@@ -32,10 +32,17 @@ export function BloqueVinculos({
   bloque,
   ownerId,
   abiertoInicial,
+  opciones = {},
 }: {
   bloque: BloqueRelacion;
   ownerId: number;
   abiertoInicial?: boolean;
+  /**
+   * Las listas de los desplegables, por nombre de catálogo. Antes venían fijas
+   * dentro de la declaración de cada relación y sólo se podían cambiar tocando
+   * código.
+   */
+  opciones?: Record<string, string[]>;
 }) {
   const toast = useToast();
   const [filas, setFilas] = useState<FilaVinculo[]>([]);
@@ -195,7 +202,7 @@ export function BloqueVinculos({
                       title={campo.label}
                     >
                       <option value="">{campo.label}…</option>
-                      {campo.opciones?.map((o) => (
+                      {(campo.catalogo ? opciones[campo.catalogo] ?? [] : campo.opciones ?? []).map((o) => (
                         <option key={o} value={o}>
                           {o}
                         </option>

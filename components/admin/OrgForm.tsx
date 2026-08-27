@@ -7,7 +7,8 @@ import type { RangoRow, FaccionRow, JerarquiaRow, HistorialRow } from "@/lib/adm
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
-import { Field, TextInput, MarkdownField, Select } from "@/components/admin/fields";
+import { Field, TextInput, MarkdownField, Select, type MapaCatalogos } from "@/components/admin/fields";
+import { crearOpcion } from "@/lib/actions/catalogos";
 import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
@@ -45,7 +46,7 @@ export function OrgForm({
 }: {
   inicial: OrgInicial | null;
   personajes: Opcion[];
-  catalogos: Record<string, string[]>;
+  catalogos: MapaCatalogos;
 }) {
   const toast = useToast();
   const o = inicial?.org;
@@ -114,8 +115,9 @@ export function OrgForm({
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre *" error={fe.nombre}><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Orden del Alba" /></Field>
           <Field label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
-          <Field label="Tipo"><Select value={campos.tipo} onChange={(x) => set("tipo", x)} options={catalogos.org_tipo ?? []} placeholder="Orden, gremio, secta…" /></Field>
-          <Field label="Estado"><Select value={campos.estado} onChange={(x) => set("estado", x)} options={catalogos.org_estado ?? []} placeholder="Activa, disuelta…" /></Field>
+          <Field label="Tipo"><Select value={campos.tipo} onChange={(x) => set("tipo", x)} options={catalogos.org_tipo ?? []} placeholder="Orden, gremio, secta…" onCrear={(v, g) => crearOpcion("org_tipo", v, g)} /></Field>
+          <Field label="Estado" hint="vitalidad"><Select value={campos.estado} onChange={(x) => set("estado", x)} options={catalogos.org_estado ?? []} placeholder="Activa, en declive, disuelta…" /></Field>
+          <Field label="Legalidad" hint="una organización activa puede ser clandestina"><Select value={campos.legalidad} onChange={(x) => set("legalidad", x)} options={catalogos.org_legalidad ?? []} placeholder="Oficial, tolerada, clandestina…" /></Field>
           <Field label="Sede"><TextInput value={campos.sede} onChange={(x) => set("sede", x)} /></Field>
         </div>
       </AccordionSection>

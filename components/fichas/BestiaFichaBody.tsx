@@ -16,7 +16,9 @@ interface BestiaRow {
   nombre: string;
   subtitulo: string | null;
   nivelAmenaza: string | null;
-  categoria: string | null;
+  naturaleza: string | null;
+  comportamientoTipo: string | null;
+  biomas: string[] | null;
   dieta: string | null;
   tamano: string | null;
   descripcion: string | null;
@@ -61,7 +63,7 @@ export async function BestiaFichaBody({ bestia }: { bestia: BestiaRow }) {
     : [];
 
   const fichaTecnica = [
-    { label: "Categoría", value: bestia.categoria, icon: "Star" },
+    { label: "Naturaleza", value: bestia.naturaleza, icon: "Star" },
     { label: "Tamaño", value: bestia.tamano, icon: "Ruler" },
     { label: "Dieta", value: bestia.dieta, icon: "Drumstick" },
   ].filter((t) => t.value);
@@ -83,9 +85,14 @@ export async function BestiaFichaBody({ bestia }: { bestia: BestiaRow }) {
                 <Icon name="Flame" size={13} /> Amenaza {bestia.nivelAmenaza}
               </span>
             )}
-            {bestia.categoria && (
+            {bestia.naturaleza && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border-base px-3 py-1 text-xs text-fg-secondary">
-                <Icon name="Star" size={13} /> {bestia.categoria}
+                <Icon name="Star" size={13} /> {bestia.naturaleza}
+              </span>
+            )}
+            {bestia.comportamientoTipo && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-base px-3 py-1 text-xs text-fg-secondary">
+                <Icon name="Activity" size={13} /> {bestia.comportamientoTipo}
               </span>
             )}
           </>

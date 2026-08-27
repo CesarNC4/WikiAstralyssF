@@ -8,7 +8,7 @@ import type { RangoRow, FaccionRow, JerarquiaRow, ArbolRow } from "@/lib/admin/c
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
-import { Field, TextInput, MarkdownField, Select } from "@/components/admin/fields";
+import { Field, TextInput, MarkdownField, Select, type MapaCatalogos } from "@/components/admin/fields";
 import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
@@ -49,7 +49,7 @@ export function FamiliaForm({
 }: {
   inicial: FamiliaInicial | null;
   personajes: Opcion[];
-  catalogos: Record<string, string[]>;
+  catalogos: MapaCatalogos;
 }) {
   const toast = useToast();
   const f = inicial?.familia;
@@ -120,7 +120,8 @@ export function FamiliaForm({
           <Field label="Nombre *" error={fe.nombre}><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Casa Valeria" /></Field>
           <Field label="Apellido / casa"><TextInput value={campos.apellido} onChange={(x) => set("apellido", x)} /></Field>
           <Field label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
-          <Field label="Origen"><Select value={campos.origen} onChange={(x) => set("origen", x)} options={catalogos.familia_origen ?? []} placeholder="Selecciona origen…" /></Field>
+          <Field label="Origen" hint="de dónde viene"><Select value={campos.origen} onChange={(x) => set("origen", x)} options={catalogos.familia_origen ?? []} placeholder="Real, noble, mercante…" /></Field>
+          <Field label="Estatus" hint="dónde está hoy"><Select value={campos.estatus} onChange={(x) => set("estatus", x)} options={catalogos.familia_estatus ?? []} placeholder="En auge, consolidada, caída…" /></Field>
         </div>
       </AccordionSection>
 
@@ -165,7 +166,7 @@ export function FamiliaForm({
         <JerarquiaEditor rows={jerarquia} onChange={wrap(setJerarquia)} variant="familia" rangos={rangos} facciones={facciones} personajes={personajes} />
       </AccordionSection>
       <AccordionSection title="Árbol genealógico" subtitle={`${arbol.length} personas`} defaultOpen>
-        <ArbolEditor rows={arbol} onChange={wrap(setArbol)} personajes={personajes} estadoOptions={catalogos.arbol_estado ?? []} />
+        <ArbolEditor rows={arbol} onChange={wrap(setArbol)} personajes={personajes} estadoOptions={catalogos.estado_vital ?? []} />
       </AccordionSection>
 
       <AccordionSection title="Imágenes">

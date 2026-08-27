@@ -15,7 +15,7 @@ export async function getMapaPublico() {
       .from(s.regiones)
       .where(and(eq(s.regiones.estadoPublicacion, "publicado"), isNull(s.regiones.eliminadoEn))),
     db
-      .select({ id: s.locaciones.id, regionId: s.locaciones.regionId, nacionId: s.locaciones.nacionId, tipo: s.locaciones.tipo, nombre: s.locaciones.nombre, x: s.locaciones.x, y: s.locaciones.y })
+      .select({ id: s.locaciones.id, regionId: s.locaciones.regionId, nacionId: s.locaciones.nacionId, tipo: s.locaciones.tipo, escala: s.locaciones.escala, nombre: s.locaciones.nombre, x: s.locaciones.x, y: s.locaciones.y })
       .from(s.locaciones)
       .where(and(eq(s.locaciones.estadoPublicacion, "publicado"), isNull(s.locaciones.eliminadoEn))),
   ]);

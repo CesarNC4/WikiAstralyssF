@@ -33,6 +33,21 @@ const boolField = z.preprocess(
   z.boolean(),
 );
 
+/**
+ * Campo de varios valores (terreno de una nación, biomas de una bestia).
+ * Se guarda como lista en la base, así que una lista vacía se escribe como null
+ * y no como un array vacío: así "no lo he rellenado" y "no tiene ninguno" no se
+ * confunden al leer.
+ */
+const listField = z.preprocess(
+  (v) => {
+    if (!Array.isArray(v)) return null;
+    const items = v.map((x) => String(x).trim()).filter((x) => x.length > 0);
+    return items.length > 0 ? items : null;
+  },
+  z.array(z.string()).nullable(),
+);
+
 const idField = z.preprocess(
   (v) => {
     if (v === "" || v === null || v === undefined) return null;
@@ -52,6 +67,7 @@ export function buildEntidadSchema(config: EntidadConfig) {
   };
   for (const field of config.fields) {
     if (field.type === "reference") shape[field.name] = idField;
+    else if (field.type === "multi") shape[field.name] = listField;
     else if (field.type === "slider") shape[field.name] = statField;
     else if (field.type === "number") shape[field.name] = intField;
     else if (field.type === "checkbox") shape[field.name] = boolField;

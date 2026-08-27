@@ -16,7 +16,9 @@ interface MineralRow {
   nombre: string;
   rareza: string | null;
   tipo: string | null;
-  elemento: string | null;
+  composicion: string | null;
+  estado: string | null;
+  estadoFisico: string | null;
   origen: string | null;
   descripcion: string | null;
   propiedades: string | null;
@@ -31,7 +33,9 @@ export async function MineralFichaBody({ mineral }: { mineral: MineralRow }) {
     getGaleria("minerales", mineral.id).catch(() => []),
     getMineralRelaciones(mineral.id).catch(() => null),
   ]);
-  const el = elementoMeta(mineral.elemento);
+  // La afinidad vive en `entidad_elemento` y puede ser más de una.
+  const afinidades = rel?.elementos.afinidad ?? [];
+  const el = elementoMeta(afinidades[0]?.slug);
   const color = el?.color ?? "#6fc3d6";
 
   const grupos: GrafoGrupo[] = rel
@@ -70,7 +74,10 @@ export async function MineralFichaBody({ mineral }: { mineral: MineralRow }) {
             { label: "Rareza", value: mineral.rareza },
             { label: "Tipo", value: mineral.tipo },
             { label: "Origen", value: mineral.origen },
-            { label: "Afinidad", value: el?.nombre ?? mineral.elemento },
+            { label: "Afinidad", value: afinidades.map((a) => a.nombre).join(" · ") || null },
+            { label: "Composición", value: mineral.composicion },
+            { label: "Estado físico", value: mineral.estadoFisico },
+            { label: "Disponibilidad", value: mineral.estado },
             ...(rel?.moneda ? [{ label: "Valor", value: `${formatCantidad(rel.moneda.cantidad)} ${rel.moneda.denominacion ?? rel.moneda.nombre}` }] : []),
           ]}
         />

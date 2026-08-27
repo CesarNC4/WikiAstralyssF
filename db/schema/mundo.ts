@@ -22,7 +22,8 @@ export const naciones = pgTable("naciones", {
   estructura: text("estructura"),
   // Clima / geografía (§overhaul mundo).
   clima: varchar("clima"),
-  terreno: varchar("terreno"),
+  /** Varios: una nacion puede ser montanosa y costera a la vez. */
+  terreno: text("terreno").array(),
   recursosNaturales: text("recursos_naturales"),
   // Medidores de poder 0-100 (radar comparativo).
   poderMilitarNivel: integer("poder_militar_nivel"),
@@ -46,7 +47,11 @@ export const razas = pgTable("razas", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   clasificacion: varchar("clasificacion"),
-  afinidad: varchar("afinidad"),
+  // La afinidad elemental vive en `entidad_elemento`: admite varias y hace que
+  // la ficha del elemento sepa que razas lo tienen.
+  estado: varchar("estado"),
+  longevidad: varchar("longevidad"),
+  rareza: varchar("rareza"),
   subtitulo: varchar("subtitulo"),
   descripcion: text("descripcion"),
   origen: text("origen"),
@@ -97,7 +102,10 @@ export const organizaciones = pgTable("organizaciones", {
   relacionFacciones: text("relacion_facciones"),
   notasAdicionales: text("notas_adicionales"),
   sede: varchar("sede"),
+  /** Vitalidad: activa, en declive, disuelta... */
   estado: varchar("estado"),
+  /** Aparte del estado: una organizacion activa puede ser clandestina. */
+  legalidad: varchar("legalidad"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
@@ -110,7 +118,10 @@ export const familias = pgTable("familias", {
   nombre: varchar("nombre").notNull(),
   apellido: varchar("apellido"),
   subtitulo: varchar("subtitulo"),
+  /** De donde viene la familia. */
   origen: varchar("origen"),
+  /** Donde esta hoy: en auge, consolidada, caida... */
+  estatus: varchar("estatus"),
   descripcion: text("descripcion"),
   historia: text("historia"),
   poderEconomico: text("poder_economico"),
@@ -140,9 +151,13 @@ export const bestias = pgTable("bestias", {
   habitat: text("habitat"),
   recursos: text("recursos"),
   // Taxonomía.
-  categoria: varchar("categoria"),
+  naturaleza: varchar("naturaleza"),
   dieta: varchar("dieta"),
   tamano: varchar("tamano"),
+  /** Desplegable, junto al texto largo `comportamiento`. */
+  comportamientoTipo: varchar("comportamiento_tipo"),
+  /** Biomas donde vive. Varios, junto al texto largo `habitat`. */
+  biomas: text("biomas").array(),
   // Stats de combate 0-100.
   statFuerza: integer("stat_fuerza"),
   statVelocidad: integer("stat_velocidad"),
@@ -168,8 +183,11 @@ export const minerales = pgTable("minerales", {
   propiedades: text("propiedades"),
   usos: text("usos"),
   origen: varchar("origen"),
-  // Afinidad elemental (slug del catálogo unificado).
-  elemento: varchar("elemento"),
+  composicion: varchar("composicion"),
+  estado: varchar("estado"),
+  estadoFisico: varchar("estado_fisico"),
+  // La afinidad elemental vive en `entidad_elemento`: admite varias y hace que
+  // la ficha del elemento sepa qué minerales lo tienen.
   // Stats de gema 0-100.
   statDureza: integer("stat_dureza"),
   statPureza: integer("stat_pureza"),
@@ -222,6 +240,10 @@ export const lordDemonio = pgTable("lord_demonio", {
   historia: text("historia"),
   poderEspecial: text("poder_especial"),
   eraAparicion: varchar("era_aparicion"),
+  /** Era del catalogo compartido; `eraAparicion` queda como texto libre. */
+  era: varchar("era"),
+  /** Ano de lore, para poder ordenar. */
+  anioLore: integer("anio_lore"),
   derrotadoPor: varchar("derrotado_por"),
   estado: varchar("estado"),
   imagenUrl: varchar("imagen_url"),
@@ -239,7 +261,8 @@ export const armasArtefactos = pgTable("armas_artefactos", {
   descripcion: text("descripcion"),
   historia: text("historia"),
   poderEspecial: text("poder_especial"),
-  propietarioActual: varchar("propietario_actual"),
+  rareza: varchar("rareza"),
+  // El propietario es una referencia a ficha, en las dos direcciones.
   propietarioId: integer("propietario_id"),
   imagenUrl: varchar("imagen_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),

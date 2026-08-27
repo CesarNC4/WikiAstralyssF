@@ -12,6 +12,12 @@ export const elementos = pgTable("elementos", {
   id: serial("id").primaryKey(),
   slug: varchar("slug").notNull().unique(),
   nombre: varchar("nombre").notNull(),
+  /**
+   * Familia del elemento (Elementales, Antiguos, Oscuros, Sacros, Sin elemento).
+   * Agrupa los desplegables, filtra la web pública y decide qué variantes ofrece
+   * cada escuela de magia.
+   */
+  familia: varchar("familia"),
   color: varchar("color"),
   icono: varchar("icono"),
   descripcion: text("descripcion"),

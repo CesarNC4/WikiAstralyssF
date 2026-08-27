@@ -12,7 +12,12 @@ export const capitulos = pgTable("capitulos", {
   tipo: varchar("tipo"),
   tipoTemporal: varchar("tipo_temporal"),
   marcoNarrativo: varchar("marco_narrativo"),
+  /** Texto libre, para narradores sin ficha. */
   narrador: varchar("narrador"),
+  /** Y si el narrador tiene ficha, se enlaza. */
+  narradorPersonajeId: integer("narrador_personaje_id"),
+  /** Como narra: omnisciente, primera persona... */
+  narradorTipo: varchar("narrador_tipo"),
   paraleloACapituloId: integer("paralelo_a_capitulo_id"),
   notasPrivadas: text("notas_privadas"),
   descripcion: text("descripcion"),

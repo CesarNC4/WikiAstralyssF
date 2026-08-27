@@ -8,7 +8,7 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { Icon } from "@/components/Icon";
 import { getLocacionFicha, getVisibleLocacionIds } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
-import { TIPOS_LOCACION, type TipoLocacionKey } from "@/lib/mapa";
+import { estiloLocacion } from "@/lib/mapa";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -32,7 +32,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { locacion, region, nacion, evento } = data;
   const galeria = await getGaleria("locaciones", locacion.id).catch(() => []);
 
-  const meta = TIPOS_LOCACION[locacion.tipo as TipoLocacionKey];
+  const meta = estiloLocacion(locacion.tipo);
   const color = meta?.color ?? "#2dd4bf";
   const esBatalla = locacion.tipo === "batalla";
 
@@ -54,7 +54,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         imagen={locacion.imagenUrl}
         titulo={locacion.nombre}
         subtitulo={locacion.subtitulo}
-        kicker={meta?.label ?? "Locación"}
+        kicker={locacion.tipo ?? "Locación"}
         accent={`${color}40`}
         migas={[
           { label: "Naciones", href: "/naciones" },
@@ -64,7 +64,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         ]}
         badges={
           <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs" style={{ borderColor: `${color}66`, background: `${color}1a`, color }}>
-            <Icon name={meta?.icon ?? "Star"} size={13} /> {meta?.label}
+            <Icon name={meta.icon} size={13} /> {locacion.tipo}
           </span>
         }
       />

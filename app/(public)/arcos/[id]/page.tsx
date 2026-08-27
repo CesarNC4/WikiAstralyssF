@@ -47,7 +47,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </>
       }
     >
-      <FieldGrid fields={[{ label: "Libro", value: x.libro }, { label: "Tipo", value: x.tipo }]} />
+      <FieldGrid fields={[{ label: "Libro", value: x.libro }, { label: "Tiempo", value: x.tipo }]} />
 
       <ProseFields fields={[{ label: "Descripción", value: x.descripcion }]} />
 

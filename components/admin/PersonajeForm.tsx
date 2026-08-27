@@ -5,7 +5,8 @@ import { guardarPersonaje, type PersonajeFormState } from "@/lib/actions/persona
 import type { PersonajeParaEditar, Opcion, OpcionRegion, OpcionLocacion } from "@/lib/queries/adminPersonajes";
 import type { CatalogosPersonaje } from "@/lib/queries/catalogos";
 import type { EstadoPublicacion } from "@/db/schema/enums";
-import { CATALOGOS, etiquetaInversa } from "@/lib/catalogos";
+import { CATALOGOS, MAGIA_FAMILIA_ELEMENTAL, etiquetaInversa } from "@/lib/catalogos";
+import { crearOpcion } from "@/lib/actions/catalogos";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection, Repeater, MultiPicker } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
@@ -68,7 +69,19 @@ interface Ob {
   nPoder: string;
   nota: string;
 }
-interface Rel { idRr?: number; personajeRelacionadoId: number | null; relLabel: string; nombreExterno: string; tipoRelacion: string; subtipoRelacion: string; descripcion: string }
+interface Rel {
+  idRr?: number;
+  personajeRelacionadoId: number | null;
+  relLabel: string;
+  nombreExterno: string;
+  tipoRelacion: string;
+  subtipoRelacion: string;
+  /** Lo que siente ESTE personaje por el otro. */
+  afecto: string;
+  /** Lo que siente el otro por este. No se refleja del anterior: son independientes. */
+  afectoReciproco: string;
+  descripcion: string;
+}
 interface NacSel { nacionId: number; label: string; tipo: string; descripcion: string }
 interface RazSel { razaId: number; label: string; esMixta: boolean; nota: string }
 interface OrgSel { organizacionId: number; label: string; rol: string; tipo: string; descripcion: string }
@@ -134,7 +147,8 @@ export function PersonajeForm({
   const [f, setF] = useState({
     nombre: s(inicial?.nombre), surname: s(inicial?.surname), titulo: s(inicial?.titulo),
     edad: s(inicial?.edad), genero: s(inicial?.genero),
-    altura: s(inicial?.altura), ocupacion: s(inicial?.ocupacion), rangoAventurero: s(inicial?.rangoAventurero),
+    altura: s(inicial?.altura), ocupacion: s(inicial?.ocupacion), ocupacionDetalle: s(inicial?.ocupacionDetalle),
+    estadoVital: s(inicial?.estadoVital), rangoAventurero: s(inicial?.rangoAventurero),
     lugarNacimiento: s(inicial?.lugarNacimiento),
     lugarNacimientoNacionId: s(inicial?.lugarNacimientoNacionId),
     lugarNacimientoRegionId: s(inicial?.lugarNacimientoRegionId),
@@ -193,7 +207,8 @@ export function PersonajeForm({
     (inicial?.relaciones ?? []).map((r) => ({
       idRr: r.idRr, personajeRelacionadoId: r.personajeRelacionadoId ?? null,
       relLabel: r.relacionado ? [r.relacionado.nombre, r.relacionado.surname].filter(Boolean).join(" ") : "",
-      nombreExterno: s(r.nombreExterno), tipoRelacion: s(r.tipoRelacion), subtipoRelacion: s(r.subtipoRelacion), descripcion: s(r.descripcion),
+      nombreExterno: s(r.nombreExterno), tipoRelacion: s(r.tipoRelacion), subtipoRelacion: s(r.subtipoRelacion),
+      afecto: s(r.afecto), afectoReciproco: s(r.afectoReciproco), descripcion: s(r.descripcion),
     })),
   );
   const [naciones, setNaciones] = useState<NacSel[]>(
@@ -310,6 +325,8 @@ export function PersonajeForm({
           nombreExterno: r.nombreExterno,
           tipoRelacion: r.tipoRelacion,
           subtipoRelacion: r.subtipoRelacion,
+          afecto: r.afecto,
+          afectoReciproco: r.afectoReciproco,
           descripcion: r.descripcion,
         })),
       naciones: naciones.map((n) => ({ nacionId: n.nacionId, tipo: n.tipo, descripcion: n.descripcion })),
@@ -422,7 +439,9 @@ export function PersonajeForm({
           <Field label="Edad"><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
           <Field label="Género"><Select value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} /></Field>
           <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" /></Field>
-          <Field label="Ocupación"><TextInput value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} /></Field>
+          <Field label="Ocupación"><Select value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} options={catalogos.ocupacion} onCrear={(valor) => crearOpcion("ocupacion", valor)} /></Field>
+          <Field label="Ocupación (detalle)" hint="el matiz: 'Ex Princesa', 'Escriba del Consejo'…"><TextInput value={f.ocupacionDetalle} onChange={(v) => patch({ ocupacionDetalle: v })} /></Field>
+          <Field label="Estado vital"><Select value={f.estadoVital} onChange={(v) => patch({ estadoVital: v })} options={catalogos.estado_vital} /></Field>
           <Field label="Rango aventurero"><Select value={f.rangoAventurero} onChange={(v) => patch({ rangoAventurero: v })} options={catalogos.rango_aventurero} /></Field>
           {/* Lugar de nacimiento en 3 niveles (todos opcionales, en cascada). */}
           <div className="sm:col-span-2">
@@ -485,8 +504,8 @@ export function PersonajeForm({
       {/* Magia y combate (punto 4: campos grandes markdown) */}
       <AccordionSection {...sec("magia")} title="Magia y combate">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Magia principal"><MagiaPicker tipo={f.magiaPrincipalTipo} variante={f.magiaPrincipalVariante} onTipo={(v) => patch({ magiaPrincipalTipo: v })} onVariante={(v) => patch({ magiaPrincipalVariante: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
-          <Field label="Magia secundaria"><MagiaPicker tipo={f.magiaSecundariaTipo} variante={f.magiaSecundariaVariante} onTipo={(v) => patch({ magiaSecundariaTipo: v })} onVariante={(v) => patch({ magiaSecundariaVariante: v })} tipos={catalogos.magiaTipos} variantes={catalogos.magiaVariantes} /></Field>
+          <Field label="Magia principal"><MagiaPicker tipo={f.magiaPrincipalTipo} variante={f.magiaPrincipalVariante} onTipo={(v) => patch({ magiaPrincipalTipo: v })} onVariante={(v) => patch({ magiaPrincipalVariante: v })} tipos={catalogos.magiaTipos} elementos={catalogos.elementos} familias={MAGIA_FAMILIA_ELEMENTAL} /></Field>
+          <Field label="Magia secundaria"><MagiaPicker tipo={f.magiaSecundariaTipo} variante={f.magiaSecundariaVariante} onTipo={(v) => patch({ magiaSecundariaTipo: v })} onVariante={(v) => patch({ magiaSecundariaVariante: v })} tipos={catalogos.magiaTipos} elementos={catalogos.elementos} familias={MAGIA_FAMILIA_ELEMENTAL} /></Field>
           <Field label="Nivel de consciencia"><Select value={f.nivelDeConsciencia} onChange={(v) => patch({ nivelDeConsciencia: v })} options={catalogos.nivel_consciencia} /></Field>
           <div />
         </div>
@@ -570,8 +589,8 @@ export function PersonajeForm({
               ) : (
                 <div className="grid gap-2 sm:grid-cols-3">
                   <Field label="Nombre *"><TextInput value={h.nuevoNombre} onChange={(v) => up({ nuevoNombre: v })} /></Field>
-                  <Field label="Tipo / escuela"><Select value={h.nuevoTipo} onChange={(v) => up({ nuevoTipo: v })} options={catalogos.magiaTipos} /></Field>
-                  <Field label="Elemento"><Select value={h.nuevoSubcategoria} onChange={(v) => up({ nuevoSubcategoria: v })} options={catalogos.magiaVariantes[h.nuevoTipo] ?? []} /></Field>
+                  <Field label="Tipo / escuela"><Select value={h.nuevoTipo} onChange={(v) => up({ nuevoTipo: v, nuevoSubcategoria: "" })} options={catalogos.magiaTipos} /></Field>
+                  <Field label="Elemento"><Select value={h.nuevoSubcategoria} onChange={(v) => up({ nuevoSubcategoria: v })} options={catalogos.elementos} grupoActivo={h.nuevoTipo ? MAGIA_FAMILIA_ELEMENTAL[h.nuevoTipo] ?? null : null} /></Field>
                 </div>
               )}
               <div className="grid gap-2 sm:grid-cols-2">
@@ -644,7 +663,7 @@ export function PersonajeForm({
         <Repeater
           items={relaciones}
           onChange={wrapSetter(setRelaciones)}
-          blank={() => ({ personajeRelacionadoId: null, relLabel: "", nombreExterno: "", tipoRelacion: "", subtipoRelacion: "", descripcion: "" })}
+          blank={() => ({ personajeRelacionadoId: null, relLabel: "", nombreExterno: "", tipoRelacion: "", subtipoRelacion: "", afecto: "", afectoReciproco: "", descripcion: "" })}
           addLabel="Añadir relación"
           renderItem={(r, up) => (
             <div className="space-y-2">
@@ -660,8 +679,10 @@ export function PersonajeForm({
                   )}
                 </Field>
                 <Field label="o Nombre externo" hint="entidad sin ficha"><TextInput value={r.nombreExterno} onChange={(v) => up({ nombreExterno: v })} /></Field>
-                <Field label="Tipo de relación"><Select value={r.tipoRelacion} onChange={(v) => up({ tipoRelacion: v })} options={catalogos.tipo_relacion} /></Field>
-                <Field label="Subtipo"><Select value={r.subtipoRelacion} onChange={(v) => up({ subtipoRelacion: v })} options={catalogos.subtipo_relacion} /></Field>
+                <Field label="Tipo de relación"><Select value={r.tipoRelacion} onChange={(v) => up({ tipoRelacion: v, subtipoRelacion: "" })} options={catalogos.tipo_relacion} /></Field>
+                <Field label="Subtipo" hint="depende del tipo"><Select value={r.subtipoRelacion} onChange={(v) => up({ subtipoRelacion: v })} options={catalogos.subtipo_relacion} grupoActivo={r.tipoRelacion || null} /></Field>
+                <Field label="Lo que siente" hint="este personaje hacia el otro"><Select value={r.afecto} onChange={(v) => up({ afecto: v })} options={catalogos.afecto} /></Field>
+                <Field label="Lo que le devuelve" hint="puede ser distinto: uno ama y el otro odia"><Select value={r.afectoReciproco} onChange={(v) => up({ afectoReciproco: v })} options={catalogos.afecto} /></Field>
               </div>
               <Field label="Descripción"><MarkdownField value={r.descripcion} onChange={(v) => up({ descripcion: v })} rows={2} /></Field>
             </div>

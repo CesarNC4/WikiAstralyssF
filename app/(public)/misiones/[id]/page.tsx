@@ -38,7 +38,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       galeriaId={x.id}
       badges={<>{x.nivelRiesgo && <Badge tone="amenaza">Riesgo {x.nivelRiesgo}</Badge>}{x.estado && <Badge tone="accent">{x.estado}</Badge>}{x.tipo && <Badge>{x.tipo}</Badge>}</>}
     >
-      <FieldGrid fields={[{ label: "Tipo", value: x.tipo }, { label: "Nivel de riesgo", value: x.nivelRiesgo }, { label: "Estado", value: x.estado }, { label: "Rango mínimo", value: x.rangoMinimo }, { label: "Ubicación", value: x.ubicacion }, { label: "Fecha", value: x.fechaLore }]} />
+      <FieldGrid fields={[{ label: "Tipo", value: x.tipo }, { label: "Nivel de riesgo", value: x.nivelRiesgo }, { label: "Estado", value: x.estado }, { label: "Rango mínimo", value: x.rangoMinimo }, { label: "Grupo recomendado", value: x.tamanoGrupo }, { label: "Ubicación", value: x.ubicacion }, { label: "Fecha", value: x.fechaLore }]} />
 
       {(x.encargante || x.encarganteNombre) && (
         <section className="mb-6">

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { BloqueVinculos } from "./BloqueVinculos";
 import { resumenConexiones } from "@/lib/actions/vinculos";
+import { catalogosPorNombre } from "@/lib/actions/catalogos";
 import { bloquesDe } from "@/lib/relaciones/registro";
 import { entityByKey } from "@/lib/entities";
 import { NotaPrivada } from "@/components/admin/NotaPrivada";
@@ -29,7 +30,16 @@ export function PanelConexiones({
 }) {
   const bloques = bloquesDe(entidad);
   const [conteo, setConteo] = useState<Record<string, number> | null>(null);
+  const [opciones, setOpciones] = useState<Record<string, string[]>>({});
   const [soloConectados, setSoloConectados] = useState(false);
+
+  // Qué catálogos hacen falta para los desplegables de ESTA ficha. Se piden una
+  // sola vez, no uno por bloque.
+  const campos = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of bloques) for (const c of b.campos) if (c.catalogo) set.add(c.catalogo);
+    return [...set];
+  }, [bloques]);
 
   useEffect(() => {
     if (!ownerId) return;
@@ -39,6 +49,15 @@ export function PanelConexiones({
       .catch(() => { if (vivo) setConteo({}); });
     return () => { vivo = false; };
   }, [entidad, ownerId]);
+
+  useEffect(() => {
+    if (campos.length === 0) return;
+    let vivo = true;
+    catalogosPorNombre(campos)
+      .then((r) => { if (vivo) setOpciones(r); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [campos]);
 
   if (bloques.length === 0) return null;
 
@@ -91,6 +110,7 @@ export function PanelConexiones({
           // Se abre solo lo que ya tiene contenido: el resto se queda plegado
           // para que la lista siga siendo legible con 18 bloques.
           abiertoInicial={(conteo?.[`${b.relId}:${b.lado}`] ?? 0) > 0}
+          opciones={opciones}
         />
       ))}
     </aside>

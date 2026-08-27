@@ -9,6 +9,6 @@ const MapaEditor = dynamic(() => import("./MapaEditor").then((m) => m.MapaEditor
   loading: () => <div className="grid h-[60vh] place-items-center rounded-2xl border border-border-glow bg-deep text-fg-muted">Cargando editor…</div>,
 });
 
-export function MapaEditorClient({ data }: { data: MapaAdmin }) {
-  return <MapaEditor data={data} />;
+export function MapaEditorClient({ data, tiposLocacion }: { data: MapaAdmin; tiposLocacion: string[] }) {
+  return <MapaEditor data={data} tiposLocacion={tiposLocacion} />;
 }

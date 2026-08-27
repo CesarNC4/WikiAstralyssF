@@ -14,7 +14,6 @@
 import type { RelacionDef, BloqueRelacion } from "./tipos";
 
 const NOTA = { name: "nota", label: "Nota", tipo: "text" } as const;
-const RAREZA = ["Común", "Poco común", "Raro", "Épico", "Legendario"];
 
 export const RELACIONES: RelacionDef[] = [
   // ── Personaje ↔ mundo ─────────────────────────────────────────────────────
@@ -136,7 +135,7 @@ export const RELACIONES: RelacionDef[] = [
     a: { entidad: "naciones", titulo: "Diplomacia", icon: "Landmark", orden: 23, hint: "Relación con otras naciones" },
     b: { entidad: "naciones", titulo: "Diplomacia", icon: "Landmark", orden: 23 },
     campos: [
-      { name: "tipo", label: "Relación", tipo: "select", opciones: ["Aliada", "Rival", "Neutral", "Vasalla", "Soberana", "En guerra"], destacado: true },
+      { name: "tipo", label: "Relación", tipo: "select", catalogo: "vinculo_nacion_nacion", destacado: true },
       NOTA,
     ],
     reciproca: { campo: "tipo", inverso: { Vasalla: "Soberana", Soberana: "Vasalla" } },
@@ -161,7 +160,7 @@ export const RELACIONES: RelacionDef[] = [
     a: { entidad: "bestias", titulo: "Drops", icon: "Gem", orden: 22 },
     b: { entidad: "minerales", titulo: "Soltado por", icon: "PawPrint", orden: 20 },
     campos: [
-      { name: "rareza", label: "Rareza", tipo: "select", opciones: RAREZA, destacado: true },
+      { name: "rareza", label: "Rareza", tipo: "select", catalogo: "rareza", destacado: true },
       NOTA,
     ],
     ordenable: true,
@@ -172,7 +171,7 @@ export const RELACIONES: RelacionDef[] = [
     a: { entidad: "bestias", titulo: "Bestias relacionadas", icon: "Network", orden: 23 },
     b: { entidad: "bestias", titulo: "Bestias relacionadas", icon: "Network", orden: 23 },
     campos: [
-      { name: "tipo", label: "Relación", tipo: "select", opciones: ["Depredador", "Presa", "Subespecie", "Especie madre", "Evolución", "Forma previa", "Simbiótica", "Rival"], destacado: true },
+      { name: "tipo", label: "Relación", tipo: "select", catalogo: "vinculo_bestia_bestia", destacado: true },
       NOTA,
     ],
     reciproca: {
@@ -234,7 +233,7 @@ export const RELACIONES: RelacionDef[] = [
       // El catálogo lista una sección por tipo de ficha, no seis veces lo mismo.
       b: { entidad: "elementos", titulo: plural, icon, orden: 20 + i, sinPublico: true },
       campos: [
-        { name: "relacion", label: "Tipo", tipo: "select", opciones: ["Afinidad", "Debilidad", "Resistencia"], destacado: true },
+        { name: "relacion", label: "Tipo", tipo: "select", catalogo: "vinculo_entidad_elemento", destacado: true },
       ],
       fueraDelAtlas: true,
     }),
@@ -248,7 +247,7 @@ export const RELACIONES: RelacionDef[] = [
     a: { entidad: "personajes", titulo: "Lugares", icon: "MapPin", orden: 36 },
     b: { entidad: "locaciones", titulo: "Personajes", icon: "Users", orden: 20 },
     campos: [
-      { name: "tipo", label: "Vínculo", tipo: "select", opciones: ["Reside", "Nació", "Opera", "Murió", "Exiliado", "De paso"], destacado: true },
+      { name: "tipo", label: "Vínculo", tipo: "select", catalogo: "vinculo_personaje_locacion", destacado: true },
       NOTA,
     ],
   },
@@ -259,7 +258,7 @@ export const RELACIONES: RelacionDef[] = [
     a: { entidad: "personajes", titulo: "Bestias", icon: "PawPrint", orden: 37 },
     b: { entidad: "bestias", titulo: "Personajes", icon: "Users", orden: 24 },
     campos: [
-      { name: "tipo", label: "Vínculo", tipo: "select", opciones: ["Montura", "Familiar", "Némesis", "Domesticada", "Cazador"], destacado: true },
+      { name: "tipo", label: "Vínculo", tipo: "select", catalogo: "vinculo_personaje_bestia", destacado: true },
       NOTA,
     ],
   },
@@ -269,7 +268,7 @@ export const RELACIONES: RelacionDef[] = [
     relacion: "mision_bestia",
     a: { entidad: "misiones", titulo: "Bestias", icon: "PawPrint", orden: 21 },
     b: { entidad: "bestias", titulo: "Misiones", icon: "Swords", orden: 25 },
-    campos: [{ name: "tipo", label: "Papel", tipo: "select", opciones: ["Objetivo", "Amenaza", "Aliada"], destacado: true }, NOTA],
+    campos: [{ name: "tipo", label: "Papel", tipo: "select", catalogo: "vinculo_mision_bestia", destacado: true }, NOTA],
   },
   {
     id: "mision_locacion",
@@ -277,7 +276,7 @@ export const RELACIONES: RelacionDef[] = [
     relacion: "mision_locacion",
     a: { entidad: "misiones", titulo: "Lugares", icon: "MapPin", orden: 22 },
     b: { entidad: "locaciones", titulo: "Misiones", icon: "Swords", orden: 21 },
-    campos: [{ name: "tipo", label: "Papel", tipo: "select", opciones: ["Escenario", "Punto de partida", "Destino"], destacado: true }, NOTA],
+    campos: [{ name: "tipo", label: "Papel", tipo: "select", catalogo: "vinculo_mision_locacion", destacado: true }, NOTA],
   },
   {
     id: "mision_organizacion",
@@ -285,7 +284,7 @@ export const RELACIONES: RelacionDef[] = [
     relacion: "mision_organizacion",
     a: { entidad: "misiones", titulo: "Organizaciones", icon: "Building2", orden: 23 },
     b: { entidad: "organizaciones", titulo: "Misiones", icon: "Swords", orden: 23 },
-    campos: [{ name: "tipo", label: "Papel", tipo: "select", opciones: ["Encarga", "Respalda", "Se opone"], destacado: true }, NOTA],
+    campos: [{ name: "tipo", label: "Papel", tipo: "select", catalogo: "vinculo_mision_organizacion", destacado: true }, NOTA],
   },
   {
     id: "organizacion_relacion",
@@ -294,7 +293,7 @@ export const RELACIONES: RelacionDef[] = [
     a: { entidad: "organizaciones", titulo: "Otras organizaciones", icon: "Network", orden: 24 },
     b: { entidad: "organizaciones", titulo: "Otras organizaciones", icon: "Network", orden: 24 },
     campos: [
-      { name: "tipo", label: "Relación", tipo: "select", opciones: ["Aliada", "Rival", "Filial", "Matriz", "Escisión", "Origen", "Infiltrada"], destacado: true },
+      { name: "tipo", label: "Relación", tipo: "select", catalogo: "vinculo_org_org", destacado: true },
       NOTA,
     ],
     reciproca: {
@@ -308,7 +307,7 @@ export const RELACIONES: RelacionDef[] = [
     relacion: "familia_nacion",
     a: { entidad: "familias", titulo: "Naciones", icon: "Globe2", orden: 21 },
     b: { entidad: "naciones", titulo: "Familias", icon: "Network", orden: 25 },
-    campos: [{ name: "tipo", label: "Vínculo", tipo: "select", opciones: ["Gobierna", "Nobleza", "Exiliada", "Originaria"], destacado: true }, NOTA],
+    campos: [{ name: "tipo", label: "Vínculo", tipo: "select", catalogo: "vinculo_familia_nacion", destacado: true }, NOTA],
   },
   {
     id: "familia_organizacion",
@@ -316,7 +315,7 @@ export const RELACIONES: RelacionDef[] = [
     relacion: "familia_organizacion",
     a: { entidad: "familias", titulo: "Organizaciones", icon: "Building2", orden: 22 },
     b: { entidad: "organizaciones", titulo: "Familias", icon: "Network", orden: 25 },
-    campos: [{ name: "tipo", label: "Vínculo", tipo: "select", opciones: ["Fundadora", "Financia", "Controla", "Enfrentada"], destacado: true }, NOTA],
+    campos: [{ name: "tipo", label: "Vínculo", tipo: "select", catalogo: "vinculo_familia_organizacion", destacado: true }, NOTA],
   },
   // Sedes y feudos: dónde se asienta una organización o una familia.
   ...(["locaciones", "regiones"] as const).flatMap((lugar): RelacionDef[] =>
@@ -327,7 +326,7 @@ export const RELACIONES: RelacionDef[] = [
       a: { entidad: lugar, titulo: quien === "organizaciones" ? "Organizaciones" : "Familias", icon: quien === "organizaciones" ? "Building2" : "Network", orden: quien === "organizaciones" ? 22 : 23 },
       b: { entidad: quien, titulo: lugar === "locaciones" ? "Sedes" : "Territorios", icon: lugar === "locaciones" ? "MapPin" : "MapPinned", orden: lugar === "locaciones" ? 26 : 27 },
       campos: [
-        { name: "tipo", label: "Tipo", tipo: "select" as const, opciones: ["Sede", "Cuartel", "Feudo", "Refugio", "Presencia"], destacado: true },
+        { name: "tipo", label: "Tipo", tipo: "select" as const, catalogo: "vinculo_org_locacion", destacado: true },
         NOTA,
       ],
     })),

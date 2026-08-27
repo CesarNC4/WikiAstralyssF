@@ -159,6 +159,10 @@ export const relacionSchema = z.object({
   nombreExterno: str,
   tipoRelacion: str,
   subtipoRelacion: str,
+  // El afecto NO se refleja: A puede sentir amor y B odio, así que cada lado
+  // tiene su columna y ninguna se deriva de la otra.
+  afecto: str,
+  afectoReciproco: str,
   descripcion: str,
 });
 
@@ -198,6 +202,8 @@ export const personajeSchema = z.object({
     z.number().nonnegative().nullable(),
   ),
   ocupacion: str,
+  ocupacionDetalle: str,
+  estadoVital: str,
   rangoAventurero: str,
   lugarNacimiento: str,
   lugarNacimientoNacionId: idField,

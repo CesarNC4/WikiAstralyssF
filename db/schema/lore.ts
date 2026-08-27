@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, text, timestamp, boolean } from "drizzle-orm/pg-core";
 import { estadoPublicacion } from "./enums";
 import { auditColumns } from "./_audit";
 
@@ -9,6 +9,8 @@ export const conceptos = pgTable("conceptos", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
   categoria: varchar("categoria"),
+  /** Sube el concepto arriba del indice. Antes se apanaba con una categoria. */
+  destacado: boolean("destacado").notNull().default(false),
   descripcion: text("descripcion"),
   contenido: text("contenido"),
   imagenUrl: varchar("imagen_url"),
@@ -24,6 +26,10 @@ export const magiaFundamentos = pgTable("magia_fundamentos", {
   categoria: varchar("categoria"),
   /** Naturaleza conceptual: Fundamento | Concepto (teoría) | Tecnica | Tecnica Avanzada (§ punto 12). */
   naturaleza: varchar("naturaleza"),
+  /** Que cuesta usarla. */
+  coste: varchar("coste"),
+  /** Si esta permitida, regulada o prohibida. */
+  legalidad: varchar("legalidad"),
   /** Tipo/escuela de la técnica: Elemental | Demoniaca | … (NULL para teoría: fundamentos/conceptos). */
   tipo: varchar("tipo"),
   /** Jerarquía opcional: fundamento del que depende un hechizo. */
@@ -72,7 +78,13 @@ export const misiones = pgTable("misiones", {
   descripcion: text("descripcion"),
   objetivo: text("objetivo"),
   recompensa: text("recompensa"),
+  /** Texto libre, para lugares sin ficha. */
   ubicacion: varchar("ubicacion"),
+  // Y si el lugar si tiene ficha, se enlaza de verdad y la mision aparece alli.
+  ubicacionNacionId: integer("ubicacion_nacion_id"),
+  ubicacionRegionId: integer("ubicacion_region_id"),
+  ubicacionLocacionId: integer("ubicacion_locacion_id"),
+  tamanoGrupo: varchar("tamano_grupo"),
   fechaLore: varchar("fecha_lore"),
   personajeId: integer("personaje_id"),
   encarganteNombre: varchar("encargante_nombre"),
@@ -91,6 +103,8 @@ export const timelineEventos = pgTable("timeline_eventos", {
   categoria: varchar("categoria"),
   /** Era / edad para agrupar la cronología (§ punto 13). */
   era: varchar("era"),
+  /** Ano de lore, para ordenar de verdad la cronologia. */
+  anioLore: integer("anio_lore"),
   capituloId: integer("capitulo_id"),
   orden: integer("orden").notNull().default(0),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),

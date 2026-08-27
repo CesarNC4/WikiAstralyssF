@@ -5,7 +5,7 @@ import { ReactFlow, Background, Controls, type Node, type Edge } from "@xyflow/r
 import "@xyflow/react/dist/style.css";
 import { newKey, type ArbolRow } from "@/lib/admin/complejas";
 import { MiembroPicker, subInp, type Opcion } from "./shared";
-import { Select } from "@/components/admin/fields";
+import { Select, type Opciones } from "@/components/admin/fields";
 
 /**
  * Árbol genealógico visual (React Flow). Los nodos se colocan solos por
@@ -21,7 +21,7 @@ export function ArbolEditor({
   rows: ArbolRow[];
   onChange: (r: ArbolRow[]) => void;
   personajes: Opcion[];
-  estadoOptions: string[];
+  estadoOptions: Opciones;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
 
