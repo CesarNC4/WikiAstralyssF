@@ -66,6 +66,17 @@ import {
   BarChart3,
   Table2,
   Thermometer,
+  PenLine,
+  FolderTree,
+  Columns3,
+  Trash2,
+  CalendarDays,
+  BookOpen,
+  ArrowLeft,
+  Plus,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 
@@ -137,6 +148,17 @@ const REGISTRY: Record<string, LucideIcon> = {
   BarChart3,
   Table2,
   Thermometer,
+  PenLine,
+  FolderTree,
+  Columns3,
+  Trash2,
+  CalendarDays,
+  BookOpen,
+  ArrowLeft,
+  Plus,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
 };
 
 export function Icon({

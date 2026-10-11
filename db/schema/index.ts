@@ -11,4 +11,5 @@ export * from "./relacionesNM";
 export * from "./vinculos";
 export * from "./jerarquias";
 export * from "./mapa";
+export * from "./fechas";
 export * from "./admin";

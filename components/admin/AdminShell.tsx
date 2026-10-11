@@ -23,6 +23,8 @@ export function AdminShell({
           </div>
           <nav className="flex flex-col gap-1 px-2 text-sm">
             <NavLink href="/admin" icon="Home" label="Dashboard" />
+            <NavLink href="/admin/taller" icon="PenLine" label="Taller del autor" />
+            <div className="my-2 border-t border-border-base" />
             <NavLink href="/admin/personajes" icon="Users" label="Personajes" />
             {Object.values(ENTIDADES).map((e) => (
               <NavLink key={e.key} href={`/admin/${e.key}`} icon={e.icon} label={e.plural} />
