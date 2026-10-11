@@ -65,8 +65,8 @@ punta a punta, aunque todavía no lo use ninguna ficha.
 
 > **Estado (2026-10-11):** código terminado; `typecheck`, `lint` y `build` pasan. El
 > ensayo de `migrate-fechas.ts` convierte 50 fechas y deja 2 para revisar a mano
-> ("19 días" y "Desconocido"). **Falta aplicar la migración** y la prueba manual
-> del calendario con sesión de autor.
+> ("19 días" y "Desconocido"). Migración **aplicada** el mismo día (commit
+> 5f8099d). Pendiente: la prueba manual del calendario con sesión de autor.
 
 1. **Migración `migrate-fechas.mjs`:** crea `era`, `calendario_segmento`,
    `calendario_dia_semana` y `fecha_lore`. Siembra un calendario por defecto
