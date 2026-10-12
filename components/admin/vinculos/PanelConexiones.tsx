@@ -28,17 +28,21 @@ export function PanelConexiones({
   /** Sin id no hay nada que vincular: la ficha aún no existe. */
   ownerId: number | null;
 }) {
-  const bloques = bloquesDe(entidad);
+  // Memorizado: `bloquesDe` devuelve un array nuevo en cada llamada, y los
+  // efectos de abajo dependen de él. Sin esto, cada respuesta de catálogos
+  // provocaba otro render, otra petición… y la cola de acciones del servidor no
+  // se vaciaba nunca (el «Guardar» de la ficha se quedaba esperando detrás).
+  const bloques = useMemo(() => bloquesDe(entidad), [entidad]);
   const [conteo, setConteo] = useState<Record<string, number> | null>(null);
   const [opciones, setOpciones] = useState<Record<string, string[]>>({});
   const [soloConectados, setSoloConectados] = useState(false);
 
   // Qué catálogos hacen falta para los desplegables de ESTA ficha. Se piden una
   // sola vez, no uno por bloque.
-  const campos = useMemo(() => {
+  const clave = useMemo(() => {
     const set = new Set<string>();
     for (const b of bloques) for (const c of b.campos) if (c.catalogo) set.add(c.catalogo);
-    return [...set];
+    return [...set].sort().join("|");
   }, [bloques]);
 
   useEffect(() => {
@@ -51,13 +55,13 @@ export function PanelConexiones({
   }, [entidad, ownerId]);
 
   useEffect(() => {
-    if (campos.length === 0) return;
+    if (!clave) return;
     let vivo = true;
-    catalogosPorNombre(campos)
+    catalogosPorNombre(clave.split("|"))
       .then((r) => { if (vivo) setOpciones(r); })
       .catch(() => {});
     return () => { vivo = false; };
-  }, [campos]);
+  }, [clave]);
 
   if (bloques.length === 0) return null;
 
