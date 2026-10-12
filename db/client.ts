@@ -18,6 +18,7 @@ if (!connectionString) {
 
 const globalForDb = globalThis as unknown as {
   __astralysSql?: ReturnType<typeof postgres>;
+  __astralysSqlTx?: ReturnType<typeof postgres>;
 };
 
 /**
@@ -34,6 +35,13 @@ const globalForDb = globalThis as unknown as {
  * Los tipos de postgres.js no declaran `max_pipeline`, aunque la librería lo lee
  * (está en su lista de opciones numéricas); por eso va en una variable con el
  * tipo ampliado en lugar de en el literal.
+ *
+ * Pero `max_pipeline: 0` rompe las transacciones: `sql.begin` solo reserva la
+ * conexión si `sent.length < max_pipeline`, y con 0 eso nunca se cumple, así
+ * que todo `db.transaction` fallaba con UNSAFE_TRANSACTION. Las transacciones
+ * van por eso en un pool aparte con el pipelining normal: dentro de una
+ * transacción el pooler mantiene fija la conexión del servidor hasta el commit,
+ * y el cuelgue de arriba no puede darse.
  */
 const opciones: postgres.Options<Record<string, never>> & { max_pipeline: number } = {
   prepare: false,
@@ -43,9 +51,17 @@ const opciones: postgres.Options<Record<string, never>> & { max_pipeline: number
 };
 
 const sql = globalForDb.__astralysSql ?? postgres(connectionString ?? "postgresql://invalid", opciones);
+const sqlTx =
+  globalForDb.__astralysSqlTx ??
+  postgres(connectionString ?? "postgresql://invalid", { prepare: false, max: 3, idle_timeout: 20 });
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.__astralysSql = sql;
+  globalForDb.__astralysSqlTx = sqlTx;
 }
 
-export const db = drizzle(sql, { schema: { ...schema, ...relations } });
+const dbTx = drizzle(sqlTx, { schema: { ...schema, ...relations } });
+
+export const db = Object.assign(drizzle(sql, { schema: { ...schema, ...relations } }), {
+  transaction: dbTx.transaction.bind(dbTx),
+});
