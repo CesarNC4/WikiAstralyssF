@@ -115,6 +115,8 @@ export async function buscarFichas(entidad: string, q: string, limite = 20): Pro
 async function revalidarLados(relId: string, lado: "a" | "b", ownerId: number, objetivoId?: number) {
   const rel = getRelacion(relId);
   if (!rel) return;
+  // Toda conexión es una línea del Atlas.
+  revalidatePath("/atlas");
   const mia = lado === "a" ? rel.a.entidad : rel.b.entidad;
   const suya = lado === "a" ? rel.b.entidad : rel.a.entidad;
   for (const [entidad, id] of [

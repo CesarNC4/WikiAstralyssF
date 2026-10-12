@@ -5,7 +5,6 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { Badge } from "@/components/entity/Badge";
 import { StatBars } from "@/components/viz/StatBars";
 import { ElementoBadge, ElementoGroup } from "@/components/viz/ElementoBadges";
-import { MiniGrafo, type GrafoGrupo } from "@/components/viz/MiniGrafo";
 import { elementoMeta } from "@/lib/elementos";
 import { getGaleria } from "@/lib/queries/galeria";
 import { getRazaRelaciones } from "@/lib/queries/mundoRelaciones";
@@ -48,13 +47,6 @@ export async function RazaFichaBody({ raza }: { raza: RazaRow }) {
   const el = elementoMeta(afinidades[0]?.slug);
   const color = el?.color ?? "#9b8cff";
 
-  const grupos: GrafoGrupo[] = rel
-    ? [
-        { label: "Naciones", color: "#5b8def", nodos: rel.naciones.map((n) => ({ id: `n${n.id}`, label: n.nombre, href: `/naciones/${n.id}`, img: n.imagenUrl })) },
-        { label: "Sub-razas", color: "#5fb98f", nodos: rel.subRazas.map((r) => ({ id: `r${r.id}`, label: r.nombre, href: `/razas/${r.id}`, img: r.imagenUrl })) },
-        { label: "Personajes", color: "#cbab57", nodos: rel.personajes.slice(0, 8).map((p) => ({ id: `p${p.id}`, label: p.nombre, href: `/personajes/${p.id}`, img: p.imagenUrl })) },
-      ].filter((g) => g.nodos.length > 0)
-    : [];
 
   return (
     <div>
@@ -137,7 +129,6 @@ export async function RazaFichaBody({ raza }: { raza: RazaRow }) {
           </section>
         )}
 
-        {grupos.length > 0 && <MiniGrafo centro={{ label: raza.nombre, img: raza.imagenUrl }} grupos={grupos} accent={color} />}
 
         {galeria.length > 0 && <Galeria images={galeria} />}
       </div>

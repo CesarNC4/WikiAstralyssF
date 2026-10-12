@@ -39,6 +39,9 @@ function revalidar(route: string, id?: number) {
   revalidatePath("/");
   // Nombre, estado o papelera de una ficha cambian sus sucesos en la cronología.
   revalidatePath("/timeline", "layout");
+  // …y su nombre, su estado o sus medidas, en el Atlas y el comparador.
+  revalidatePath("/atlas");
+  revalidatePath("/alturas");
 }
 
 export async function guardarEntidad(

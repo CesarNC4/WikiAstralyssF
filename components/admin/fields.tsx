@@ -58,20 +58,24 @@ export function NumberInput({
   min,
   max,
   placeholder,
+  step,
 }: {
   value: string;
   onChange: (v: string) => void;
   min?: number;
   max?: number;
   placeholder?: string;
+  /** "0.01" para medidas con decimales; sin él, enteros. */
+  step?: string;
 }) {
   return (
     <input
       type="number"
-      inputMode="numeric"
+      inputMode={step ? "decimal" : "numeric"}
       value={value}
       min={min}
       max={max}
+      step={step}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       className={cn(inputCls, "font-mono")}

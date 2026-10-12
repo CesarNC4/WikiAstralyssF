@@ -30,7 +30,8 @@ export type EntityKey =
   | "timeline"
   | "mapa"
   | "compendio"
-  | "atlas";
+  | "atlas"
+  | "alturas";
 
 export interface EntityMeta {
   key: EntityKey;
@@ -322,6 +323,17 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     tagline: "El grafo de relaciones del mundo.",
     hasIndex: false,
   },
+  alturas: {
+    key: "alturas",
+    plural: "Comparador de alturas",
+    singular: "Comparador de alturas",
+    route: "/alturas",
+    accent: "text-accent",
+    icon: "Ruler",
+    group: "explorar",
+    tagline: "Personajes, bestias y demonios, uno al lado del otro y a escala real.",
+    hasIndex: false,
+  },
 };
 
 export const ENTITY_LIST = Object.values(ENTITIES);
@@ -358,7 +370,7 @@ export const NAV_GROUPS: { id: EntityGroup; label: string; keys: EntityKey[] }[]
     keys: ["naciones", "razas", "organizaciones", "familias", "gremio", "bestias", "minerales", "demonios", "artefactos"],
   },
   { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "capitulos", "arcos", "misiones", "economia"] },
-  { id: "explorar", label: "Explorar", keys: ["timeline", "mapa", "compendio", "atlas"] },
+  { id: "explorar", label: "Explorar", keys: ["timeline", "mapa", "compendio", "atlas", "alturas"] },
 ];
 
 export function entityByKey(key: string): EntityMeta | undefined {

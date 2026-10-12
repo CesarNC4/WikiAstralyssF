@@ -30,7 +30,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       {/* Conexiones generadas desde el registro de relaciones. */}
       <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
         <FechasDeFicha entidad="razas" id={x.id} />
-        <Conexiones entidad="razas" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} conGrafo={false} />
+        <Conexiones entidad="razas" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} />
       </div>
     </>
   );

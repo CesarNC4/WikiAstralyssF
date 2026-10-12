@@ -347,6 +347,31 @@ function FieldRender({
       </Field>
     );
   }
+  if (fd.type === "decimal") {
+    return (
+      <Field label={label} hint={fd.hint} error={error}>
+        <NumberInput value={value} onChange={onChange} step="0.01" />
+      </Field>
+    );
+  }
+  if (fd.type === "opciones") {
+    return (
+      <Field label={label} hint={fd.hint} error={error}>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-lg border border-border-base bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-border-glow"
+        >
+          <option value="">—</option>
+          {(fd.opciones ?? []).map((o) => (
+            <option key={o.valor} value={o.valor}>
+              {o.etiqueta}
+            </option>
+          ))}
+        </select>
+      </Field>
+    );
+  }
   if (fd.type === "slider") {
     return (
       <Field label={label} hint={fd.hint} error={error}>

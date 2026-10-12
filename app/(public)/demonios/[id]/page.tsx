@@ -48,6 +48,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           { label: "Dominio", value: x.dominio },
           { label: "Estado", value: x.estado },
           { label: "Derrotado por", value: x.derrotadoPor },
+          { label: "Altura", value: x.altura ? `${x.altura.toLocaleString("es-ES")} m` : null },
+          { label: "Longitud", value: x.longitud ? `${x.longitud.toLocaleString("es-ES")} m` : null },
         ]}
       />
       <FechasDeFicha entidad="demonios" id={x.id} />

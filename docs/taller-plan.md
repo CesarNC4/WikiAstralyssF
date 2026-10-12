@@ -261,12 +261,28 @@ derivada devuelve lo esperado sobre los 2 capítulos reales.
 
 ## Fase 9 — Atlas 3D y mini-mapa
 
+> **Estado (2026-10-11):** hecha, sin migración. El Atlas y el mapa del taller
+> comparten consulta (`getMapaRelaciones({ publico })`); `lib/queries/atlas.ts` y
+> `components/atlas/AtlasClient.tsx` desaparecen. El 3D (`react-force-graph-3d`
+> + `three`) se carga solo si la pantalla es de escritorio con ratón; el móvil
+> recibe el 2D. El mini-mapa lo pone `Conexiones` en todas las fichas con los
+> mismos bloques que ya leía; se retiran `MiniGrafo` y los grafos hechos a mano
+> de nación, raza, bestia y mineral. Las relaciones entre personajes se pintan
+> por su categoría en los tres mapas.
+
 1. **Atlas:** 3D navegable en escritorio y 2D en móvil, con esferas por tipo de
    entidad. Sustituye a `components/atlas/`.
 2. **Mini-mapa 2D** centrado en cada ficha, que sustituye a `MiniGrafoFicha` y
    `MiniGrafo`.
 
 ## Fase 10 — Comparador de alturas
+
+> **Estado (2026-10-11):** hecha y migración aplicada (`migrate-alturas.ts`). Las
+> siluetas son trazados SVG en `lib/alturas/siluetas.ts` (humana, humanoide,
+> cuadrúpedo, alado, serpentino, acuático y amorfo). El formulario genérico gana
+> los tipos de campo `decimal` y `opciones` (lista fija del código). La página
+> es `/alturas`, en Explorar; respeta la visibilidad por campo de `altura` y
+> `longitud`.
 
 1. **Migración:** `altura`, `longitud` y `silueta` en `bestias` y `lord_demonio`.
 2. **Campos** en sus editores, incluido el selector de forma.

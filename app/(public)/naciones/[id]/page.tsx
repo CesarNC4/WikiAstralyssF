@@ -6,7 +6,6 @@ import { FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { LinkGrid } from "@/components/fichas/LinkGrid";
 import { MiniMapa, type MiniPin } from "@/components/viz/MiniMapa";
 import { StatRadar } from "@/components/viz/StatRadar";
-import { MiniGrafo, type GrafoGrupo } from "@/components/viz/MiniGrafo";
 import { Badge } from "@/components/entity/Badge";
 import { Galeria } from "@/components/fichas/Galeria";
 import { Icon } from "@/components/Icon";
@@ -240,19 +239,9 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
           </section>
         )}
 
-        {/* Grafo de relaciones */}
-        {(() => {
-          const grupos: GrafoGrupo[] = [
-            { label: "Pueblos", color: "#9b8cff", nodos: facciones.razas.map((r) => ({ id: `r${r.id}`, label: r.nombre, href: `/razas/${r.id}`, img: r.imagenUrl })) },
-            { label: "Organizaciones", color: "#5b8def", nodos: facciones.organizaciones.map((o) => ({ id: `o${o.id}`, label: o.nombre, href: `/organizaciones/${o.id}`, img: o.imagenUrl })) },
-            { label: "Bestias", color: "#ef6f6f", nodos: extra.bestias.map((b) => ({ id: `b${b.id}`, label: b.nombre, href: `/bestias/${b.id}`, img: b.imagenUrl })) },
-            { label: "Diplomacia", color: "#e0a44a", nodos: extra.diplomacia.map((d) => ({ id: `n${d.id}`, label: d.nombre, href: `/naciones/${d.id}`, img: d.imagenUrl })) },
-          ].filter((g) => g.nodos.length > 0);
-          return grupos.length > 0 ? <MiniGrafo centro={{ label: n.nombre, img: n.imagenUrl }} grupos={grupos} accent={color} /> : null;
-        })()}
 
         {/* Conexiones generadas desde el registro de relaciones. */}
-        <Conexiones entidad="naciones" id={n.id} nombre={n.nombre} imagen={n.imagenUrl} conGrafo={false} />
+        <Conexiones entidad="naciones" id={n.id} nombre={n.nombre} imagen={n.imagenUrl} />
 
         {galeria.length > 0 && <Galeria images={galeria} />}
       </div>

@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, getTableColumns, getTableName } from "drizzle-orm";
+import { eq, sql, getTableColumns, getTableName } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
@@ -11,12 +11,17 @@ import { getCategoriasRelacion } from "./categoriasRelacion";
 import type { CategoriaRelacion } from "@/lib/relaciones/categorias";
 
 /**
- * Datos del mapa de relaciones del taller (spec §11, "Mapa del taller").
+ * El grafo del mundo (spec §11): lo comparten el Atlas público y el mapa de
+ * relaciones del taller.
  *
- * Como el Atlas, sale del registro de relaciones en una sola sentencia, pero
- * con lo que hace falta para editar: el id de la relación del registro y el de
- * la fila, el campo destacado (el "tipo" de la relación) y todas las fichas que
- * no están en la papelera, publicadas o no, conectadas o sueltas.
+ * Sale del registro de relaciones en una sola sentencia: cada relación aporta
+ * su rama del UNION ALL, con el id de la relación y el de la fila (para poder
+ * editarla) y el campo destacado (el "tipo": "Rival", "Ciudadano"…).
+ *
+ *  - En el taller entran todas las fichas fuera de la papelera, publicadas o
+ *    no, conectadas o sueltas, y enlazan a su editor.
+ *  - En público solo las publicadas que conectan con algo (doscientos puntos
+ *    sueltos no dicen nada), enlazadas a su ficha.
  */
 
 export interface NodoMapa {
@@ -26,7 +31,8 @@ export interface NodoMapa {
   entidadId: number;
   label: string;
   img: string | null;
-  editor: string;
+  /** Editor en el taller; ficha pública en el Atlas. */
+  href: string;
   publicado: boolean;
 }
 
@@ -98,11 +104,11 @@ function consulta() {
 function relDeVinculo(relacion: string, at: string, bt: string): RelacionDef | undefined {
   const encaja = (decl: string, real: string) => decl === CUALQUIERA || decl === real;
   return RELACIONES.find(
-    (r) => r.medio === "vinculo" && (r.relacion ?? r.id) === relacion && encaja(r.a.entidad, at) && encaja(r.b.entidad, bt),
+    (r) => r.medio === "vinculo" && !r.fueraDelAtlas && (r.relacion ?? r.id) === relacion && encaja(r.a.entidad, at) && encaja(r.b.entidad, bt),
   );
 }
 
-export async function getMapaRelaciones(): Promise<{
+export async function getMapaRelaciones({ publico = false }: { publico?: boolean } = {}): Promise<{
   nodos: NodoMapa[];
   aristas: AristaMapa[];
   categorias: CategoriaRelacion[];
@@ -119,9 +125,11 @@ export async function getMapaRelaciones(): Promise<{
         id: s.searchIndex.entidadId,
         label: s.searchIndex.titulo,
         img: s.searchIndex.imagenUrl,
+        url: s.searchIndex.url,
         estado: s.searchIndex.estadoPublicacion,
       })
-      .from(s.searchIndex),
+      .from(s.searchIndex)
+      .where(publico ? eq(s.searchIndex.estadoPublicacion, "publicado") : undefined),
     getCategoriasRelacion(),
   ]);
 
@@ -136,7 +144,7 @@ export async function getMapaRelaciones(): Promise<{
       entidadId: id,
       label: f.label,
       img: f.img,
-      editor: rutaEditor(f.tipo, id),
+      href: publico ? f.url : rutaEditor(f.tipo, id),
       publicado: f.estado === "publicado",
     });
   }
@@ -160,5 +168,10 @@ export async function getMapaRelaciones(): Promise<{
   const categoriaDeTipo: Record<string, number> = {};
   for (const t of cats.tipos) if (t.categoriaId != null) categoriaDeTipo[t.valor] = t.categoriaId;
 
-  return { nodos: [...nodos.values()], aristas, categorias: cats.categorias, categoriaDeTipo };
+  let lista = [...nodos.values()];
+  if (publico) {
+    const usados = new Set(aristas.flatMap((x) => [x.a, x.b]));
+    lista = lista.filter((n) => usados.has(n.id));
+  }
+  return { nodos: lista, aristas, categorias: cats.categorias, categoriaDeTipo };
 }

@@ -6,7 +6,6 @@ import { Icon } from "@/components/Icon";
 import { Galeria } from "@/components/fichas/Galeria";
 import { StatBars } from "@/components/viz/StatBars";
 import { ElementoGroup } from "@/components/viz/ElementoBadges";
-import { MiniGrafo, type GrafoGrupo } from "@/components/viz/MiniGrafo";
 import { MiniMapa, type MiniPin } from "@/components/viz/MiniMapa";
 import { getGaleria } from "@/lib/queries/galeria";
 import { getBestiaRelaciones } from "@/lib/queries/mundoRelaciones";
@@ -28,6 +27,8 @@ interface BestiaRow {
   recursos: string | null;
   imagenUrl: string | null;
   bannerUrl: string | null;
+  altura?: number | null;
+  longitud?: number | null;
   [key: string]: unknown;
 }
 
@@ -54,18 +55,13 @@ export async function BestiaFichaBody({ bestia }: { bestia: BestiaRow }) {
     .map((r) => ({ points: r.poligono as [number, number][], color: r.color ?? color, href: `/regiones/${r.id}`, label: r.nombre }));
   const hasMapa = pins.length > 0 || polys.length > 0;
 
-  const grupos: GrafoGrupo[] = rel
-    ? [
-        { label: "Hábitat", color: "#5b8def", nodos: rel.naciones.map((n) => ({ id: `n${n.id}`, label: n.nombre, href: `/naciones/${n.id}`, img: n.imagenUrl })) },
-        { label: "Drops", color: "#cbab57", nodos: rel.drops.map((d) => ({ id: `m${d.id}`, label: d.nombre, href: `/minerales/${d.id}`, img: d.imagenUrl })) },
-        { label: "Bestias", color: "#ef6f6f", nodos: rel.relacionadas.map((b) => ({ id: `b${b.id}`, label: b.nombre, href: `/bestias/${b.id}`, img: b.imagenUrl })) },
-      ].filter((g) => g.nodos.length > 0)
-    : [];
 
   const fichaTecnica = [
     { label: "Naturaleza", value: bestia.naturaleza, icon: "Star" },
     { label: "Tamaño", value: bestia.tamano, icon: "Ruler" },
     { label: "Dieta", value: bestia.dieta, icon: "Drumstick" },
+    { label: "Altura", value: bestia.altura ? `${bestia.altura.toLocaleString("es-ES")} m` : null, icon: "Ruler" },
+    { label: "Longitud", value: bestia.longitud ? `${bestia.longitud.toLocaleString("es-ES")} m` : null, icon: "Ruler" },
   ].filter((t) => t.value);
 
   return (
@@ -158,7 +154,6 @@ export async function BestiaFichaBody({ bestia }: { bestia: BestiaRow }) {
               </section>
             )}
 
-            {grupos.length > 0 && <MiniGrafo centro={{ label: bestia.nombre, img: bestia.imagenUrl }} grupos={grupos} accent={color} />}
 
             {galeria.length > 0 && <Galeria images={galeria} />}
           </div>

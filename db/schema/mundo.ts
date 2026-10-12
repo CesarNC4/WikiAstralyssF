@@ -166,6 +166,11 @@ export const bestias = pgTable("bestias", {
   statPeligrosidad: integer("stat_peligrosidad"),
   statRareza: integer("stat_rareza"),
   statTerritorialidad: integer("stat_territorialidad"),
+  /** Medidas en metros y forma del comparador de alturas (spec del taller §12). */
+  altura: doublePrecision("altura"),
+  longitud: doublePrecision("longitud"),
+  /** Una de `lib/alturas/siluetas.ts`. */
+  silueta: varchar("silueta"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
@@ -241,6 +246,11 @@ export const lordDemonio = pgTable("lord_demonio", {
   // La aparición es una fecha de `fecha_lore` (rol 'aparicion').
   derrotadoPor: varchar("derrotado_por"),
   estado: varchar("estado"),
+  /** Medidas en metros y forma del comparador de alturas (spec del taller §12). */
+  altura: doublePrecision("altura"),
+  longitud: doublePrecision("longitud"),
+  /** Una de `lib/alturas/siluetas.ts`. */
+  silueta: varchar("silueta"),
   imagenUrl: varchar("imagen_url"),
   bannerUrl: varchar("banner_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),

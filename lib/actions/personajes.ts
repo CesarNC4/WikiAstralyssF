@@ -37,7 +37,9 @@ function revalidarPersonaje(id: number) {
   revalidatePath("/");
   // Pueden haberse creado entradas globales al vuelo desde la ficha.
   revalidatePath("/magia");
-  revalidatePath("/timeline");
+  revalidatePath("/timeline", "layout");
+  revalidatePath("/atlas");
+  revalidatePath("/alturas");
   revalidatePath("/artefactos");
 }
 

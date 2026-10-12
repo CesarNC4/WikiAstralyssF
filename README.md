@@ -141,6 +141,11 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   ver `lib/fechas/roles.ts`), el lector elige entre eras y año absoluto, y la
   edad de un personaje se calcula según el momento de lectura (el capítulo o el
   acto que tenga abierto).
+- **Atlas** (`/atlas`): el grafo de todo lo publicado que se conecta, en 3D
+  navegable en escritorio y 2D en móvil. Cada ficha pública tiene además su
+  mini-mapa 2D con sus conexiones directas.
+- **Comparador de alturas** (`/alturas`): personajes, bestias y lords demonio a
+  escala real, de pie (alto) o de perfil (largo), con filtros y selección libre.
 - **Cronología derivada** (`/timeline`): los eventos y todo lo que tiene fecha en
   las fichas, ordenado por día absoluto, con filtros por tipo, era y ficha, y
   solo lo importante por defecto. Submenú con el calendario por año

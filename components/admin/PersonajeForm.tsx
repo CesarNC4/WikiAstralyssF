@@ -441,7 +441,7 @@ export function PersonajeForm({
           <Field label="Título"><TextInput value={f.titulo} onChange={(v) => patch({ titulo: v })} /></Field>
           <Field label="Edad (texto)" hint="Solo se muestra si no tiene fecha de nacimiento: «Milenaria», «Desconocida»."><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
           <Field label="Género"><Select value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} /></Field>
-          <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" /></Field>
+          <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" step="0.01" /></Field>
           <Field label="Ocupación"><Select value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} options={catalogos.ocupacion} onCrear={(valor) => crearOpcion("ocupacion", valor)} /></Field>
           <Field label="Ocupación (detalle)" hint="el matiz: 'Ex Princesa', 'Escriba del Consejo'…"><TextInput value={f.ocupacionDetalle} onChange={(v) => patch({ ocupacionDetalle: v })} /></Field>
           <Field label="Estado vital"><Select value={f.estadoVital} onChange={(v) => patch({ estadoVital: v })} options={catalogos.estado_vital} /></Field>

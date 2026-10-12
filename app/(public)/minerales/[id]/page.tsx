@@ -28,7 +28,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <MineralFichaBody mineral={x} />
       {/* Conexiones generadas desde el registro de relaciones. */}
       <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
-        <Conexiones entidad="minerales" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} conGrafo={false} />
+        <Conexiones entidad="minerales" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} />
       </div>
     </>
   );

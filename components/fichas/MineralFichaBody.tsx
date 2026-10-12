@@ -6,7 +6,6 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { Badge } from "@/components/entity/Badge";
 import { StatBars } from "@/components/viz/StatBars";
 import { ElementoBadge } from "@/components/viz/ElementoBadges";
-import { MiniGrafo, type GrafoGrupo } from "@/components/viz/MiniGrafo";
 import { elementoMeta } from "@/lib/elementos";
 import { getGaleria } from "@/lib/queries/galeria";
 import { getMineralRelaciones } from "@/lib/queries/mundoRelaciones";
@@ -38,12 +37,6 @@ export async function MineralFichaBody({ mineral }: { mineral: MineralRow }) {
   const el = elementoMeta(afinidades[0]?.slug);
   const color = el?.color ?? "#6fc3d6";
 
-  const grupos: GrafoGrupo[] = rel
-    ? [
-        { label: "Forjado en", color: "#cbab57", nodos: rel.artefactos.map((a) => ({ id: `a${a.id}`, label: a.nombre, href: `/artefactos/${a.id}`, img: a.imagenUrl })) },
-        { label: "Lo sueltan", color: "#ef6f6f", nodos: rel.soltadoPor.map((b) => ({ id: `b${b.id}`, label: b.nombre, href: `/bestias/${b.id}`, img: b.imagenUrl })) },
-      ].filter((g) => g.nodos.length > 0)
-    : [];
 
   return (
     <div>
@@ -122,7 +115,6 @@ export async function MineralFichaBody({ mineral }: { mineral: MineralRow }) {
           </section>
         )}
 
-        {grupos.length > 0 && <MiniGrafo centro={{ label: mineral.nombre, img: mineral.imagenUrl }} grupos={grupos} accent={color} />}
 
         {galeria.length > 0 && <Galeria images={galeria} />}
       </div>

@@ -52,3 +52,26 @@ export function aCategoria(fila: { id: number; valor: string; meta: Record<strin
   const color = typeof m.color === "string" && /^#[0-9a-f]{6}$/i.test(m.color) ? m.color : COLOR_CATEGORIA_POR_DEFECTO;
   return { id: fila.id, nombre: fila.valor, color, icono: typeof m.icono === "string" ? m.icono : "Circle", estilo };
 }
+
+/** Color de una relación personaje–personaje que aún no tiene categoría. */
+export const COLOR_SIN_CATEGORIA = "#c4b5fd";
+
+export type ClaveCategoria = number | "sin" | "otras";
+
+/**
+ * Cómo se pinta una arista en cualquier mapa: las relaciones entre personajes
+ * por su categoría; el resto, con el color común de las aristas.
+ */
+export function estiloArista(
+  relId: string,
+  matiz: string | null,
+  categorias: Map<number, CategoriaRelacion>,
+  categoriaDeTipo: Record<string, number>,
+  colorOtras: string,
+): { clave: ClaveCategoria; color: string; patron: number[] | null } {
+  if (relId !== "relaciones") return { clave: "otras", color: colorOtras, patron: null };
+  const id = matiz ? categoriaDeTipo[matiz] : undefined;
+  const cat = id != null ? categorias.get(id) : undefined;
+  if (!cat) return { clave: "sin", color: COLOR_SIN_CATEGORIA, patron: null };
+  return { clave: cat.id, color: cat.color, patron: PATRON_LINEA[cat.estilo] };
+}

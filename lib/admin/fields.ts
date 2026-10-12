@@ -1,3 +1,4 @@
+import { SILUETAS_DE_CRIATURA } from "@/lib/alturas/siluetas";
 /**
  * Configuración declarativa de entidades para el admin genérico.
  * Plano y client-safe (sin imports de servidor/Drizzle): describe cómo se
@@ -16,7 +17,11 @@ export type FieldType =
   | "elemento"
   | "checkbox"
   | "reference"
-  | "slider";
+  | "slider"
+  /** Número con decimales (metros). */
+  | "decimal"
+  /** Desplegable de una lista fija del código (`opciones`), no de un catálogo. */
+  | "opciones";
 
 export type RefTarget =
   | "personajes"
@@ -58,6 +63,8 @@ export interface FieldDef {
    * `dependeDe` se pasa otro campo, la familia sale de la escuela elegida allí.
    */
   familia?: string;
+  /** Para `opciones`: los valores posibles y su rótulo. */
+  opciones?: { valor: string; etiqueta: string }[];
 }
 
 export interface EntidadConfig {
@@ -89,6 +96,16 @@ const f = (name: string, label: string, type: FieldType, group: string, extra: P
   group,
   ...extra,
 });
+
+/** Medidas del comparador de alturas (spec §12), en bestias y lords demonio. */
+const MEDIDAS: FieldDef[] = [
+  f("altura", "Altura (m)", "decimal", "Medidas", { hint: "De pie o hasta la cruz. Sin ella no sale en el comparador de alturas." }),
+  f("longitud", "Longitud (m)", "decimal", "Medidas", { hint: "De la cabeza a la cola, de perfil." }),
+  f("silueta", "Forma de silueta", "opciones", "Medidas", {
+    opciones: SILUETAS_DE_CRIATURA.map((s) => ({ valor: s.id, etiqueta: s.etiqueta })),
+    hint: "Cómo se dibuja en el comparador.",
+  }),
+];
 
 export const ENTIDADES: Record<string, EntidadConfig> = {
   naciones: {
@@ -222,6 +239,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
       f("tamano", "Tamaño", "combobox", "Datos clave", { catalogCampo: "bestia_tamano" }),
       f("comportamientoTipo", "Comportamiento", "combobox", "Datos clave", { catalogCampo: "bestia_comportamiento", hint: "El resumen; el detalle va en el texto de abajo." }),
       f("biomas", "Biomas", "multi", "Datos clave", { catalogCampo: "bestia_habitat" }),
+      ...MEDIDAS,
       f("statFuerza", "Fuerza", "slider", "Combate (0-100)"),
       f("statVelocidad", "Velocidad", "slider", "Combate (0-100)"),
       f("statResistencia", "Resistencia", "slider", "Combate (0-100)"),
@@ -386,6 +404,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
       f("dominio", "Dominio", "combobox", "Identidad", { catalogCampo: "demonio_dominio" }),
       f("estado", "Estado", "combobox", "Datos clave", { catalogCampo: "estado_vital" }),
       f("derrotadoPor", "Derrotado por", "text", "Datos clave"),
+      ...MEDIDAS,
       f("descripcionFisica", "Descripción física", "textarea", "Contenido"),
       f("devilTrigger", "Devil Trigger", "textarea", "Contenido"),
       f("historia", "Historia", "textarea", "Contenido", { rows: 8 }),

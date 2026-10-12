@@ -12,7 +12,7 @@ import { actualizarVinculo, borrarVinculo, crearVinculo, listarVinculos } from "
 import { CUALQUIERA, RELACIONES } from "@/lib/relaciones/registro";
 import type { CampoVinculo, RelacionDef } from "@/lib/relaciones/tipos";
 import { COLOR_ARISTA, COLOR_ENTIDAD, COLOR_ENTIDAD_POR_DEFECTO } from "@/lib/relaciones/colores";
-import { PATRON_LINEA, type CategoriaRelacion } from "@/lib/relaciones/categorias";
+import { estiloArista, type CategoriaRelacion, type ClaveCategoria } from "@/lib/relaciones/categorias";
 import type { AristaMapa, NodoMapa } from "@/lib/queries/mapaRelaciones";
 
 /**
@@ -32,8 +32,6 @@ import type { AristaMapa, NodoMapa } from "@/lib/queries/mapaRelaciones";
 type N = NodoMapa & { grado: number };
 type L = { id: string; source: string; target: string; arista: AristaMapa };
 
-/** "sin" = personaje–personaje sin categoría; "otras" = el resto de conexiones. */
-type ClaveCategoria = number | "sin" | "otras";
 
 const color = (tipo: string) => COLOR_ENTIDAD[tipo] ?? COLOR_ENTIDAD_POR_DEFECTO;
 const nombreTipo = (tipo: string) => entityByKey(tipo)?.plural ?? tipo;
@@ -90,11 +88,9 @@ export function MapaRelaciones({
   }, []);
 
   const catMap = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias]);
-  const categoriaDe = (a: AristaMapa): ClaveCategoria => {
-    if (a.relId !== "relaciones") return "otras";
-    const id = a.matiz ? categoriaDeTipo[a.matiz] : undefined;
-    return id != null && catMap.has(id) ? id : "sin";
-  };
+  // "sin" = personaje–personaje sin categoría; "otras" = el resto de conexiones.
+  const estilo = (a: AristaMapa) => estiloArista(a.relId, a.matiz, catMap, categoriaDeTipo, COLOR_ARISTA);
+  const categoriaDe = (a: AristaMapa): ClaveCategoria => estilo(a).clave;
 
   // Los objetos de nodo se conservan entre recargas: la simulación guarda en
   // ellos la posición, y así el mapa no se recoloca entero tras cada cambio.
@@ -238,15 +234,8 @@ export function MapaRelaciones({
             linkHoverPrecision={6}
             nodeLabel={(n) => `${n.label} · ${singular(n.tipo)}${n.publicado ? "" : " (borrador)"}`}
             linkLabel={(l) => etiquetaArista(l.arista)}
-            linkColor={(l) => {
-              const k = categoriaDe(l.arista);
-              const base = typeof k === "number" ? catMap.get(k)!.color : k === "sin" ? "#c4b5fd" : COLOR_ARISTA;
-              return aristaSel?.id === l.id ? "#ffffff" : base;
-            }}
-            linkLineDash={(l) => {
-              const k = categoriaDe(l.arista);
-              return typeof k === "number" ? PATRON_LINEA[catMap.get(k)!.estilo] : null;
-            }}
+            linkColor={(l) => (aristaSel?.id === l.id ? "#ffffff" : estilo(l.arista).color)}
+            linkLineDash={(l) => estilo(l.arista).patron}
             linkWidth={(l) => (aristaSel?.id === l.id ? 3 : categoriaDe(l.arista) === "otras" ? 0.8 : 1.6)}
             onLinkClick={(l) => {
               setAristaSel(l.arista);
@@ -407,7 +396,7 @@ function FichaElegida({ n, grado, onSoltar }: { n: NodoMapa; grado: number; onSo
       <p className="text-xs text-fg-muted">{grado} conexiones</p>
       <p className="rounded-lg border border-border-glow/60 bg-surface/40 p-2 text-sm text-fg-secondary">Pulsa otra ficha para unirlas.</p>
       <div className="flex gap-2">
-        <Link href={n.editor} className="rounded-lg border border-border-glow px-3 py-1.5 text-sm text-accent hover:bg-surface">
+        <Link href={n.href} className="rounded-lg border border-border-glow px-3 py-1.5 text-sm text-accent hover:bg-surface">
           Abrir editor
         </Link>
         <button type="button" onClick={onSoltar} className="rounded-lg border border-border-base px-3 py-1.5 text-sm text-fg-muted hover:text-fg">
@@ -625,7 +614,7 @@ function EditarConexion({
         ].map(([n, titulo]) => {
           const nodo = n as NodoMapa;
           return (
-            <Link key={nodo.id} href={nodo.editor} className="flex items-center gap-2 rounded-lg border border-border-base bg-surface/40 px-2 py-1.5 hover:border-border-glow">
+            <Link key={nodo.id} href={nodo.href} className="flex items-center gap-2 rounded-lg border border-border-base bg-surface/40 px-2 py-1.5 hover:border-border-glow">
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: color(nodo.tipo) }} />
               <span className="min-w-0 flex-1 truncate text-fg">{nodo.label}</span>
               <span className="text-[11px] text-fg-muted">ve «{titulo as string}»</span>

@@ -17,6 +17,16 @@ const intField = z.preprocess(
   z.number().int().nullable(),
 );
 
+/** Medida positiva con decimales (metros). Vacío o no positivo → null. */
+const decimalField = z.preprocess(
+  (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(String(v).replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  },
+  z.number().positive().nullable(),
+);
+
 /** Stat 0-100: recorta al rango y vacío → null. */
 const statField = z.preprocess(
   (v) => {
@@ -70,6 +80,9 @@ export function buildEntidadSchema(config: EntidadConfig) {
     else if (field.type === "multi") shape[field.name] = listField;
     else if (field.type === "slider") shape[field.name] = statField;
     else if (field.type === "number") shape[field.name] = intField;
+    else if (field.type === "decimal") shape[field.name] = decimalField;
+    else if (field.type === "opciones")
+      shape[field.name] = str.refine((v) => v == null || (field.opciones ?? []).some((o) => o.valor === v), "Opción no válida");
     else if (field.type === "checkbox") shape[field.name] = boolField;
     // Regla de producto: solo el nombre es obligatorio; el resto siempre opcional.
     else shape[field.name] = str;
