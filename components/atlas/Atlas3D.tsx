@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph3D, { type ForceGraphMethods, type LinkObject, type NodeObject } from "react-force-graph-3d";
 import { CanvasTexture, LinearFilter, Sprite, SpriteMaterial } from "three";
-import { colorTipo, radioNodo, singularTipo, useTamano } from "@/components/grafo/comun";
+import { colorTipo, radioNodo, singularTipo, useClicTolerante, useTamano } from "@/components/grafo/comun";
 import type { EnlaceGrafo, NodoGrafo, PropsGrafo } from "./tipos";
 
 /**
@@ -40,6 +40,7 @@ function rotulo(texto: string): Sprite {
 export function Atlas3D({ nodos, aristas, estilo, seleccion, vecinos, foco, onNodo }: PropsGrafo) {
   const caja = useRef<HTMLDivElement>(null);
   const tam = useTamano(caja);
+  useClicTolerante(caja);
   const fg = useRef<ForceGraphMethods<NodeObject<NodoGrafo>, LinkObject<NodoGrafo, EnlaceGrafo>> | undefined>(undefined);
   const [cache] = useState(() => new Map<string, NodeObject<NodoGrafo>>());
   const ajustado = useRef(false);

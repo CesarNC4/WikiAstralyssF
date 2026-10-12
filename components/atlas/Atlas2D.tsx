@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph2D, { type ForceGraphMethods, type LinkObject, type NodeObject } from "react-force-graph-2d";
-import { dibujarNodo, radioNodo, singularTipo, useTamano } from "@/components/grafo/comun";
+import { dibujarNodo, radioNodo, singularTipo, useClicTolerante, useTamano } from "@/components/grafo/comun";
 import type { EnlaceGrafo, NodoGrafo, PropsGrafo } from "./tipos";
 
 /** El Atlas en 2D: el de los móviles (spec §11, "Atlas público"). */
 export function Atlas2D({ nodos, aristas, estilo, seleccion, vecinos, foco, onNodo }: PropsGrafo) {
   const caja = useRef<HTMLDivElement>(null);
   const tam = useTamano(caja);
+  useClicTolerante(caja);
   const fg = useRef<ForceGraphMethods<NodeObject<NodoGrafo>, LinkObject<NodoGrafo, EnlaceGrafo>> | undefined>(undefined);
   // Los objetos de nodo guardan la posición que les da la simulación: se
   // reutilizan al filtrar para que el grafo no se recoloque entero.

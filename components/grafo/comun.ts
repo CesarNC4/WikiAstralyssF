@@ -29,6 +29,46 @@ export function useTamano(ref: RefObject<HTMLElement | null>) {
   return tam;
 }
 
+/**
+ * Que un clic con temblor siga siendo un clic. Las librerías de grafos dan por
+ * arrastre cualquier `pointermove` con el botón pulsado, aunque sea de 0 px (el
+ * 2D cuando hay `onBackgroundClick`, el 3D siempre), y tras un arrastre
+ * descartan el clic. Chrome en Windows emite ese movimiento al pulsar, así que
+ * no se podía seleccionar ningún nodo.
+ *
+ * Se filtran en captura, sobre el envoltorio, los movimientos de menos de
+ * `margen` px mientras el botón está pulsado. El pan y el arrastre de nodos no
+ * cambian: pasado el margen, los movimientos llegan todos.
+ */
+export function useClicTolerante(ref: RefObject<HTMLElement | null>, margen = 5) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let inicio: { x: number; y: number } | null = null;
+    const abajo = (e: PointerEvent) => {
+      inicio = { x: e.clientX, y: e.clientY };
+    };
+    const mueve = (e: PointerEvent) => {
+      if (!inicio || e.buttons === 0) return;
+      if (Math.hypot(e.clientX - inicio.x, e.clientY - inicio.y) < margen) e.stopPropagation();
+      else inicio = null; // ya es un arrastre: deja pasar el resto
+    };
+    const arriba = () => {
+      inicio = null;
+    };
+    el.addEventListener("pointerdown", abajo, true);
+    el.addEventListener("pointermove", mueve, true);
+    el.addEventListener("pointerup", arriba, true);
+    el.addEventListener("pointercancel", arriba, true);
+    return () => {
+      el.removeEventListener("pointerdown", abajo, true);
+      el.removeEventListener("pointermove", mueve, true);
+      el.removeEventListener("pointerup", arriba, true);
+      el.removeEventListener("pointercancel", arriba, true);
+    };
+  }, [ref, margen]);
+}
+
 /** Dibuja un nodo en el canvas 2D: círculo de color y, si toca, su nombre debajo. */
 export function dibujarNodo(
   ctx: CanvasRenderingContext2D,

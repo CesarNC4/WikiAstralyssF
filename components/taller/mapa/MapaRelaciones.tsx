@@ -14,6 +14,7 @@ import type { CampoVinculo, RelacionDef } from "@/lib/relaciones/tipos";
 import { COLOR_ARISTA, COLOR_ENTIDAD, COLOR_ENTIDAD_POR_DEFECTO } from "@/lib/relaciones/colores";
 import { estiloArista, type CategoriaRelacion, type ClaveCategoria } from "@/lib/relaciones/categorias";
 import type { AristaMapa, NodoMapa } from "@/lib/queries/mapaRelaciones";
+import { useClicTolerante } from "@/components/grafo/comun";
 
 /**
  * Mapa de relaciones del taller (spec §11, "Mapa del taller"): 2D, con
@@ -67,6 +68,7 @@ export function MapaRelaciones({
   const fgRef = useRef<ForceGraphMethods<NodeObject<N>, LinkObject<N, L>> | undefined>(undefined);
   const caja = useRef<HTMLDivElement>(null);
   const [tam, setTam] = useState({ w: 800, h: 600 });
+  useClicTolerante(caja);
 
   const tipos = useMemo(() => [...new Set(nodos.map((n) => n.tipo))].sort((a, b) => nombreTipo(a).localeCompare(nombreTipo(b))), [nodos]);
   const [tiposOn, setTiposOn] = useState<Set<string>>(() => new Set(tipos));
