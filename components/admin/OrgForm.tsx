@@ -30,7 +30,6 @@ const LARGOS: { k: string; label: string }[] = [
   { k: "descripcion", label: "Descripción" },
   { k: "historia", label: "Historia" },
   { k: "objetivo", label: "Objetivo" },
-  { k: "fundacion", label: "Fundación" },
   { k: "ideologia", label: "Ideología" },
   { k: "liderazgo", label: "Liderazgo" },
   { k: "miembrosDestacados", label: "Miembros destacados" },

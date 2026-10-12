@@ -6,7 +6,8 @@ import { SongList } from "@/components/fichas/SongList";
 import { Badge } from "@/components/entity/Badge";
 import { Icon } from "@/components/Icon";
 import { Conexiones } from "@/components/fichas/Conexiones";
-import { formatoFecha } from "@/lib/fechas";
+import { textosFecha } from "@/lib/fechas";
+import { FechaTexto, FijarMomento } from "@/components/fechas/Lectura";
 import { getCalendario, leerFecha } from "@/lib/queries/fechas";
 import { getActoPublico, getActosVisibles } from "@/lib/queries/fichas";
 import { getCancionesDeActo, getCapituloDerivado } from "@/lib/queries/narrativa";
@@ -53,7 +54,7 @@ export default async function ActoPage({ params }: { params: Params }) {
   const yo = hermanos[i];
   const anterior = i > 0 ? hermanos[i - 1] : null;
   const siguiente = i >= 0 && i < hermanos.length - 1 ? hermanos[i + 1] : null;
-  const cuando = fecha && cal ? formatoFecha(cal, fecha.fecha, "eras") : null;
+  const cuando = fecha && cal ? textosFecha(cal, fecha.fecha) : null;
 
   return (
     <FichaShell
@@ -74,9 +75,12 @@ export default async function ActoPage({ params }: { params: Params }) {
       <FieldGrid
         fields={[
           { label: "Capítulo", value: `${capitulo.numero} — ${capitulo.titulo}` },
-          { label: "Cuándo", value: cuando },
+          { label: "Cuándo", value: cuando ? <FechaTexto t={cuando} /> : null },
         ]}
       />
+
+      {/* Las edades de los personajes se leen desde el inicio del acto (§13). */}
+      {fecha && <FijarMomento clave={fecha.claveIni} origen={`al inicio de «${acto.nombre}»`} />}
 
       <ProseFields fields={[{ label: "Resumen", value: acto.descripcion }]} />
 

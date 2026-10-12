@@ -58,8 +58,6 @@ export const capitulos = pgTable("capitulos", {
   /** Intro propia. La ficha añade debajo los resúmenes de sus actos (§3). */
   descripcion: text("descripcion"),
   discordUrl: varchar("discord_url"),
-  /** Texto viejo: la fecha del capítulo se calcula de sus actos. Se retirará. */
-  fechaLore: varchar("fecha_lore"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
   ...auditColumns(),
@@ -78,9 +76,6 @@ export const actos = pgTable("actos", {
   faseId: integer("fase_id"),
   notasPrivadas: text("notas_privadas"),
   discordUrl: varchar("discord_url"),
-  /** Textos viejos: la fecha vive en `fecha_lore`. Se retirarán. */
-  fechaInicioLore: varchar("fecha_inicio_lore"),
-  fechaFinLore: varchar("fecha_fin_lore"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),
   ...auditColumns(),

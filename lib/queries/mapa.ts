@@ -2,6 +2,8 @@ import "server-only";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { textosDeFechas } from "@/lib/queries/fechas";
+import type { TextosFecha } from "@/lib/fechas";
 
 /** Datos para renderizar el mapa público (§10): naciones, regiones y locaciones publicadas. */
 export async function getMapaPublico() {
@@ -76,9 +78,12 @@ export async function getLocacionFicha(id: number) {
   const [nacion] = locacion.nacionId
     ? await db.select({ id: s.naciones.id, nombre: s.naciones.nombre, poligono: s.naciones.poligono, color: s.naciones.color }).from(s.naciones).where(eq(s.naciones.id, locacion.nacionId)).limit(1)
     : [undefined];
-  const [evento] = locacion.eventoId
-    ? await db.select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo, fechaLore: s.timelineEventos.fechaLore }).from(s.timelineEventos).where(eq(s.timelineEventos.id, locacion.eventoId)).limit(1)
+  const [ev] = locacion.eventoId
+    ? await db.select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo }).from(s.timelineEventos).where(eq(s.timelineEventos.id, locacion.eventoId)).limit(1)
     : [undefined];
+  const evento = ev
+    ? { ...ev, fecha: (await textosDeFechas("timeline", [ev.id]).catch(() => new Map<number, TextosFecha>())).get(ev.id) ?? null }
+    : undefined;
 
   return { locacion, region: region ?? null, nacion: nacion ?? null, evento: evento ?? null };
 }

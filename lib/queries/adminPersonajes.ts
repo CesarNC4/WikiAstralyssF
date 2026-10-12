@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, ne, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { textosDeFechas } from "@/lib/queries/fechas";
 import type { EstadoPublicacion } from "@/db/schema/enums";
 
 export const ADMIN_PAGE_SIZE = 25;
@@ -85,7 +86,7 @@ export async function getPersonajeParaEditar(id: number) {
     with: {
       estadisticas: true,
       habilidades: { with: { fundamento: { columns: { id: true, nombre: true } } } },
-      eventos: { with: { evento: { columns: { id: true, fechaLore: true, titulo: true } } } },
+      eventos: { with: { evento: { columns: { id: true, titulo: true } } } },
       objetos: { with: { objeto: { columns: { id: true, nombre: true, tipo: true } } } },
       relaciones: {
         with: {
@@ -214,11 +215,12 @@ export async function listMagiaHechizosOpciones(): Promise<Opcion[]> {
 /** Eventos de la cronología global (para vincular eventos clave del PJ). */
 export async function listTimelineOpciones(): Promise<Opcion[]> {
   const rows = await db
-    .select({ id: s.timelineEventos.id, fechaLore: s.timelineEventos.fechaLore, titulo: s.timelineEventos.titulo })
+    .select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo })
     .from(s.timelineEventos)
     .where(isNull(s.timelineEventos.eliminadoEn))
     .orderBy(asc(s.timelineEventos.orden), asc(s.timelineEventos.titulo));
-  return rows.map((r) => ({ id: r.id, label: [r.fechaLore, r.titulo].filter(Boolean).join(" · ") }));
+  const fechas = await textosDeFechas("timeline", rows.map((r) => r.id), { corto: true });
+  return rows.map((r) => ({ id: r.id, label: [fechas.get(r.id)?.absoluto, r.titulo].filter(Boolean).join(" · ") }));
 }
 
 /** Armas/artefactos/objetos del catálogo global (para vincular objetos del PJ). */

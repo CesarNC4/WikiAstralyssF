@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GremioFichaBody } from "@/components/fichas/GremioFichaBody";
 import { getGremioFicha } from "@/lib/queries/fichas";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 
 export const revalidate = 3600;
 
@@ -19,12 +20,17 @@ export default async function GremioPage() {
   const data = await getGremioFicha().catch(() => null);
   if (!data) notFound();
   return (
-    <GremioFichaBody
-      gremio={data.gremio}
-      rangos={data.rangos}
-      facciones={data.facciones}
-      jerarquia={data.jerarquia}
-      historial={data.historial}
-    />
+    <>
+      <GremioFichaBody
+        gremio={data.gremio}
+        rangos={data.rangos}
+        facciones={data.facciones}
+        jerarquia={data.jerarquia}
+        historial={data.historial}
+      />
+      <div className="mx-auto max-w-5xl px-4 pb-10">
+        <FechasDeFicha entidad="gremio" id={data.gremio.id} />
+      </div>
+    </>
   );
 }

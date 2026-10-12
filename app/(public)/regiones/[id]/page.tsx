@@ -10,6 +10,7 @@ import { Icon } from "@/components/Icon";
 import { getRegionFicha, getVisibleRegionIds } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
 import { estiloLocacion } from "@/lib/mapa";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -103,6 +104,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </section>
         )}
 
+        <FechasDeFicha entidad="regiones" id={data.region.id} />
         {/* Conexiones generadas desde el registro de relaciones. */}
         <Conexiones entidad="regiones" id={data.region.id} nombre={data.region.nombre} imagen={data.region.imagenUrl} />
 

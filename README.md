@@ -123,7 +123,8 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
     hojas, hilos y eventos.
   - *Capítulos*: el árbol libro > capítulo > acto, con arrastre.
   - *Estructura*: plantillas propias y un tablero de fases por capítulo.
-  - *Trama*, *Estadísticas*, *Papelera* y *Universo > Calendario*.
+  - *Trama*, *Estadísticas*, *Papelera* y *Universo > Calendario* (vista por
+    año con alta de eventos, y configuración de meses, semana y eras).
 - **Numeración automática**: los capítulos se numeran por libro (los tipos sin
   número se marcan en el catálogo `capitulo_tipo`) y los actos en romanos.
 - **El capítulo se calcula de sus actos**: personajes, lugares, canciones y
@@ -131,7 +132,14 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   entra en el buscador, el sitemap, el feed y el Atlas.
 - **Fechas del lore estructuradas** (`fecha_lore`, `lib/fechas/`): eje absoluto
   con el año 0 en el inicio de la trama, eras, calendario propio con días fuera
-  de mes.
+  de mes. Cada ficha tiene sus fechas (nacimiento y muerte, fundación y caída…,
+  ver `lib/fechas/roles.ts`), el lector elige entre eras y año absoluto, y la
+  edad de un personaje se calcula según el momento de lectura (el capítulo o el
+  acto que tenga abierto).
+- **Cronología derivada** (`/timeline`): los eventos y todo lo que tiene fecha en
+  las fichas, ordenado por día absoluto, con filtros por tipo, era y ficha, y
+  solo lo importante por defecto. Submenú con el calendario por año
+  (`/timeline/calendario`).
 - Canciones y catálogo de elementos gestionables desde el panel.
 - Feed RSS en `/feed.xml` con las últimas entidades publicadas.
 - PWA instalable con service worker propio (sin dependencias): navegación sin

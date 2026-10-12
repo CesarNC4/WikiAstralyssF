@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShell";
 import { Badge } from "@/components/entity/Badge";
 import { getLordDemonio, getVisibleIds } from "@/lib/queries/fichas";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -45,11 +46,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <FieldGrid
         fields={[
           { label: "Dominio", value: x.dominio },
-          { label: "Era de aparición", value: x.eraAparicion },
           { label: "Estado", value: x.estado },
           { label: "Derrotado por", value: x.derrotadoPor },
         ]}
       />
+      <FechasDeFicha entidad="demonios" id={x.id} />
       <ProseFields
         fields={[
           { label: "Descripción física", value: x.descripcionFisica },

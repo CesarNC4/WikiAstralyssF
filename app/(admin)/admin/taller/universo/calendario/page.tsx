@@ -1,28 +1,21 @@
 import { assertAdmin } from "@/lib/actions/auth";
-import { CalendarioConfig } from "@/components/taller/CalendarioConfig";
-import { getCalendario, getUsoSegmentos } from "@/lib/queries/fechas";
+import { CalendarioTaller } from "@/components/taller/CalendarioTaller";
+import { getSucesos } from "@/lib/queries/cronologia";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarioPage() {
+/**
+ * Vista de calendario del taller (spec §13): un año con todo lo que tiene
+ * fecha, publicado o no, y alta de eventos en un día, un mes o el año.
+ */
+export default async function CalendarioAnualPage() {
   await assertAdmin();
-  const datos = await Promise.all([getCalendario(), getUsoSegmentos()]).catch((e) => {
+  const datos = await getSucesos({ publico: false }).catch((e) => {
     console.error("[taller/calendario]", e);
     return null;
   });
-
-  // Antes de aplicar `migrate-fechas.ts` las tablas no existen: se dice en vez de romper.
   if (!datos) {
-    return (
-      <div className="mx-auto max-w-2xl px-6 py-12 text-sm text-fg-secondary">
-        <p className="mb-2 text-fg">El calendario aún no existe en la base.</p>
-        <p>
-          Falta aplicar la migración <code className="font-mono text-accent">scripts/migrations/migrate-fechas.ts</code>.
-        </p>
-      </div>
-    );
+    return <p className="px-6 py-12 text-sm text-fg-secondary">No se pudo cargar el calendario.</p>;
   }
-
-  const [cal, uso] = datos;
-  return <CalendarioConfig inicial={cal} uso={uso} />;
+  return <CalendarioTaller sucesos={datos.sucesos} cal={datos.cal} />;
 }

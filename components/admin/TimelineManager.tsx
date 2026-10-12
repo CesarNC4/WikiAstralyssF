@@ -1,122 +1,107 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { TimelineEvento } from "@/lib/queries/adminTimeline";
 import type { OpcionRef } from "@/lib/queries/adminEntidades";
 import type { EstadoPublicacion } from "@/db/schema/enums";
-import { reordenarTimeline, actualizarEventoInline, crearEventoRapido } from "@/lib/actions/timeline";
+import { actualizarEventoInline, crearEventoRapido } from "@/lib/actions/timeline";
 import { moverEntidadAPapelera } from "@/lib/actions/entidades";
 import { useToast } from "@/components/admin/Toast";
 
 const inp = "rounded-lg border border-border-base bg-surface px-2 py-1.5 text-sm text-fg outline-none focus:border-border-glow";
 
+/**
+ * Gestor de los eventos de la cronología. Van en orden cronológico (spec §14):
+ * la fecha manda, así que ya no se arrastran. La fecha, su importancia y el
+ * acto se editan en «Editar»; aquí, lo rápido.
+ */
 export function TimelineManager({ eventos, capitulos }: { eventos: TimelineEvento[]; capitulos: OpcionRef[] }) {
   const router = useRouter();
   const toast = useToast();
   const [, startTransition] = useTransition();
   const [items, setItems] = useState<TimelineEvento[]>(eventos);
-  // Espejo síncrono de `items` para leer el estado más reciente en handlers (drag).
-  const itemsRef = useRef<TimelineEvento[]>(eventos);
-  const apply = (next: TimelineEvento[]) => { itemsRef.current = next; setItems(next); };
-  const dragIndex = useRef<number | null>(null);
-  const [dragging, setDragging] = useState<number | null>(null);
-
-  const persistOrden = (list: TimelineEvento[]) => {
-    startTransition(async () => {
-      try { await reordenarTimeline(list.map((e) => e.id)); } catch { toast("No se pudo guardar el orden.", "error"); }
-    });
-  };
-
-  const onDragEnter = (i: number) => {
-    const from = dragIndex.current;
-    if (from === null || from === i) return;
-    const next = [...itemsRef.current];
-    const [moved] = next.splice(from, 1);
-    next.splice(i, 0, moved);
-    apply(next);
-    dragIndex.current = i;
-    setDragging(i);
-  };
-
-  const onDragEnd = () => {
-    dragIndex.current = null;
-    setDragging(null);
-    persistOrden(itemsRef.current);
-  };
 
   const patch = (id: number, p: Partial<TimelineEvento>, persist: () => Promise<void>) => {
-    apply(itemsRef.current.map((e) => (e.id === id ? { ...e, ...p } : e)));
+    setItems((prev) => prev.map((e) => (e.id === id ? { ...e, ...p } : e)));
     startTransition(async () => {
-      try { await persist(); } catch { toast("No se pudo guardar.", "error"); }
+      try {
+        await persist();
+      } catch {
+        toast("No se pudo guardar.", "error");
+      }
     });
   };
 
+  // El evento nace sin fecha: se abre su editor para ponérsela.
   const addEvento = () =>
     startTransition(async () => {
       try {
         const id = await crearEventoRapido();
-        apply([...itemsRef.current, { id, titulo: "Nuevo evento", fechaLore: "—", era: null, importancia: null, categoria: null, capituloId: null, estado: "borrador" }]);
-        toast("Evento creado.", "success");
-      } catch { toast("No se pudo crear.", "error"); }
+        router.push(`/admin/timeline/${id}/editar`);
+      } catch {
+        toast("No se pudo crear.", "error");
+      }
     });
 
   const borrar = (id: number) => {
     if (!confirm("¿Mover este evento a la papelera?")) return;
-    apply(itemsRef.current.filter((e) => e.id !== id));
+    setItems((prev) => prev.filter((e) => e.id !== id));
     startTransition(async () => {
-      try { await moverEntidadAPapelera("timeline", id); toast("Movido a la papelera.", "success"); }
-      catch { toast("No se pudo borrar.", "error"); router.refresh(); }
+      try {
+        await moverEntidadAPapelera("timeline", id);
+        toast("Movido a la papelera.", "success");
+      } catch {
+        toast("No se pudo borrar.", "error");
+        router.refresh();
+      }
     });
   };
 
   return (
     <div>
       <p className="mb-3 text-sm text-fg-muted">
-        Arrastra los eventos para ordenarlos como quieras (el orden se guarda solo). Edita título, fecha, estado y capítulo
-        aquí mismo; el resto (importancia, categoría, descripción) en «Editar».
+        Los eventos se ordenan solos por su fecha. Título, estado y capítulo se editan aquí mismo; la fecha, la importancia,
+        el acto y lo demás, en «Editar». También puedes crearlos desde el{" "}
+        <Link href="/admin/taller/universo/calendario" className="text-accent hover:underline">
+          calendario del taller
+        </Link>
+        .
       </p>
 
       <div className="space-y-2">
-        {items.map((ev, i) => (
-          <div
-            key={ev.id}
-            draggable
-            onDragStart={() => { dragIndex.current = i; setDragging(i); }}
-            onDragEnter={() => onDragEnter(i)}
-            onDragOver={(e) => e.preventDefault()}
-            onDragEnd={onDragEnd}
-            className={
-              "flex flex-wrap items-center gap-2 rounded-xl border bg-surface/40 p-2 " +
-              (dragging === i ? "border-border-glow opacity-70" : "border-border-base")
-            }
-          >
-            <span className="cursor-grab select-none px-1 text-fg-muted" title="Arrastrar">⠿</span>
-            <span className="w-6 text-center text-xs text-fg-muted">{i + 1}</span>
+        {items.map((ev) => (
+          <div key={ev.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border-base bg-surface/40 p-2">
+            <span className="w-44 shrink-0 text-xs" title={ev.fecha?.absoluto}>
+              {ev.fecha ? (
+                <>
+                  <span className="block text-fg-secondary">{ev.fecha.eras}</span>
+                  {ev.fecha.eras !== ev.fecha.absoluto && <span className="block font-mono text-fg-muted">{ev.fecha.absoluto}</span>}
+                </>
+              ) : (
+                <span className="text-warning">Sin fecha</span>
+              )}
+            </span>
+            <span className="w-4 text-center text-accent" title={ev.importante ? "Importante: sale en la cronología destacada" : undefined}>
+              {ev.importante ? "★" : ""}
+            </span>
 
             <input
               defaultValue={ev.titulo}
-              onBlur={(e) => { if (e.target.value !== ev.titulo) patch(ev.id, { titulo: e.target.value }, () => actualizarEventoInline(ev.id, { titulo: e.target.value })); }}
+              onBlur={(e) => {
+                if (e.target.value !== ev.titulo) patch(ev.id, { titulo: e.target.value }, () => actualizarEventoInline(ev.id, { titulo: e.target.value }));
+              }}
               placeholder="Título del evento"
               className={inp + " min-w-[12rem] flex-1"}
             />
-            <input
-              defaultValue={ev.fechaLore ?? ""}
-              onBlur={(e) => { if (e.target.value !== (ev.fechaLore ?? "")) patch(ev.id, { fechaLore: e.target.value }, () => actualizarEventoInline(ev.id, { fechaLore: e.target.value })); }}
-              placeholder="Fecha (lore)"
-              className={inp + " w-32"}
-            />
-            <input
-              defaultValue={ev.era ?? ""}
-              onBlur={(e) => { if (e.target.value !== (ev.era ?? "")) patch(ev.id, { era: e.target.value }, () => actualizarEventoInline(ev.id, { era: e.target.value })); }}
-              placeholder="Era / edad"
-              title="Era para agrupar la cronología"
-              className={inp + " w-32"}
-            />
             <select
               value={ev.estado}
-              onChange={(e) => patch(ev.id, { estado: e.target.value as EstadoPublicacion }, () => actualizarEventoInline(ev.id, { estado: e.target.value as EstadoPublicacion }))}
+              onChange={(e) =>
+                patch(ev.id, { estado: e.target.value as EstadoPublicacion }, () =>
+                  actualizarEventoInline(ev.id, { estado: e.target.value as EstadoPublicacion }),
+                )
+              }
               className={inp + " w-28"}
             >
               <option value="borrador">Borrador</option>
@@ -133,15 +118,21 @@ export function TimelineManager({ eventos, capitulos }: { eventos: TimelineEvent
             >
               <option value="">— Capítulo —</option>
               {capitulos.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
               ))}
             </select>
 
-            {ev.importancia && <span className="rounded-full border border-border-base px-2 py-0.5 text-[11px] text-fg-muted">{ev.importancia}</span>}
+            {ev.categoria && <span className="rounded-full border border-border-base px-2 py-0.5 text-[11px] text-fg-muted">{ev.categoria}</span>}
 
             <div className="ml-auto flex items-center gap-1 text-xs">
-              <Link href={`/admin/timeline/${ev.id}/editar`} className="rounded border border-border-base px-2 py-1 text-fg-secondary hover:text-fg">Editar</Link>
-              <button type="button" onClick={() => borrar(ev.id)} className="rounded border border-error/40 px-2 py-1 text-error hover:bg-error/10">✕</button>
+              <Link href={`/admin/timeline/${ev.id}/editar`} className="rounded border border-border-base px-2 py-1 text-fg-secondary hover:text-fg">
+                Editar
+              </Link>
+              <button type="button" onClick={() => borrar(ev.id)} className="rounded border border-error/40 px-2 py-1 text-error hover:bg-error/10">
+                ✕
+              </button>
             </div>
           </div>
         ))}

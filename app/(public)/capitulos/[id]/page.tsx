@@ -8,7 +8,8 @@ import { SongList } from "@/components/fichas/SongList";
 import { Badge } from "@/components/entity/Badge";
 import { Icon } from "@/components/Icon";
 import { Conexiones } from "@/components/fichas/Conexiones";
-import { formatoFecha } from "@/lib/fechas";
+import { claves, textosFecha } from "@/lib/fechas";
+import { FechaTexto, FijarMomento } from "@/components/fechas/Lectura";
 import { getCalendario } from "@/lib/queries/fechas";
 import { getCapitulo, getVisibleIds } from "@/lib/queries/fichas";
 import { getCapituloDerivado, type CapituloDerivado } from "@/lib/queries/narrativa";
@@ -48,7 +49,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     getCapituloDerivado(x.id, { publico: true }).catch(() => VACIO),
     getCalendario().catch(() => null),
   ]);
-  const fechas = d.fecha && cal ? formatoFecha(cal, d.fecha, "eras") : null;
+  const fechas = d.fecha && cal ? textosFecha(cal, d.fecha) : null;
+  // Las edades de los personajes se leen desde el inicio del capítulo (§13).
+  const inicio = d.fecha && cal ? claves(cal, d.fecha).ini : null;
   const povs = d.personajes.filter((p) => p.pov).map((p) => p.nombre);
 
   return (
@@ -77,10 +80,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           { label: "Tipo", value: x.tipo },
           { label: "Marco narrativo", value: x.marcoNarrativo },
           { label: "Narrador", value: x.narrador },
-          { label: "Cuándo", value: fechas },
+          { label: "Cuándo", value: fechas ? <FechaTexto t={fechas} /> : null },
           { label: "Actos", value: d.actos.length ? String(d.actos.length) : null },
         ]}
       />
+
+      {inicio != null && <FijarMomento clave={inicio} origen={`al inicio de ${x.numero}`} />}
 
       {/* `notasPrivadas` no se muestra nunca: es material de autor. */}
       <ProseFields fields={[{ label: "Descripción", value: x.descripcion }]} />

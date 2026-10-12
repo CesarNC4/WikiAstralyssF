@@ -94,6 +94,23 @@ export function diaSemana(cal: Calendario, clave: number): string | null {
   return cal.diasSemana[((clave % n) + n) % n];
 }
 
+/**
+ * Dónde cae un día absoluto: año, segmento y día dentro del segmento. Lo inverso
+ * de `claveExtremo` con precisión de día. Null en el segmento si el calendario
+ * está vacío.
+ */
+export function posicionDeClave(cal: Calendario, clave: number): { anio: number; segmentoId: number | null; dia: number } {
+  const D = diasPorAnio(cal);
+  const anio = Math.floor(clave / D);
+  let resto = clave - anio * D;
+  for (const s of segmentosOrdenados(cal)) {
+    const d = Math.max(0, s.dias);
+    if (resto < d) return { anio, segmentoId: s.id, dia: resto + 1 };
+    resto -= d;
+  }
+  return { anio, segmentoId: null, dia: resto + 1 };
+}
+
 /** Año al que pertenece un día absoluto. */
 export function anioDeClave(cal: Calendario, clave: number): number {
   return Math.floor(clave / diasPorAnio(cal));

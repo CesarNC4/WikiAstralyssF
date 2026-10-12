@@ -57,6 +57,7 @@ export function ActoEditor({
   const [discord, setDiscord] = useState(a.discordUrl ?? "");
   const [publicacion, setPublicacion] = useState(a.estadoPublicacion);
   const [fecha, setFecha] = useState<Fecha | null>(datos.fecha);
+  const [importante, setImportante] = useState(datos.importante);
   const [cambios, setCambios] = useState(false);
 
   const marcar =
@@ -84,6 +85,7 @@ export function ActoEditor({
         discordUrl: discord,
         estadoPublicacion: publicacion,
         fecha,
+        importante,
       });
       if (!r.ok) return toast(r.error, "error");
       setCambios(false);
@@ -167,7 +169,13 @@ export function ActoEditor({
 
       <Campo label="Fecha (inicio y fin)">
         {cal ? (
-          <FechaInput cal={cal} value={fecha} onChange={marcar(setFecha)} />
+          <>
+            <FechaInput cal={cal} value={fecha} onChange={marcar(setFecha)} />
+            <label className="mt-2 flex items-center gap-1.5 text-xs text-fg-secondary">
+              <input type="checkbox" checked={importante} onChange={(e) => marcar(setImportante)(e.target.checked)} />
+              Importante (sale en la cronología destacada)
+            </label>
+          </>
         ) : (
           <p className="text-xs text-warning">El calendario no está disponible.</p>
         )}
@@ -341,7 +349,7 @@ function Trama({
             {datos.eventos.map((ev) => (
               <li key={ev.id} className="flex items-center gap-1 text-sm text-fg-secondary">
                 <span className="flex-1 truncate">
-                  {ev.titulo} <span className="font-mono text-xs text-fg-muted">{ev.fechaLore}</span>
+                  {ev.titulo} {ev.fecha && <span className="font-mono text-xs text-fg-muted">{ev.fecha}</span>}
                 </span>
                 <button type="button" onClick={() => ya(() => vincularEventoActo(ev.id, null))} className="text-fg-muted hover:text-error" aria-label="Desligar">
                   <Icon name="X" size={13} />
@@ -357,7 +365,7 @@ function Trama({
                 .filter((ev) => !ligados.has(ev.id))
                 .map((ev) => (
                   <option key={ev.id} value={ev.id}>
-                    {ev.fechaLore} · {ev.titulo}
+                    {ev.fecha ? `${ev.fecha} · ${ev.titulo}` : ev.titulo}
                   </option>
                 ))}
             </select>

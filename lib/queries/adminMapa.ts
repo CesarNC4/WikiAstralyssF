@@ -22,7 +22,7 @@ export async function getMapaAdmin() {
       .where(isNull(s.locaciones.eliminadoEn))
       .orderBy(asc(s.locaciones.nombre)),
     db
-      .select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo, fechaLore: s.timelineEventos.fechaLore })
+      .select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo })
       .from(s.timelineEventos)
       .where(isNull(s.timelineEventos.eliminadoEn))
       .orderBy(asc(s.timelineEventos.orden)),

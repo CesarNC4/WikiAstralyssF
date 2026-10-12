@@ -17,18 +17,25 @@ import { getFamiliasDePersonaje, getMisionesDePersonaje, getCapitulosDePersonaje
 import { calcularPoderDeCombate, PRIMARY_MAX, COMBAT_MAX } from "@/lib/poderCombate";
 import { etiquetaInversa } from "@/lib/catalogos";
 import type { Track } from "@/hooks/usePlayerStore";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
+import { FechaTexto } from "@/components/fechas/Lectura";
+import { textosDeFechas } from "@/lib/queries/fechas";
+import type { TextosFecha } from "@/lib/fechas";
 
 /** Cuerpo de la ficha de personaje: hero cinematográfico + secciones (§ punto 2). */
 export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   const nombre = [p.nombre, p.surname].filter(Boolean).join(" ");
   const stats = p.estadisticas?.[0];
 
-  const [galeria, magiaLinksMap, familias, misiones, capitulos] = await Promise.all([
+  const [galeria, magiaLinksMap, familias, misiones, capitulos, fechasEventos] = await Promise.all([
     getGaleria("personajes", p.id).catch(() => []),
     resolveMagiaLinks([p.tipoMagiaPrincipal, p.magiaSecundaria]).catch(() => new Map<string, number>()),
     getFamiliasDePersonaje(p.id).catch(() => []),
     getMisionesDePersonaje(p.id).catch(() => []),
     getCapitulosDePersonaje(p.id).catch(() => []),
+    textosDeFechas("timeline", (p.eventos ?? []).map((e) => e.timelineEventoId).filter((x): x is number => x != null)).catch(
+      () => new Map<number, TextosFecha>(),
+    ),
   ]);
   const magiaLinks = Object.fromEntries(magiaLinksMap);
 
@@ -113,7 +120,6 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   }));
 
   const keyFacts = [
-    { label: "Edad", value: p.edad },
     { label: "Altura", value: p.altura ? `${p.altura} m` : null },
     { label: "Origen", value: p.lugarNacimiento },
     { label: "Ocupación", value: p.ocupacion },
@@ -170,6 +176,9 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
       </div>
 
       <div className="mx-auto max-w-5xl space-y-12 px-4 py-10">
+        {/* Nacimiento, muerte y edad en el momento de lectura (spec §13). */}
+        <FechasDeFicha entidad="personajes" id={p.id} edadTexto={p.edad} className="-mb-4" />
+
         {/* Perfil mágico */}
         <Section icon="Sparkles" title="Perfil mágico">
           <PerfilMagico
@@ -213,7 +222,11 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
                     .map((e) => (
                       <li key={e.id} className="relative">
                         <span className="absolute -left-6.5 top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-                        {e.evento!.fechaLore && <p className="font-mono text-xs text-fg-muted">{e.evento!.fechaLore}</p>}
+                        {fechasEventos.get(e.evento!.id) && (
+                          <p className="font-mono text-xs text-fg-muted">
+                            <FechaTexto t={fechasEventos.get(e.evento!.id)!} />
+                          </p>
+                        )}
                         <Link href="/timeline" className="font-medium text-fg hover:text-primary-glow">
                           {e.evento!.titulo}
                         </Link>

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Icon } from "@/components/Icon";
 import { ParticleField } from "@/components/viz/ParticleField";
-import { catMeta, DetallePanel, FiltrosTimeline, type Ev } from "@/components/viz/timelineShared";
+import { colorDe, DetallePanel, type Ev } from "@/components/viz/timelineShared";
+import { FechaTexto } from "@/components/fechas/Lectura";
 
 // --- Espacio de proyección (viewBox del SVG) ---
 const VW = 1000;
@@ -45,7 +46,11 @@ function project(i: number, rot: number, camZ: number, camback: number, f: numbe
   return { x: CX + wx * s, y: CY + wy * s, s, depth };
 }
 
-/** Cronología — "túnel del tiempo": vórtice 3D real con perspectiva propia. */
+/**
+ * Cronología — "túnel del tiempo": vórtice 3D real con perspectiva propia.
+ * Recibe los sucesos ya filtrados y en orden cronológico (`Cronologia`); quien
+ * cambie los filtros lo remonta con otra `key`.
+ */
 export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
   const reduce = useReducedMotion();
   const n = eventos.length;
@@ -61,8 +66,6 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
   const [hover, setHover] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [grabbing, setGrabbing] = useState(false);
-  const [cat, setCat] = useState<string | null>(null);
-  const [soloMayor, setSoloMayor] = useState(false);
   // El render inicial (SSR + primer paint del cliente) debe ser idéntico → diferimos lo que depende
   // de useReducedMotion(), que difiere servidor/cliente y rompía la hidratación.
   const [mounted, setMounted] = useState(false);
@@ -95,11 +98,6 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
     el: HTMLElement;
   } | null>(null);
 
-  const categorias = [...new Set(eventos.map((e) => e.categoria).filter((x): x is string => !!x))];
-  const visible = useCallback(
-    (ev: Ev) => (!cat || ev.categoria === cat) && (!soloMayor || ev.importancia === "Mayor"),
-    [cat, soloMayor],
-  );
 
   // Vuela la cámara hasta el evento `i`.
   const goTo = useCallback(
@@ -114,15 +112,11 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
 
   const step = useCallback(
     (dir: 1 | -1) => {
-      let i = focusRef.current;
-      for (let k = 0; k < n; k++) {
-        i += dir;
-        if (i < 0 || i >= n) return;
-        if (visible(eventos[i])) break;
-      }
+      const i = focusRef.current + dir;
+      if (i < 0 || i >= n) return;
       goTo(i);
     },
-    [n, eventos, visible, goTo],
+    [n, goTo],
   );
 
   // Bucle de animación: giro autónomo + suavizado de la cámara + foco. Solo re-renderiza si cambia algo.
@@ -254,9 +248,9 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
     let gi = 0;
     let k = 0;
     while (k < n) {
-      const era = eventos[k].era ?? null;
+      const era = eventos[k].era?.nombre ?? null;
       let j = k;
-      while (j < n && (eventos[j].era ?? null) === era) j++;
+      while (j < n && (eventos[j].era?.nombre ?? null) === era) j++;
       if (era) eras.push({ i: Math.floor((k + j - 1) / 2), label: era, color: ERA_PALETTE[gi++ % ERA_PALETTE.length] });
       k = j;
     }
@@ -267,13 +261,11 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
   const focusEv = eventos[focus];
 
   // Glow barato: un gradiente radial por color (en lugar de feGaussianBlur por nodo, carísimo).
-  const haloColors = [...new Set([...eventos.map((e) => catMeta(e.categoria).color), "#cdc4ff"])];
+  const haloColors = [...new Set([...eventos.map((e) => colorDe(e)), "#cdc4ff"])];
   const haloId = (c: string) => `h-${c.replace("#", "")}`;
 
   return (
     <div>
-      <FiltrosTimeline categorias={categorias} cat={cat} setCat={setCat} soloMayor={soloMayor} setSoloMayor={setSoloMayor} />
-
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* === Túnel del tiempo === */}
         <div
@@ -331,17 +323,16 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
 
             {/* Nodos de evento */}
             {nodos.map((nd) => {
-              const meta = catMeta(nd.ev.categoria);
-              const mayor = nd.ev.importancia === "Mayor";
-              const vis = visible(nd.ev);
+              const color = colorDe(nd.ev);
+              const mayor = nd.ev.importante;
               const isFocus = nd.i === focus;
               const isHover = nd.i === hover;
               const baseR = mayor ? 7 : 4.6;
               const rr = baseR * nd.s * (isFocus || isHover ? 1.32 : 1);
-              const op = fog(nd.depth) * (vis ? 1 : 0.12);
+              const op = fog(nd.depth);
               return (
                 <g
-                  key={nd.ev.id}
+                  key={nd.ev.clave}
                   style={{ cursor: "pointer", opacity: op }}
                   onMouseEnter={() => setHover(nd.i)}
                   onMouseLeave={() => setHover(null)}
@@ -351,13 +342,13 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
                     goTo(nd.i, true);
                   }}
                 >
-                  <circle cx={nd.x} cy={nd.y} r={rr * 2.7} fill={`url(#${haloId(meta.color)})`} />
+                  <circle cx={nd.x} cy={nd.y} r={rr * 2.7} fill={`url(#${haloId(color)})`} />
                   {isFocus && (
-                    <circle cx={nd.x} cy={nd.y} r={rr + 7} fill="none" stroke={meta.color} strokeWidth={1.5} strokeOpacity={0.85}>
+                    <circle cx={nd.x} cy={nd.y} r={rr + 7} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.85}>
                       {anim && <animate attributeName="r" values={`${rr + 5};${rr + 11};${rr + 5}`} dur="2.2s" repeatCount="indefinite" />}
                     </circle>
                   )}
-                  <circle cx={nd.x} cy={nd.y} r={rr} fill={meta.color} />
+                  <circle cx={nd.x} cy={nd.y} r={rr} fill={color} />
                   <circle cx={nd.x - rr * 0.3} cy={nd.y - rr * 0.3} r={rr * 0.42} fill="#ffffff" fillOpacity={0.55} />
                 </g>
               );
@@ -396,7 +387,7 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
           <AnimatePresence mode="wait">
             {focusEv && (
               <motion.div
-                key={focusEv.id}
+                key={focusEv.clave}
                 className="absolute left-3 top-3 z-30 max-w-[78%] cursor-pointer rounded-2xl border border-border-glow bg-deep/85 p-3 backdrop-blur-xl sm:max-w-[260px]"
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -406,10 +397,9 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
                 onClick={() => setSel(focusEv)}
               >
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs" style={{ color: catMeta(focusEv.categoria).color }}>
-                    {focusEv.fechaLore}
+                  <span className="font-mono text-xs" style={{ color: colorDe(focusEv) }}>
+                    <FechaTexto t={focusEv.cortos} />
                   </span>
-                  {focusEv.era && <span className="text-[10px] text-fg-muted">· {focusEv.era}</span>}
                 </div>
                 <h3 className="mt-0.5 font-display text-base leading-tight text-fg">{focusEv.titulo}</h3>
                 {focusEv.descripcion && <p className="mt-1 line-clamp-2 text-xs leading-snug text-fg-muted">{focusEv.descripcion}</p>}
@@ -430,22 +420,23 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
           <div ref={listRef} className="max-h-[340px] overflow-y-auto pr-1 lg:max-h-[540px]">
             <ol className="space-y-1">
               {eventos.map((ev, i) => {
-                const meta = catMeta(ev.categoria);
-                const vis = visible(ev);
+                const color = colorDe(ev);
                 const active = i === focus;
                 return (
-                  <li key={ev.id} data-ev={i} hidden={!vis}>
+                  <li key={ev.clave} data-ev={i}>
                     <button
                       onClick={() => goTo(i)}
                       onDoubleClick={() => setSel(ev)}
                       onMouseEnter={() => setHover(i)}
                       onMouseLeave={() => setHover(null)}
                       className="flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-left transition-colors"
-                      style={{ borderColor: active ? meta.color : "transparent", background: active ? `${meta.color}1a` : "transparent" }}
+                      style={{ borderColor: active ? color : "transparent", background: active ? `${color}1a` : "transparent" }}
                     >
-                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: meta.color, boxShadow: `0 0 6px ${meta.color}` }} />
+                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
                       <span className="min-w-0">
-                        <span className="block font-mono text-[11px] text-fg-muted">{ev.fechaLore}</span>
+                        <span className="block font-mono text-[11px] text-fg-muted">
+                          <FechaTexto t={ev.cortos} />
+                        </span>
                         <span className={`block truncate text-sm ${active ? "text-fg" : "text-fg-secondary"}`}>{ev.titulo}</span>
                       </span>
                     </button>

@@ -14,7 +14,7 @@ export async function getPersonajeFicha(id: number) {
       estadisticas: true,
       habilidades: { with: { fundamento: { columns: { id: true, nombre: true, estadoPublicacion: true } } } },
       eventos: {
-        with: { evento: { columns: { id: true, fechaLore: true, titulo: true, descripcion: true } } },
+        with: { evento: { columns: { id: true, titulo: true, descripcion: true } } },
       },
       narrativa: true,
       objetos: {
@@ -59,7 +59,7 @@ export async function getPersonajePreview(id: number) {
       estadisticas: true,
       habilidades: { with: { fundamento: { columns: { id: true, nombre: true, estadoPublicacion: true } } } },
       eventos: {
-        with: { evento: { columns: { id: true, fechaLore: true, titulo: true, descripcion: true } } },
+        with: { evento: { columns: { id: true, titulo: true, descripcion: true } } },
       },
       narrativa: true,
       objetos: {

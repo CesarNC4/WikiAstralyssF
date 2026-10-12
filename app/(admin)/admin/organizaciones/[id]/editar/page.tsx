@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { OrgForm } from "@/components/admin/OrgForm";
+import { FechasFicha } from "@/components/admin/FechasFicha";
 import { getOrgParaEditar } from "@/lib/queries/adminComplejas";
 import { listPersonajesOpciones } from "@/lib/queries/adminPersonajes";
 import { getCatalogosPorCampos } from "@/lib/queries/adminEntidades";
@@ -28,6 +29,9 @@ export default async function EditarOrgPage({ params }: { params: Promise<{ id: 
         </Link>
       }
     >
+      <div className="mb-4">
+        <FechasFicha entidad="organizaciones" id={Number(id)} />
+      </div>
       <OrgForm inicial={data} personajes={personajes} catalogos={catalogos} />
     </AdminShell>
   );

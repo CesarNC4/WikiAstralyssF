@@ -8,44 +8,24 @@ import { assertAdmin } from "@/lib/actions/auth";
 
 function revalidar() {
   revalidatePath("/admin/timeline");
-  revalidatePath("/timeline");
+  revalidatePath("/timeline", "layout");
   revalidatePath("/");
-}
-
-/**
- * Persiste el nuevo orden (lista de ids en la secuencia deseada).
- *
- * Una sola sentencia con `VALUES`, no una UPDATE por evento: arrastrar un ítem
- * reordena la lista entera, así que el bucle costaba tantos viajes a la base
- * como eventos tuviera el timeline. Al ser una sola sentencia es atómica por
- * construcción, sin necesidad de envolverla en una transacción.
- */
-export async function reordenarTimeline(ids: number[]): Promise<void> {
-  await assertAdmin();
-  if (ids.length === 0) return;
-
-  const pares = ids.map((id, i) => sql`(${id}::int, ${i}::int)`);
-  await db.execute(sql`
-    update timeline_eventos t
-    set orden = v.orden
-    from (values ${sql.join(pares, sql`, `)}) as v(id, orden)
-    where t.id = v.id
-  `);
-  revalidar();
 }
 
 /** Edición rápida inline de un evento. */
 export async function actualizarEventoInline(
   id: number,
-  patch: { titulo?: string; fechaLore?: string; era?: string | null; estado?: "borrador" | "publicado" | "oculto"; capituloId?: number | null },
+  patch: { titulo?: string; estado?: "borrador" | "publicado" | "oculto"; capituloId?: number | null },
 ): Promise<void> {
   await assertAdmin();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const set: any = {};
   if (patch.titulo !== undefined) set.titulo = patch.titulo.trim() || "Sin título";
-  if (patch.fechaLore !== undefined) set.fechaLore = patch.fechaLore;
-  if (patch.era !== undefined) set.era = patch.era?.trim() || null;
-  if (patch.capituloId !== undefined) set.capituloId = patch.capituloId;
+  // Cambiar de capítulo suelta el acto: era un acto del capítulo anterior.
+  if (patch.capituloId !== undefined) {
+    set.capituloId = patch.capituloId;
+    set.actoId = null;
+  }
   if (patch.estado !== undefined) {
     set.estadoPublicacion = patch.estado;
     if (patch.estado === "publicado") {
@@ -58,13 +38,13 @@ export async function actualizarEventoInline(
   revalidar();
 }
 
-/** Crea un evento en blanco al final de la cronología y devuelve su id. */
+/** Crea un evento en blanco y devuelve su id. La fecha se le pone en su editor. */
 export async function crearEventoRapido(): Promise<number> {
   await assertAdmin();
   const [{ max }] = await db.select({ max: sql<number>`coalesce(max(${s.timelineEventos.orden}), -1)` }).from(s.timelineEventos);
   const [row] = await db
     .insert(s.timelineEventos)
-    .values({ titulo: "Nuevo evento", fechaLore: "—", orden: (max ?? -1) + 1, estadoPublicacion: "borrador" })
+    .values({ titulo: "Nuevo evento", orden: (max ?? -1) + 1, estadoPublicacion: "borrador" })
     .returning({ id: s.timelineEventos.id });
   revalidar();
   return row.id;

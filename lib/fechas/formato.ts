@@ -37,6 +37,16 @@ export function tramosDeEras(cal: Calendario): TramoEra[] {
   return tramos;
 }
 
+/** Era en la que cae un año, o null si no hay eras. */
+export function eraDeAnio(cal: Calendario, anio: number): Era | null {
+  const tramos = tramosDeEras(cal);
+  for (let i = tramos.length - 1; i >= 0; i--) {
+    const t = tramos[i];
+    if (t.inicio == null || anio >= t.inicio) return t.era;
+  }
+  return null;
+}
+
 /** Nombre corto de una era: su abreviatura, o "la <nombre>". */
 function nombreEra(era: Era): string {
   return era.abreviatura?.trim() || `de la ${era.nombre}`;
@@ -150,6 +160,21 @@ export function formatoCorto(cal: Calendario, f: Fecha, modo: ModoFecha): string
   };
   const base = f.fin && f.fin.anio !== f.ini.anio ? `${uno(f.ini.anio)} a ${uno(f.fin.anio)}` : uno(f.ini.anio);
   return f.aproximada ? `≈ ${base}` : base;
+}
+
+/**
+ * Una fecha escrita en las dos lecturas. El servidor las calcula y el navegador
+ * enseña la que haya elegido el lector, así el cliente no necesita el calendario
+ * para pintar una fecha.
+ */
+export interface TextosFecha {
+  eras: string;
+  absoluto: string;
+}
+
+export function textosFecha(cal: Calendario, f: Fecha, corto = false): TextosFecha {
+  const fmt = corto ? formatoCorto : formatoFecha;
+  return { eras: fmt(cal, f, "eras"), absoluto: fmt(cal, f, "absoluto") };
 }
 
 function mayuscula(s: string): string {

@@ -12,6 +12,7 @@ import { getEntidadTable } from "@/lib/admin/tables";
 import { REL_TABLES } from "@/lib/admin/relacionesTables";
 import { clonarVinculos } from "@/lib/relaciones/consultas";
 import { entidadMedia } from "@/db/schema/media";
+import { actos } from "@/db/schema/narrativa";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
@@ -36,6 +37,8 @@ function revalidar(route: string, id?: number) {
   revalidatePath(route);
   if (id) revalidatePath(`${route}/${id}`);
   revalidatePath("/");
+  // Nombre, estado o papelera de una ficha cambian sus sucesos en la cronología.
+  revalidatePath("/timeline", "layout");
 }
 
 export async function guardarEntidad(
@@ -74,6 +77,14 @@ export async function guardarEntidad(
   const bannerAssetId = (data.bannerAssetId as number | null | undefined) ?? null;
   delete data.imagenAssetId;
   delete data.bannerAssetId;
+
+  // Un evento ligado a un acto va en el capítulo de ese acto (§14): el acto es
+  // la precisión opcional dentro del capítulo, no otra cosa que pueda discrepar.
+  if (key === "timeline" && data.actoId != null) {
+    const [acto] = await db.select({ capituloId: actos.capituloId }).from(actos).where(eq(actos.id, Number(data.actoId))).limit(1);
+    if (!acto) return { ok: false, error: "El acto elegido ya no existe.", fieldErrors: { actoId: "No existe." } };
+    data.capituloId = acto.capituloId;
+  }
 
   const idRaw = formData.get("id");
   const id = idRaw ? Number(idRaw) : null;

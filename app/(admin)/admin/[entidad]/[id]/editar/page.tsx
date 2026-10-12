@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { EntidadForm } from "@/components/admin/EntidadForm";
+import { FechasFicha } from "@/components/admin/FechasFicha";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadParaEditar, getCatalogosPorCampos, getElementosCatalogo, getReferenciasDeConfig } from "@/lib/queries/adminEntidades";
 
@@ -41,7 +42,7 @@ export default async function EditarEntidadPage({ params }: { params: Promise<{ 
         ) : null
       }
     >
-      <EntidadForm config={config} inicial={row} catalogos={catalogos} elementos={elementos} referencias={referencias} />
+      <EntidadForm config={config} inicial={row} catalogos={catalogos} elementos={elementos} referencias={referencias} fechas={<FechasFicha entidad={entidad} id={Number(id)} />} />
     </AdminShell>
   );
 }

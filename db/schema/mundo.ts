@@ -94,7 +94,6 @@ export const organizaciones = pgTable("organizaciones", {
   descripcion: text("descripcion"),
   historia: text("historia"),
   objetivo: text("objetivo"),
-  fundacion: text("fundacion"),
   ideologia: text("ideologia"),
   liderazgo: text("liderazgo"),
   miembrosDestacados: text("miembros_destacados"),
@@ -239,11 +238,7 @@ export const lordDemonio = pgTable("lord_demonio", {
   devilTrigger: text("devil_trigger"),
   historia: text("historia"),
   poderEspecial: text("poder_especial"),
-  eraAparicion: varchar("era_aparicion"),
-  /** Era del catalogo compartido; `eraAparicion` queda como texto libre. */
-  era: varchar("era"),
-  /** Ano de lore, para poder ordenar. */
-  anioLore: integer("anio_lore"),
+  // La aparición es una fecha de `fecha_lore` (rol 'aparicion').
   derrotadoPor: varchar("derrotado_por"),
   estado: varchar("estado"),
   imagenUrl: varchar("imagen_url"),

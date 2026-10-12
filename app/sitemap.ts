@@ -14,6 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
+    // Submenú de la cronología (spec del taller §13).
+    { url: `${base}/timeline/calendario`, changeFrequency: "weekly", priority: 0.6 },
   ];
 
   const keys = [

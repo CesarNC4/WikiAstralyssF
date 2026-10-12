@@ -56,7 +56,13 @@ export function EntidadForm({
   elementos = [],
   referencias = {},
   rutaBase,
+  fechas,
 }: {
+  /**
+   * Editor de fechas de la ficha (`FechasFicha`), que se guarda por su cuenta.
+   * Llega ya renderizado desde la página porque es un Server Component.
+   */
+  fechas?: React.ReactNode;
   /**
    * Dentro del taller: dónde vive el editor de esta entidad
    * (`/admin/taller/trama/hilos`). Al crear se redirige a `${rutaBase}/${id}` y
@@ -220,6 +226,8 @@ export function EntidadForm({
             ))}
         </div>
       </AccordionSection>
+
+      {fechas}
 
       {/* Resto de grupos */}
       {groups

@@ -24,7 +24,6 @@ export const ETIQUETAS_CATALOGO: Record<string, EtiquetaCatalogo> = {
   dieta: { titulo: "Dieta", descripcion: "Compartida por razas y bestias." },
   clima: { titulo: "Clima", descripcion: "Naciones y regiones. Una región puede tener clima propio." },
   terreno: { titulo: "Terreno", descripcion: "Varios por ficha: una nación puede ser montañosa y costera." },
-  era: { titulo: "Eras del mundo", descripcion: "Lords demonio y cronología. Rellénala con tu lore." },
   libro: { titulo: "Libros", descripcion: "Capítulos y arcos." },
   tipo_temporal: { titulo: "Tipo temporal", descripcion: "Capítulos y arcos: presente, flashback, paralelo…" },
   estado_narrativo: {
@@ -122,7 +121,6 @@ export const USOS_LEGIBLES: Record<string, string[]> = {
   dieta: ["Razas", "Bestias"],
   clima: ["Naciones", "Regiones"],
   terreno: ["Naciones", "Regiones"],
-  era: ["Lords demonio", "Cronología"],
   libro: ["Capítulos", "Arcos"],
   tipo_temporal: ["Capítulos", "Arcos"],
   estado_narrativo: ["Actos", "Hojas de trama", "Hilos narrativos"],
@@ -199,7 +197,6 @@ export const USOS_DE_CATALOGO: Record<string, [string, string][]> = {
   estado_vital: [["personajes", "estado_vital"], ["lord_demonio", "estado"], ["familia_arbol", "estado"]],
   dieta: [["razas", "dieta"], ["bestias", "dieta"]],
   clima: [["naciones", "clima"], ["regiones", "clima"]],
-  era: [["lord_demonio", "era"], ["timeline_eventos", "era"]],
   libro: [["capitulos", "libro"], ["trama_arcos", "libro"]],
   tipo_temporal: [["capitulos", "tipo_temporal"], ["trama_arcos", "tipo"]],
   estado_narrativo: [["actos", "estado"], ["trama_hojas", "estado"], ["hilo_narrativo", "estado"]],

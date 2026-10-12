@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BestiaFichaBody } from "@/components/fichas/BestiaFichaBody";
 import { getBestia, getVisibleIds } from "@/lib/queries/fichas";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -27,6 +28,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <BestiaFichaBody bestia={x} />
       {/* Conexiones generadas desde el registro de relaciones. */}
       <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
+        <FechasDeFicha entidad="bestias" id={x.id} />
         <Conexiones entidad="bestias" id={x.id} nombre={x.nombre} imagen={x.imagenUrl} conGrafo={false} />
       </div>
     </>

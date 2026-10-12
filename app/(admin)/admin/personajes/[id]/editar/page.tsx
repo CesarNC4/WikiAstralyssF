@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PersonajeForm } from "@/components/admin/PersonajeForm";
+import { getCalendario } from "@/lib/queries/fechas";
+import { FechasFicha } from "@/components/admin/FechasFicha";
 import { getCatalogosPersonaje } from "@/lib/queries/catalogos";
 import {
   getPersonajeParaEditar,
@@ -45,6 +47,7 @@ export default async function EditarPersonajePage({
   const familiasOpts = await listFamiliasDePersonaje(pid);
   const regionesOpts = await listRegionesOpciones();
   const locacionesOpts = await listLocacionesOpciones();
+  const cal = await getCalendario().catch(() => null);
 
   const nombre = [inicial.nombre, inicial.surname].filter(Boolean).join(" ");
 
@@ -61,6 +64,9 @@ export default async function EditarPersonajePage({
         </Link>
       }
     >
+      <div className="mb-4">
+        <FechasFicha entidad="personajes" id={pid} />
+      </div>
       <PersonajeForm
         inicial={inicial}
         catalogos={catalogos}
@@ -74,6 +80,7 @@ export default async function EditarPersonajePage({
         familiasDelPersonaje={familiasOpts}
         regionesOpts={regionesOpts}
         locacionesOpts={locacionesOpts}
+        cal={cal}
       />
     </AdminShell>
   );

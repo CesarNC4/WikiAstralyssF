@@ -194,6 +194,23 @@ derivada devuelve lo esperado sobre los 2 capítulos reales.
 
 ## Fase 6 — Fechas en todas las fichas
 
+> **Estado (2026-10-11):** hecha. Ajustes respecto a lo previsto:
+> - Los roles de cada ficha están en un solo sitio, `lib/fechas/roles.ts`; de ahí
+>   salen el editor, la ficha pública y la cronología.
+> - El editor de fechas (`FechasFicha`) se guarda por su cuenta, como el panel de
+>   conexiones, así que va igual en el formulario genérico y en los propios
+>   (personaje, organización, familia, gremio, lore). Aparece al editar, no al crear.
+> - El servidor escribe cada fecha en las dos lecturas y el navegador enseña la
+>   elegida (`components/fechas/`): el cliente no necesita el calendario para
+>   pintar una fecha.
+> - La edad del personaje usa el momento de lectura (Zustand, en memoria de la
+>   pestaña); `personajes.edad` se queda como texto manual de respaldo.
+> - Los eventos guardan su escala de importancia (Anécdota… Definitorio), que es
+>   un catálogo del autor; lo que decide la cronología destacada es la casilla
+>   "Importante" de la fecha. La migración marcó los Mayor, Crítico y Definitorio.
+> - La retirada de columnas (`migrate-fechas-retirada.ts`) va aparte porque el
+>   despliegue anterior aún las lee: se aplica con el nuevo ya en producción.
+
 1. `FechaInput` en todos los editores, con los roles de §13: nacimiento y muerte,
    fundación y caída, creación y destrucción, origen y extinción, etc.
 2. **Edad:** campo de texto manual de respaldo y cálculo según el momento de
@@ -206,6 +223,14 @@ derivada devuelve lo esperado sobre los 2 capítulos reales.
    con ensayo.
 
 ## Fase 7 — Cronología y calendario
+
+> **Estado (2026-10-11):** hecha. `lib/queries/cronologia.ts` saca los sucesos de
+> `fecha_lore` (los capítulos, del rango de sus actos). La línea temporal y el
+> calendario comparten filtros (`components/cronologia/`); el calendario del
+> taller es el mismo con todo lo no publicado y alta de eventos por día, mes o
+> año. La configuración del calendario pasó a `universo/calendario/configurar`.
+> El gestor de eventos del admin ordena por fecha (ya no se arrastra) y el
+> evento admite un acto, que fija su capítulo.
 
 1. **Cronología pública:** eventos y sucesos derivados de `fecha_lore`, con filtros
    por tipo, era y entidad, e importantes por defecto. `TimelineEspiral` pasa a

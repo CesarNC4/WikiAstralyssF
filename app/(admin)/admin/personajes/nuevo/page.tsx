@@ -1,6 +1,7 @@
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PersonajeForm } from "@/components/admin/PersonajeForm";
+import { getCalendario } from "@/lib/queries/fechas";
 import { getCatalogosPersonaje } from "@/lib/queries/catalogos";
 import {
   listPersonajesOpciones,
@@ -30,6 +31,7 @@ export default async function NuevoPersonajePage() {
   const artefactosOpts = await listArtefactosOpciones();
   const regionesOpts = await listRegionesOpciones();
   const locacionesOpts = await listLocacionesOpciones();
+  const cal = await getCalendario().catch(() => null);
 
   return (
     <AdminShell title="Nuevo personaje">
@@ -46,6 +48,7 @@ export default async function NuevoPersonajePage() {
         familiasDelPersonaje={[]}
         regionesOpts={regionesOpts}
         locacionesOpts={locacionesOpts}
+        cal={cal}
       />
     </AdminShell>
   );

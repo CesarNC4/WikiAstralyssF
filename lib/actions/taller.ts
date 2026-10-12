@@ -45,6 +45,8 @@ async function intentar<T>(donde: string, fn: () => Promise<T>): Promise<Resulta
 function revalidarNarrativa(capituloId?: number) {
   revalidatePath("/admin/taller", "layout");
   revalidatePath("/capitulos");
+  // Capítulos y actos también son sucesos de la cronología (§14).
+  revalidatePath("/timeline", "layout");
   if (capituloId) revalidatePath(`/capitulos/${capituloId}`);
 }
 
@@ -418,6 +420,8 @@ const ActoCambios = z
     estadoPublicacion: z.enum(ESTADOS),
     /** Fecha de inicio y fin del acto; null la borra, ausente no la toca. */
     fecha: FechaSchema.nullable(),
+    /** Si su fecha sale en la cronología destacada (§14). Va con `fecha`. */
+    importante: z.boolean(),
   })
   .partial();
 
@@ -430,7 +434,7 @@ export async function guardarActo(id: number, cambios: z.input<typeof ActoCambio
   await assertAdmin();
   const p = ActoCambios.safeParse(cambios);
   if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "Datos inválidos." };
-  const { fecha, ...d } = p.data;
+  const { fecha, importante, ...d } = p.data;
 
   const r = await intentar("guardarActo", () =>
     db.transaction(async (tx) => {
@@ -443,7 +447,7 @@ export async function guardarActo(id: number, cambios: z.input<typeof ActoCambio
       if (Object.keys(set).length) await tx.update(s.actos).set(set).where(eq(s.actos.id, id));
 
       if (fecha !== undefined) {
-        const error = await escribirFecha(tx, { entidadTipo: "actos", entidadId: id, rol: "principal" }, fecha as Fecha | null);
+        const error = await escribirFecha(tx, { entidadTipo: "actos", entidadId: id, rol: "principal" }, fecha as Fecha | null, importante ?? false);
         if (error) throw new Rechazo(error);
       }
       return antes.capituloId;
@@ -527,31 +531,6 @@ export async function borrarActo(id: number): Promise<Resultado> {
     }),
   );
   return conCapitulo(r);
-}
-
-// ── Fechas de cualquier ficha ──────────────────────────────────────────────
-
-const ROLES = ["principal", "nacimiento", "muerte", "fundacion", "caida", "creacion", "destruccion", "origen", "extincion", "aparicion", "descubrimiento"] as const;
-
-/** Guarda o borra (con null) la fecha de una ficha para un rol (§13). */
-export async function guardarFechaFicha(
-  entidadTipo: string,
-  entidadId: number,
-  rol: (typeof ROLES)[number],
-  fecha: Fecha | null,
-  importante = false,
-): Promise<Resultado> {
-  await assertAdmin();
-  if (!ROLES.includes(rol)) return { ok: false, error: "Rol de fecha desconocido." };
-  const f = fecha === null ? null : FechaSchema.safeParse(fecha);
-  if (f && !f.success) return { ok: false, error: "Fecha inválida." };
-  const r = await intentar("guardarFechaFicha", async () => {
-    const error = await escribirFecha(db, { entidadTipo, entidadId, rol }, f ? f.data : null, importante);
-    if (error) throw new Rechazo(error);
-    return undefined;
-  });
-  if (r.ok) revalidatePath("/timeline");
-  return r;
 }
 
 // ── Trama desde el acto (§4) ───────────────────────────────────────────────

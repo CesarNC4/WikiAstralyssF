@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FechaTexto } from "@/components/fechas/Lectura";
 import { FichaHero, SectionHead } from "@/components/fichas/FichaHero";
 import { ProseFields } from "@/components/fichas/FichaShell";
 import { MiniMapa, type MiniPoly } from "@/components/viz/MiniMapa";
@@ -9,6 +10,7 @@ import { Icon } from "@/components/Icon";
 import { getLocacionFicha, getVisibleLocacionIds } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
 import { estiloLocacion } from "@/lib/mapa";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -85,7 +87,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 {esBatalla ? "Escenario de" : "Evento relacionado"}
               </p>
               <p className="text-fg">{evento.titulo}</p>
-              {evento.fechaLore && <p className="text-xs text-fg-muted">{evento.fechaLore}</p>}
+              {evento.fecha && (
+                <p className="text-xs text-fg-muted">
+                  <FechaTexto t={evento.fecha} />
+                </p>
+              )}
             </div>
             <Icon name="ArrowRight" size={16} className="ml-auto text-fg-muted" />
           </Link>
@@ -121,6 +127,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </div>
         )}
 
+        <FechasDeFicha entidad="locaciones" id={data.locacion.id} />
         {/* Conexiones generadas desde el registro de relaciones. */}
         <Conexiones entidad="locaciones" id={data.locacion.id} nombre={data.locacion.nombre} imagen={data.locacion.imagenUrl} />
 

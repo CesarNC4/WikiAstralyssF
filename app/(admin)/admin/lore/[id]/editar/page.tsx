@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LoreForm } from "@/components/admin/LoreForm";
+import { FechasFicha } from "@/components/admin/FechasFicha";
 import { getLoreParaEditar } from "@/lib/queries/adminLore";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,9 @@ export default async function EditarLorePage({ params }: { params: Promise<{ id:
         </Link>
       }
     >
+      <div className="mb-4">
+        <FechasFicha entidad="lore" id={data.pagina.id} />
+      </div>
       <LoreForm inicial={data} />
     </AdminShell>
   );

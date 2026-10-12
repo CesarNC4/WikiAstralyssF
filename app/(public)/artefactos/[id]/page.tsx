@@ -5,6 +5,7 @@ import { FichaShell, FieldGrid, ProseFields } from "@/components/fichas/FichaShe
 import { Badge } from "@/components/entity/Badge";
 import { EntityImage } from "@/components/media/EntityImage";
 import { getArtefacto, getVisibleIds } from "@/lib/queries/fichas";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -40,6 +41,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       badges={<>{x.tipo && <Badge tone="accent">{x.tipo}</Badge>}{x.variante && <Badge>{x.variante}</Badge>}</>}
     >
       <FieldGrid fields={[{ label: "Tipo", value: x.tipo }, { label: "Variante", value: x.variante }, { label: "Rareza", value: x.rareza }]} />
+      <FechasDeFicha entidad="artefactos" id={x.id} />
 
       {x.propietario && (
         <section className="mb-8">

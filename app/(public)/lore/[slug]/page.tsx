@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LorePageBody } from "@/components/fichas/LorePageBody";
 import { getPaginaLore, getPaginaLoreConSecciones, getLoreSlugs } from "@/lib/queries/fichas";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 export const revalidate = 3600;
@@ -31,6 +32,7 @@ export default async function LorePage({ params }: { params: Promise<{ slug: str
       <LorePageBody pagina={data.pagina} secciones={data.secciones} />
       {/* Conexiones generadas desde el registro de relaciones. */}
       <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
+        <FechasDeFicha entidad="lore" id={data.pagina.id} />
         <Conexiones entidad="lore" id={data.pagina.id} nombre={data.pagina.titulo} imagen={data.pagina.imagenUrl} />
       </div>
     </>

@@ -1,8 +1,8 @@
 import "server-only";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
-import { claves, validarFecha, type Calendario, type Fecha, type TipoSegmento } from "@/lib/fechas";
+import { claves, textosFecha, validarFecha, type Calendario, type Fecha, type TextosFecha, type TipoSegmento } from "@/lib/fechas";
 
 /** Una transacción de Drizzle o el cliente. */
 type Ejecutor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -87,10 +87,35 @@ export async function escribirFecha(
   return null;
 }
 
+/** Una fila de `fecha_lore` ya en la forma de `lib/fechas`, con sus claves. */
+export interface FechaGuardada {
+  entidadId: number;
+  rol: string;
+  fecha: Fecha;
+  importante: boolean;
+  claveIni: number;
+  claveFin: number;
+}
+
+export function aFechaGuardada(f: typeof s.fechaLore.$inferSelect): FechaGuardada {
+  return {
+    entidadId: f.entidadId,
+    rol: f.rol,
+    fecha: {
+      ini: { anio: f.iniAnio, segmentoId: f.iniSegmentoId, dia: f.iniDia },
+      fin: f.finAnio != null ? { anio: f.finAnio, segmentoId: f.finSegmentoId, dia: f.finDia } : null,
+      aproximada: f.aproximada,
+    },
+    importante: f.importante,
+    claveIni: f.claveIni,
+    claveFin: f.claveFin,
+  };
+}
+
 /** La fecha guardada de una ficha para un rol, en la forma de `lib/fechas`. */
 export async function leerFecha(
   destino: { entidadTipo: string; entidadId: number; rol: string },
-): Promise<{ fecha: Fecha; importante: boolean } | null> {
+): Promise<FechaGuardada | null> {
   const [f] = await db
     .select()
     .from(s.fechaLore)
@@ -102,13 +127,42 @@ export async function leerFecha(
       ),
     )
     .limit(1);
-  if (!f) return null;
-  return {
-    fecha: {
-      ini: { anio: f.iniAnio, segmentoId: f.iniSegmentoId, dia: f.iniDia },
-      fin: f.finAnio != null ? { anio: f.finAnio, segmentoId: f.finSegmentoId, dia: f.finDia } : null,
-      aproximada: f.aproximada,
-    },
-    importante: f.importante,
-  };
+  return f ? aFechaGuardada(f) : null;
+}
+
+/** Todas las fechas de una ficha, por rol. */
+export async function leerFechasDe(entidadTipo: string, entidadId: number): Promise<Record<string, FechaGuardada>> {
+  const filas = await db
+    .select()
+    .from(s.fechaLore)
+    .where(and(eq(s.fechaLore.entidadTipo, entidadTipo), eq(s.fechaLore.entidadId, entidadId)));
+  return Object.fromEntries(filas.map((f) => [f.rol, aFechaGuardada(f)]));
+}
+
+/** La fecha de un rol para varias fichas de golpe, por id. */
+export async function fechasDeEntidades(
+  entidadTipo: string,
+  ids: number[],
+  rol = "principal",
+): Promise<Map<number, FechaGuardada>> {
+  if (ids.length === 0) return new Map();
+  const filas = await db
+    .select()
+    .from(s.fechaLore)
+    .where(and(eq(s.fechaLore.entidadTipo, entidadTipo), eq(s.fechaLore.rol, rol), inArray(s.fechaLore.entidadId, [...new Set(ids)])));
+  return new Map(filas.map((f) => [f.entidadId, aFechaGuardada(f)]));
+}
+
+/**
+ * La fecha de varias fichas ya escrita, para listas y selectores. Las dos
+ * lecturas (eras y absoluto) por id; las fichas sin fecha no aparecen.
+ */
+export async function textosDeFechas(
+  entidadTipo: string,
+  ids: number[],
+  { rol = "principal", corto = false }: { rol?: string; corto?: boolean } = {},
+): Promise<Map<number, TextosFecha>> {
+  if (ids.length === 0) return new Map();
+  const [cal, fechas] = await Promise.all([getCalendario(), fechasDeEntidades(entidadTipo, ids, rol)]);
+  return new Map([...fechas].map(([id, f]) => [id, textosFecha(cal, f.fecha, corto)]));
 }

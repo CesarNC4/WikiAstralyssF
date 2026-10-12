@@ -14,6 +14,8 @@ import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 import { StatRadar } from "@/components/fichas/personaje/StatRadar";
 import { cn } from "@/lib/utils";
+import { FechaInput } from "@/components/admin/FechaInput";
+import type { Calendario, Fecha } from "@/lib/fechas";
 import {
   Field,
   TextInput,
@@ -52,11 +54,10 @@ interface Ev {
   modo: "existente" | "nueva";
   timelineEventoId: number | null;
   eventoLabel: string;
-  nFecha: string;
+  nFecha: Fecha | null;
   nTitulo: string;
-  nImportancia: string;
+  nImportante: boolean;
   nCategoria: string;
-  nEra: string;
   nota: string;
 }
 interface Ob {
@@ -118,7 +119,10 @@ export function PersonajeForm({
   familiasDelPersonaje,
   regionesOpts,
   locacionesOpts,
+  cal,
 }: {
+  /** Para fechar los eventos nuevos. Null si no se pudo cargar. */
+  cal: Calendario | null;
   inicial: PersonajeParaEditar | null;
   catalogos: CatalogosPersonaje;
   personajesOpts: Opcion[];
@@ -189,8 +193,8 @@ export function PersonajeForm({
     (inicial?.eventos ?? []).map((e) => ({
       modo: "existente" as const,
       timelineEventoId: e.timelineEventoId ?? null,
-      eventoLabel: e.evento ? [e.evento.fechaLore, e.evento.titulo].filter(Boolean).join(" · ") : "",
-      nFecha: "", nTitulo: "", nImportancia: "", nCategoria: "", nEra: "",
+      eventoLabel: e.evento?.titulo ?? "",
+      nFecha: null, nTitulo: "", nImportante: false, nCategoria: "",
       nota: s(e.nota),
     })),
   );
@@ -279,17 +283,16 @@ export function PersonajeForm({
       );
 
     const eventosPayload = eventos
-      .filter((e) => (e.modo === "nueva" ? e.nTitulo.trim() && e.nFecha.trim() : e.timelineEventoId))
+      .filter((e) => (e.modo === "nueva" ? e.nTitulo.trim() && e.nFecha : e.timelineEventoId))
       .map((e) =>
         e.modo === "nueva"
           ? {
               timelineEventoId: null,
               nuevoEvento: {
-                fechaLore: e.nFecha.trim(),
+                fecha: e.nFecha!,
                 titulo: e.nTitulo.trim(),
-                importancia: e.nImportancia,
+                importante: e.nImportante,
                 categoria: e.nCategoria,
-                era: e.nEra,
               },
               nota: e.nota,
             }
@@ -436,7 +439,7 @@ export function PersonajeForm({
           <Field label="Nombre *" error={fe.nombre}><TextInput value={f.nombre} onChange={(v) => patch({ nombre: v })} placeholder="Nombre" /></Field>
           <Field label="Apellido"><TextInput value={f.surname} onChange={(v) => patch({ surname: v })} /></Field>
           <Field label="Título"><TextInput value={f.titulo} onChange={(v) => patch({ titulo: v })} /></Field>
-          <Field label="Edad"><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
+          <Field label="Edad (texto)" hint="Solo se muestra si no tiene fecha de nacimiento: «Milenaria», «Desconocida»."><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
           <Field label="Género"><Select value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} /></Field>
           <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" /></Field>
           <Field label="Ocupación"><Select value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} options={catalogos.ocupacion} onCrear={(valor) => crearOpcion("ocupacion", valor)} /></Field>
@@ -609,7 +612,7 @@ export function PersonajeForm({
         <Repeater
           items={eventos}
           onChange={wrapSetter(setEventos)}
-          blank={(): Ev => ({ modo: "existente", timelineEventoId: null, eventoLabel: "", nFecha: "", nTitulo: "", nImportancia: "", nCategoria: "", nEra: "", nota: "" })}
+          blank={(): Ev => ({ modo: "existente", timelineEventoId: null, eventoLabel: "", nFecha: null, nTitulo: "", nImportante: false, nCategoria: "", nota: "" })}
           addLabel="Añadir evento"
           renderItem={(e, up) => (
             <div className="space-y-2">
@@ -630,12 +633,21 @@ export function PersonajeForm({
                 </Field>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Field label="Fecha (lore) *"><TextInput value={e.nFecha} onChange={(v) => up({ nFecha: v })} /></Field>
                   <Field label="Título *"><TextInput value={e.nTitulo} onChange={(v) => up({ nTitulo: v })} /></Field>
-                  <Field label="Importancia"><Select value={e.nImportancia} onChange={(v) => up({ nImportancia: v })} options={catalogos.timeline_importancia} /></Field>
                   <Field label="Categoría"><Select value={e.nCategoria} onChange={(v) => up({ nCategoria: v })} options={catalogos.timeline_categoria} /></Field>
-                  <Field label="Era"><TextInput value={e.nEra} onChange={(v) => up({ nEra: v })} /></Field>
-                  <div />
+                  <div className="sm:col-span-2">
+                    <Field label="Fecha *">
+                      {cal ? (
+                        <FechaInput cal={cal} value={e.nFecha} onChange={(f) => up({ nFecha: f })} />
+                      ) : (
+                        <p className="text-xs text-warning">El calendario no está disponible.</p>
+                      )}
+                    </Field>
+                    <label className="mt-1 flex items-center gap-1.5 text-xs text-fg-secondary">
+                      <input type="checkbox" checked={e.nImportante} onChange={(ev) => up({ nImportante: ev.target.checked })} />
+                      Importante (sale en la cronología destacada)
+                    </label>
+                  </div>
                 </div>
               )}
               <Field label="Nota del personaje"><MarkdownField value={e.nota} onChange={(v) => up({ nota: v })} rows={3} /></Field>

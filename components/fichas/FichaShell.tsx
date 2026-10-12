@@ -90,7 +90,8 @@ export function ProseBlock({ title, children }: { title: string; children?: Reac
 }
 
 /** Lista de campos cortos (clave/valor) en grid. */
-export function FieldGrid({ fields }: { fields: FichaField[] }) {
+/** Como `FichaField`, pero el valor puede ser un nodo (una fecha que cambia con la lectura). */
+export function FieldGrid({ fields }: { fields: { label: string; value: React.ReactNode }[] }) {
   const visibles = fields.filter((f) => f.value);
   if (visibles.length === 0) return null;
   return (

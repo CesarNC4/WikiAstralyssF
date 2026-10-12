@@ -16,6 +16,7 @@ import { getNacionTerritorio } from "@/lib/queries/mapa";
 import { getGaleria } from "@/lib/queries/galeria";
 import { STATS_POR_ENTIDAD, tieneStats } from "@/lib/stats";
 import { estiloLocacion } from "@/lib/mapa";
+import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
 
 const DIPLO_COLOR: Record<string, string> = {
@@ -139,6 +140,7 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
             { label: "Terreno", value: n.terreno?.join(" · ") ?? null },
           ]}
         />
+        <FechasDeFicha entidad="naciones" id={n.id} />
 
         {/* Poder (radar) */}
         {tieneStats("naciones", n as Record<string, unknown>) && STATS_POR_ENTIDAD.naciones[0] && (

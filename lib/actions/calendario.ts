@@ -144,8 +144,9 @@ export async function guardarCalendario(entrada: CalendarioEntrada): Promise<Res
       return cambiadas;
     });
 
-    revalidatePath("/admin/taller/universo/calendario");
-    revalidatePath("/timeline");
+    revalidatePath("/admin/taller/universo/calendario", "layout");
+    // Las fechas se escriben distinto con otros meses o eras.
+    revalidatePath("/", "layout");
     return { ok: true, recalculadas };
   } catch (e) {
     if (e instanceof Rechazo) return { ok: false, error: e.message };

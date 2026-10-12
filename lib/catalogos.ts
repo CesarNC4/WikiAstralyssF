@@ -29,8 +29,7 @@ export const CATALOGOS = {
   clima: ["Templado", "Continental", "Árido", "Desértico", "Tropical", "Subtropical", "Polar", "Alpino", "Volcánico", "Pantanoso", "Oceánico", "Antaño mágico / Distorsionado", "Variable"],
   /** Naciones y regiones. Selección múltiple. */
   terreno: ["Montañoso", "Costero", "Boscoso", "Selvático", "Desértico", "Llanura", "Estepa", "Insular", "Pantanoso", "Volcánico", "Subterráneo", "Flotante / Aéreo", "Helado", "Mixto"],
-  /** Eras del mundo. Lords demonio, cronología y capítulos. Rellénalo con tu lore. */
-  era: ["Era Primordial", "Era de los Dioses", "Era Antigua", "Era Actual"],
+  // Las eras ya no son un catálogo: viven en la tabla `era` (Universo › Calendario).
   /** Libros de la obra. Capítulos y arcos. */
   libro: ["Astralys"],
   /** Capítulos y arcos. */

@@ -19,7 +19,6 @@ interface OrgRow {
   objetivo: string | null;
   ideologia: string | null;
   historia: string | null;
-  fundacion: string | null;
   liderazgo: string | null;
   miembrosDestacados: string | null;
   estructuraInterna: string | null;
@@ -108,7 +107,6 @@ export async function OrgFichaBody({
             { label: "Objetivo", value: org.objetivo },
             { label: "Ideología", value: org.ideologia },
             { label: "Historia", value: org.historia },
-            { label: "Fundación", value: org.fundacion },
             { label: "Liderazgo", value: org.liderazgo },
             { label: "Miembros destacados", value: org.miembrosDestacados },
             { label: "Estructura interna", value: org.estructuraInterna },

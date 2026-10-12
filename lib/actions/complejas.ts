@@ -61,7 +61,6 @@ export async function guardarOrganizacion(
     descripcion: nz(str(data.campos.descripcion)),
     historia: nz(str(data.campos.historia)),
     objetivo: nz(str(data.campos.objetivo)),
-    fundacion: nz(str(data.campos.fundacion)),
     ideologia: nz(str(data.campos.ideologia)),
     liderazgo: nz(str(data.campos.liderazgo)),
     miembrosDestacados: nz(str(data.campos.miembrosDestacados)),

@@ -10,6 +10,7 @@ import { notificarNuevaPublicacion } from "@/lib/discord";
 import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje";
 import { calcularPoderDeCombate } from "@/lib/poderCombate";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
+import { escribirFecha } from "@/lib/queries/fechas";
 
 function nombreCompleto(nombre: string, surname?: string | null): string {
   return [nombre, surname].filter(Boolean).join(" ").trim();
@@ -150,15 +151,19 @@ async function guardarHijos(
       const [ev] = await tx
         .insert(s.timelineEventos)
         .values({
-          fechaLore: e.nuevoEvento.fechaLore,
           titulo: e.nuevoEvento.titulo,
-          importancia: e.nuevoEvento.importancia,
           categoria: e.nuevoEvento.categoria,
-          era: e.nuevoEvento.era,
           estadoPublicacion: "borrador",
         })
         .returning({ id: s.timelineEventos.id });
       eventoId = ev.id;
+      const error = await escribirFecha(
+        tx,
+        { entidadTipo: "timeline", entidadId: ev.id, rol: "principal" },
+        e.nuevoEvento.fecha,
+        e.nuevoEvento.importante ?? false,
+      );
+      if (error) throw new Error(`Evento «${e.nuevoEvento.titulo}»: ${error}`);
     }
     if (!eventoId) continue;
     await tx.insert(s.personajeEvento).values({

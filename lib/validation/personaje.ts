@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FechaSchema } from "@/lib/validation/fecha";
 import { RANGOS } from "@/lib/poderCombate";
 
 /**
@@ -123,11 +124,10 @@ export const eventoSchema = z.object({
   timelineEventoId: idField,
   nuevoEvento: z
     .object({
-      fechaLore: z.string().trim().min(1, "La fecha del evento es obligatoria"),
+      fecha: FechaSchema,
       titulo: z.string().trim().min(1, "El título del evento es obligatorio"),
-      importancia: str,
+      importante: z.boolean().optional(),
       categoria: str,
-      era: str,
     })
     .nullable()
     .optional(),

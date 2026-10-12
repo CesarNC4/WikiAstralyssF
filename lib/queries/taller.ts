@@ -4,7 +4,7 @@ import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import type { Fecha } from "@/lib/fechas";
 import { etiquetaActo } from "@/lib/narrativa/numeracion";
-import { leerFecha } from "@/lib/queries/fechas";
+import { leerFecha, textosDeFechas } from "@/lib/queries/fechas";
 
 /**
  * Lecturas del taller del autor. Todo es material de autor: incluye borradores
@@ -171,13 +171,15 @@ export async function getTallerIndice(): Promise<TallerIndice> {
 export interface ActoEditor {
   acto: typeof s.actos.$inferSelect;
   fecha: Fecha | null;
+  importante: boolean;
   hojas: { id: number; titulo: string; estado: string | null }[];
   hilosAbre: { id: number; nombre: string }[];
   hilosCierra: { id: number; nombre: string }[];
-  eventos: { id: number; titulo: string; fechaLore: string }[];
+  /** `fecha`: la del evento ya escrita en años absolutos, o null si no tiene. */
+  eventos: { id: number; titulo: string; fecha: string | null }[];
   /** Para los selectores de "vincular": todos los hilos y eventos vivos. */
   todosHilos: { id: number; nombre: string }[];
-  todosEventos: { id: number; titulo: string; fechaLore: string }[];
+  todosEventos: { id: number; titulo: string; fecha: string | null }[];
 }
 
 export async function getActoEditor(id: number): Promise<ActoEditor | null> {
@@ -199,7 +201,7 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
       .from(s.hiloNarrativo)
       .where(and(isNull(s.hiloNarrativo.eliminadoEn), or(eq(s.hiloNarrativo.actoAperturaId, id), eq(s.hiloNarrativo.actoCierreId, id)))),
     db
-      .select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo, fechaLore: s.timelineEventos.fechaLore })
+      .select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo })
       .from(s.timelineEventos)
       .where(and(eq(s.timelineEventos.actoId, id), isNull(s.timelineEventos.eliminadoEn))),
     db
@@ -208,21 +210,25 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
       .where(isNull(s.hiloNarrativo.eliminadoEn))
       .orderBy(asc(s.hiloNarrativo.orden), asc(s.hiloNarrativo.nombre)),
     db
-      .select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo, fechaLore: s.timelineEventos.fechaLore })
+      .select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo })
       .from(s.timelineEventos)
       .where(isNull(s.timelineEventos.eliminadoEn))
       .orderBy(asc(s.timelineEventos.orden), asc(s.timelineEventos.id)),
   ]);
 
+  const textos = await textosDeFechas("timeline", todosEventos.map((e) => e.id), { corto: true });
+  const conFecha = (e: { id: number; titulo: string }) => ({ ...e, fecha: textos.get(e.id)?.absoluto ?? null });
+
   return {
     acto,
     fecha: fecha?.fecha ?? null,
+    importante: fecha?.importante ?? false,
     hojas,
     hilosAbre: hilos.filter((h) => h.abre === id).map(({ id, nombre }) => ({ id, nombre })),
     hilosCierra: hilos.filter((h) => h.cierra === id).map(({ id, nombre }) => ({ id, nombre })),
-    eventos,
+    eventos: eventos.map(conFecha),
     todosHilos,
-    todosEventos,
+    todosEventos: todosEventos.map(conFecha),
   };
 }
 
