@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
 import { USOS_DE_CATALOGO } from "@/lib/admin/catalogosMeta";
+import { renumerarCapitulos } from "@/lib/queries/narrativa";
 
 /**
  * Gestión de los catálogos: las listas que alimentan todos los desplegables.
@@ -25,6 +26,8 @@ export interface OpcionFila {
   grupo: string | null;
   valor: string;
   orden: number;
+  /** Datos extra según el catálogo (p. ej. `numerado` en `capitulo_tipo`). */
+  meta: Record<string, unknown> | null;
   /** Cuántas fichas usan este valor ahora mismo. Manda antes de borrar. */
   usos?: number;
 }
@@ -51,6 +54,7 @@ export async function listarCatalogo(campo: string): Promise<OpcionFila[]> {
       grupo: s.catalogos.grupo,
       valor: s.catalogos.valor,
       orden: s.catalogos.orden,
+      meta: s.catalogos.meta,
     })
     .from(s.catalogos)
     .where(eq(s.catalogos.campo, campo))
@@ -153,6 +157,7 @@ export async function renombrarOpcion(id: number, nuevoValor: string): Promise<{
   }
 
   await db.update(s.catalogos).set({ valor: v }).where(eq(s.catalogos.id, id));
+  await trasCambiarTipoDeCapitulo(fila.campo);
   revalidatePath("/admin/catalogos");
   return { fichas };
 }
@@ -208,8 +213,36 @@ export async function borrarOpcion(id: number): Promise<{ fichas: number }> {
   }
 
   await db.delete(s.catalogos).where(eq(s.catalogos.id, id));
+  await trasCambiarTipoDeCapitulo(fila.campo);
   revalidatePath("/admin/catalogos");
   return { fichas };
+}
+
+/**
+ * Los rótulos de los capítulos ("Capítulo 3", "Prólogo") dependen de su tipo:
+ * del nombre y de si numera. Cualquier cambio en `capitulo_tipo` los renumera.
+ */
+async function trasCambiarTipoDeCapitulo(campo: string) {
+  if (campo !== "capitulo_tipo") return;
+  await renumerarCapitulos(db);
+  revalidatePath("/capitulos");
+  revalidatePath("/admin/taller", "layout");
+}
+
+/**
+ * Marca si un tipo de capítulo consume número (spec del taller §3). Prólogo o
+ * Interludio no lo hacen: se rotulan con su nombre y no corren la cuenta.
+ */
+export async function cambiarNumerado(id: number, numerado: boolean): Promise<void> {
+  await assertAdmin();
+  const [fila] = await db.select().from(s.catalogos).where(eq(s.catalogos.id, id)).limit(1);
+  if (!fila || fila.campo !== "capitulo_tipo") return;
+  await db
+    .update(s.catalogos)
+    .set({ meta: { ...(fila.meta ?? {}), numerado } })
+    .where(eq(s.catalogos.id, id));
+  await trasCambiarTipoDeCapitulo(fila.campo);
+  revalidatePath("/admin/catalogos");
 }
 
 /** Para el verificador: qué columnas dice el código que alimenta cada catálogo. */

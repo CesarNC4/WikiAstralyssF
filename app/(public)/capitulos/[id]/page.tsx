@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const x = await getCapitulo(Number(id)).catch(() => null);
   if (!x) return { title: "Capítulo no encontrado" };
   return {
-    title: `Cap. ${x.numero} — ${x.titulo}`,
+    title: `${x.numero} — ${x.titulo}`,
     description: x.descripcion ?? undefined,
     openGraph: { title: x.titulo },
   };
@@ -36,7 +36,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       banner={null}
       imagen={null}
       titulo={x.titulo}
-      subtitulo={x.libro ? `${x.libro} · Capítulo ${x.numero}` : `Capítulo ${x.numero}`}
+      subtitulo={x.libro ? `${x.libro} · ${x.numero}` : x.numero}
       nombre={x.titulo}
       backHref="/capitulos"
       backLabel="Capítulos"

@@ -392,7 +392,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
             <div className="flex flex-wrap gap-2">
               {capitulos.map((c) => (
                 <span key={c.id} className="rounded-full border border-border-base bg-surface/40 px-3 py-1 text-sm text-fg-secondary">
-                  Cap. {c.numero} — {c.titulo}
+                  {c.numero} — {c.titulo}
                   {c.rol && <span className="text-fg-muted"> · {c.rol}</span>}
                 </span>
               ))}

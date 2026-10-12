@@ -449,9 +449,12 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasImage: false,
     hasBanner: false,
     hasFicha: true,
-    orderBy: "numero",
+    orderBy: "orden",
     fields: [
-      f("numero", "Número", "text", "Identidad", { required: true, hint: "admite '12', '12b' o 'Interludio'" }),
+      f("numero", "Número", "text", "Identidad", {
+        required: true,
+        hint: "Lo calcula el taller según el orden y el tipo: lo que escribas aquí se reemplaza al guardar.",
+      }),
       f("libro", "Libro", "combobox", "Identidad", { catalogCampo: "libro" }),
       f("tipo", "Tipo", "combobox", "Identidad", { catalogCampo: "capitulo_tipo" }),
       f("tipoTemporal", "Tipo temporal", "combobox", "Datos clave", { catalogCampo: "tipo_temporal" }),

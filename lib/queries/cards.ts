@@ -147,11 +147,11 @@ export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
         .select({ id: s.capitulos.id, numero: s.capitulos.numero, titulo: s.capitulos.titulo, libro: s.capitulos.libro, tipo: s.capitulos.tipo })
         .from(s.capitulos)
         .where(and(eq(s.capitulos.estadoPublicacion, "publicado"), isNull(s.capitulos.eliminadoEn)))
-        .orderBy(asc(s.capitulos.numero));
+        .orderBy(asc(s.capitulos.libro), asc(s.capitulos.orden), asc(s.capitulos.id));
       return rows.map((r) => ({
         id: r.id,
         titulo: r.titulo,
-        subtitulo: r.libro ? `${r.libro} · Cap. ${r.numero}` : `Capítulo ${r.numero}`,
+        subtitulo: r.libro ? `${r.libro} · ${r.numero}` : r.numero,
         imagenUrl: null,
         href: `/capitulos/${r.id}`,
         badge: r.tipo,

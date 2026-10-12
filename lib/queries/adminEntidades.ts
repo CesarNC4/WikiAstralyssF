@@ -26,8 +26,8 @@ export async function getOpcionesReferencia(target: RefTarget): Promise<OpcionRe
     const rows = await db
       .select({ id: capitulos.id, numero: capitulos.numero, titulo: capitulos.titulo })
       .from(capitulos)
-      .orderBy(asc(capitulos.numero));
-    return rows.map((r) => ({ id: r.id, label: `Cap. ${r.numero} — ${r.titulo}` }));
+      .orderBy(asc(capitulos.libro), asc(capitulos.orden), asc(capitulos.id));
+    return rows.map((r) => ({ id: r.id, label: `${r.numero} — ${r.titulo}` }));
   }
   if (target === "naciones") {
     const rows = await db.select({ id: naciones.id, label: naciones.nombre }).from(naciones).where(isNull(naciones.eliminadoEn)).orderBy(asc(naciones.nombre));

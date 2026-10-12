@@ -6,6 +6,7 @@ import { and, eq, getTableColumns, getTableName, inArray, sql } from "drizzle-or
 import { db } from "@/db/client";
 import { assertAdmin } from "@/lib/actions/auth";
 import { notificarNuevaPublicacion } from "@/lib/discord";
+import { renumerarCapitulos } from "@/lib/queries/narrativa";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { REL_TABLES } from "@/lib/admin/relacionesTables";
@@ -123,6 +124,9 @@ export async function guardarEntidad(
   }
 
   await purgarEnSegundoPlano();
+  // El número de capítulo lo pone el taller (spec §3): se recalcula aunque
+  // aquí se haya escrito otro. Este editor desaparece en la Fase 4.
+  if (key === "capitulos") await renumerarCapitulos(db).catch((e) => console.error("[guardarEntidad] renumerar", e));
   revalidar(config.route, savedId);
   if (notificar) {
     await notificarNuevaPublicacion({

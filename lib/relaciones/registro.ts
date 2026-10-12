@@ -191,13 +191,8 @@ export const RELACIONES: RelacionDef[] = [
     campos: [NOTA],
   },
   // ── Narrativa ─────────────────────────────────────────────────────────────
-  {
-    id: "capitulo_personaje",
-    medio: "tabla",
-    a: { entidad: "capitulos", titulo: "Personajes", icon: "Users", orden: 20 },
-    b: { entidad: "personajes", titulo: "Capítulos", icon: "BookOpen", orden: 42 },
-    campos: [{ name: "rolEnCapitulo", label: "Rol en el capítulo", tipo: "text", destacado: true }],
-  },
+  // Los personajes de un capítulo ya no se vinculan a mano: salen de sus actos
+  // (spec del taller §3). Por eso no hay relación capítulo↔personaje.
   {
     id: "personaje_cancion",
     medio: "tabla",
@@ -212,6 +207,30 @@ export const RELACIONES: RelacionDef[] = [
     b: { entidad: "canciones", titulo: "Capítulos", icon: "BookOpen", orden: 21 },
     campos: [{ name: "contexto", label: "Contexto", tipo: "text", destacado: true }],
   },
+
+  // ── Actos (spec del taller §4) ────────────────────────────────────────────
+  // Sin bloque público por ahora en ningún lado: el acto aún no tiene ficha y
+  // el capítulo pinta estos datos agregados. La Fase 5 decide su presentación.
+  ...(
+    [
+      ["acto_pov", "personajes", "POV", "Users", "Actos como POV", "BookOpen"],
+      ["acto_personaje", "personajes", "Personajes que aparecen", "Users", "Actos en los que aparece", "BookOpen"],
+      ["acto_nacion", "naciones", "Naciones", "Globe2", "Actos", "BookOpen"],
+      ["acto_region", "regiones", "Regiones", "MapPinned", "Actos", "BookOpen"],
+      ["acto_locacion", "locaciones", "Locaciones", "MapPin", "Actos", "BookOpen"],
+      ["acto_arco", "arcos", "Arcos de trama", "GitBranch", "Actos", "BookOpen"],
+      ["acto_cancion", "canciones", "Canciones", "Music", "Actos", "BookOpen"],
+    ] as const
+  ).map(
+    ([id, entB, tituloA, iconA, tituloB, iconB], i): RelacionDef => ({
+      id,
+      medio: "vinculo",
+      relacion: id,
+      a: { entidad: "actos", titulo: tituloA, icon: iconA, orden: 20 + i, sinPublico: true },
+      b: { entidad: entB, titulo: tituloB, icon: iconB, orden: 80 + i, sinPublico: true },
+      campos: [NOTA],
+    }),
+  ),
 
   // ── Elementos (catálogo unificado) ────────────────────────────────────────
   // Una entrada por entidad porque la tabla es polimórfica: comparten tabla y
@@ -360,6 +379,7 @@ export const RELACIONES: RelacionDef[] = [
       ["mineral_moneda", "minerales", "valorMonedaId", "economia", "Moneda de referencia", "Coins", "Minerales valorados", "Gem"],
       ["mision_encargante", "misiones", "personajeId", "personajes", "Encargada por", "UserRound", "Misiones que encarga", "Swords"],
       ["evento_capitulo", "timeline", "capituloId", "capitulos", "Capítulo", "BookOpen", "Eventos del capítulo", "Clock"],
+      ["evento_acto", "timeline", "actoId", "actos", "Acto", "BookOpen", "Eventos del acto", "Clock"],
       ["artefacto_propietario", "artefactos", "propietarioId", "personajes", "Propietario actual", "UserRound", "Objetos en propiedad", "Sword"],
       ["nacimiento_nacion", "personajes", "lugarNacimientoNacionId", "naciones", "Nació en (nación)", "Globe2", "Nacidos aquí", "Star"],
       ["nacimiento_region", "personajes", "lugarNacimientoRegionId", "regiones", "Nació en (región)", "MapPinned", "Nacidos aquí", "Star"],

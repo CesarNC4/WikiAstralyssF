@@ -20,13 +20,6 @@ export const personajeObjeto = pgTable("personaje_objeto", {
   orden: integer("orden").notNull().default(0),
 });
 
-export const capituloPersonaje = pgTable("capitulo_personaje", {
-  id: serial("id").primaryKey(),
-  capituloId: integer("capitulo_id").notNull(),
-  personajeId: integer("personaje_id").notNull(),
-  rolEnCapitulo: varchar("rol_en_capitulo"),
-});
-
 export const personajeNacion = pgTable("personaje_nacion", {
   id: serial("id").primaryKey(),
   personajeId: integer("personaje_id").notNull(),

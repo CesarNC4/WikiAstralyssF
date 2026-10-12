@@ -17,7 +17,6 @@ export const BLOQUES_A_MANO: Record<string, string[]> = {
     "org_jerarquia:b",
     "familia_jerarquia:b",
     "relaciones:a",
-    "capitulo_personaje:b",
     "personaje_evento:a",
     "personaje_objeto:a",
     "personaje_cancion:a",

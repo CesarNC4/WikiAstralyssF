@@ -7,6 +7,7 @@ import { AccordionSection } from "@/components/admin/ui";
 import { TextInput } from "@/components/admin/fields";
 import {
   borrarOpcion,
+  cambiarNumerado,
   crearOpcion,
   listarCatalogo,
   renombrarOpcion,
@@ -113,6 +114,15 @@ function CampoBloque({ resumen }: { resumen: CampoResumen }) {
     });
   };
 
+  /** Solo `capitulo_tipo`: si el tipo consume número de capítulo. */
+  const numerar = (fila: OpcionFila, numerado: boolean) => {
+    setFilas((prev) => prev?.map((f) => (f.id === fila.id ? { ...f, meta: { ...(f.meta ?? {}), numerado } } : f)) ?? null);
+    start(async () => {
+      await cambiarNumerado(fila.id, numerado);
+      toast(numerado ? `«${fila.valor}» numera. Capítulos renumerados.` : `«${fila.valor}» ya no numera. Capítulos renumerados.`, "success");
+    });
+  };
+
   const mover = (i: number, delta: number) => {
     if (!filas) return;
     const j = i + delta;
@@ -158,6 +168,20 @@ function CampoBloque({ resumen }: { resumen: CampoResumen }) {
                     onBlur={(e) => renombrar(f, e.target.value)}
                     className="w-full rounded-lg border border-border-base bg-surface px-2 py-1.5 text-sm text-fg outline-none focus:border-border-glow"
                   />
+                  {resumen.campo === "capitulo_tipo" && (
+                    <label
+                      className="flex shrink-0 items-center gap-1 text-xs text-fg-muted"
+                      title="Si está marcado, los capítulos de este tipo consumen número (Capítulo 1, 2…). Si no, se rotulan con el nombre del tipo."
+                    >
+                      <input
+                        type="checkbox"
+                        checked={f.meta?.numerado !== false}
+                        onChange={(e) => numerar(f, e.target.checked)}
+                        disabled={pending}
+                      />
+                      Numera
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={() => mover(i, -1)}

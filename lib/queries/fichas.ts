@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, asc, desc, isNull } from "drizzle-orm";
+import { and, eq, asc, desc, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { aplicarVisibilidad } from "@/lib/queries/visibilidad";
@@ -163,14 +163,48 @@ export async function getMisionesDePersonaje(personajeId: number) {
     .orderBy(asc(s.misiones.nombre));
 }
 
-/** Capítulos en los que aparece un personaje (reverso de capitulo_personaje). */
+/**
+ * Capítulos en los que aparece un personaje. Ya no se vincula a mano: sale de
+ * los actos donde es POV o aparece (spec del taller §3). Solo cuentan los actos
+ * publicados de capítulos publicados, que son los que el público puede ver.
+ */
 export async function getCapitulosDePersonaje(personajeId: number) {
-  return db
-    .select({ id: s.capitulos.id, numero: s.capitulos.numero, titulo: s.capitulos.titulo, rol: s.capituloPersonaje.rolEnCapitulo })
-    .from(s.capituloPersonaje)
-    .innerJoin(s.capitulos, eq(s.capituloPersonaje.capituloId, s.capitulos.id))
-    .where(and(eq(s.capituloPersonaje.personajeId, personajeId), eq(s.capitulos.estadoPublicacion, "publicado")))
-    .orderBy(asc(s.capitulos.numero));
+  const filas = await db
+    .select({
+      id: s.capitulos.id,
+      numero: s.capitulos.numero,
+      titulo: s.capitulos.titulo,
+      libro: s.capitulos.libro,
+      orden: s.capitulos.orden,
+      relacion: s.vinculo.relacion,
+    })
+    .from(s.vinculo)
+    .innerJoin(s.actos, eq(s.vinculo.origenId, s.actos.id))
+    .innerJoin(s.capitulos, eq(s.actos.capituloId, s.capitulos.id))
+    .where(
+      and(
+        eq(s.vinculo.origenTipo, "actos"),
+        inArray(s.vinculo.relacion, ["acto_pov", "acto_personaje"]),
+        eq(s.vinculo.destinoTipo, "personajes"),
+        eq(s.vinculo.destinoId, personajeId),
+        eq(s.actos.estadoPublicacion, "publicado"),
+        isNull(s.actos.eliminadoEn),
+        eq(s.capitulos.estadoPublicacion, "publicado"),
+        isNull(s.capitulos.eliminadoEn),
+      ),
+    );
+
+  // Una fila por capítulo; si en algún acto es POV, se dice.
+  const porId = new Map<number, { id: number; numero: string; titulo: string; libro: string | null; orden: number; rol: string | null }>();
+  for (const f of filas) {
+    const ya = porId.get(f.id);
+    const pov = f.relacion === "acto_pov";
+    if (!ya) porId.set(f.id, { id: f.id, numero: f.numero, titulo: f.titulo, libro: f.libro, orden: f.orden, rol: pov ? "POV" : null });
+    else if (pov) ya.rol = "POV";
+  }
+  return [...porId.values()].sort(
+    (a, b) => (a.libro ?? "").localeCompare(b.libro ?? "") || a.orden - b.orden || a.id - b.id,
+  );
 }
 
 /** Organizaciones y razas vinculadas a una nación (§ punto 3). */
@@ -530,6 +564,8 @@ export async function getCapitulosDeArco(arcoId: number) {
       numero: s.capitulos.numero,
       titulo: s.capitulos.titulo,
       libro: s.capitulos.libro,
+      // En la selección porque SELECT DISTINCT exige que lo que ordena esté en ella.
+      orden: s.capitulos.orden,
     })
     .from(s.tramaHojas)
     .innerJoin(s.capitulos, eq(s.tramaHojas.capituloId, s.capitulos.id))
@@ -540,7 +576,7 @@ export async function getCapitulosDeArco(arcoId: number) {
         isNull(s.capitulos.eliminadoEn),
       ),
     )
-    .orderBy(asc(s.capitulos.numero));
+    .orderBy(asc(s.capitulos.libro), asc(s.capitulos.orden), asc(s.capitulos.id));
 }
 
 export async function getVisibleIds(

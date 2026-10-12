@@ -61,7 +61,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 href={`/capitulos/${c.id}`}
                 className="rounded-xl border border-border-base bg-surface/40 px-3 py-2 text-sm text-fg hover:border-border-glow"
               >
-                <span className="text-fg-muted">Cap. {c.numero}</span> · {c.titulo}
+                <span className="text-fg-muted">{c.numero}</span> · {c.titulo}
               </Link>
             ))}
           </div>

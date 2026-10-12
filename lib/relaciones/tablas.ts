@@ -43,6 +43,9 @@ export const ENTIDAD_INFO: Record<string, EntidadInfo> = {
   conceptos: { tabla: s.conceptos, label: "nombre", imagen: "imagenUrl", estado: true, papelera: true, ruta: "/conceptos" },
   magia: { tabla: s.magiaFundamentos, label: "nombre", imagen: "imagenUrl", estado: true, papelera: true, ruta: "/magia" },
   capitulos: { tabla: s.capitulos, label: "titulo", detalle: "numero", estado: true },
+  // Sin `ruta` hasta la Fase 5, cuando el acto tenga ficha pública.
+  actos: { tabla: s.actos, label: "nombre", estado: true, papelera: true },
+  arcos: { tabla: s.tramaArcos, label: "nombre", estado: true, papelera: true, ruta: "/arcos" },
   canciones: { tabla: s.canciones, label: "titulo", detalle: "artista", imagen: "imagenUrl", estado: true },
   gremio: { tabla: s.gremio, label: "nombre", imagen: "imagenUrl", ruta: "/gremio" },
   elementos: { tabla: s.elementos, label: "nombre", detalle: "slug" },
@@ -98,7 +101,6 @@ export const TABLAS_REL: Record<string, TablaRel> = {
   bestia_drop: { tabla: s.bestiaDrop, colA: "bestiaId", colB: "mineralId", pk: "id", orden: "orden" },
   bestia_relacion: { tabla: s.bestiaRelacion, colA: "bestiaId", colB: "relacionadaId", pk: "id" },
   mineral_artefacto: { tabla: s.mineralArtefacto, colA: "mineralId", colB: "artefactoId", pk: "id" },
-  capitulo_personaje: { tabla: s.capituloPersonaje, colA: "capituloId", colB: "personajeId", pk: "id" },
   personaje_cancion: { tabla: s.personajeCancion, colA: "personajeId", colB: "cancionId", pk: "id" },
   capitulo_cancion: { tabla: s.capituloCancion, colA: "capituloId", colB: "cancionId", pk: "id" },
 };

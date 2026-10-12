@@ -106,6 +106,8 @@ export const timelineEventos = pgTable("timeline_eventos", {
   /** Ano de lore, para ordenar de verdad la cronologia. */
   anioLore: integer("anio_lore"),
   capituloId: integer("capitulo_id"),
+  /** Acto opcional dentro del capítulo (§14). */
+  actoId: integer("acto_id"),
   orden: integer("orden").notNull().default(0),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, text, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 /** Dominio Admin: notas privadas del autor. */
 export const notaPrivada = pgTable("nota_privada", {
@@ -32,4 +32,9 @@ export const catalogos = pgTable("catalogos", {
   valor: varchar("valor").notNull(),
   grupo: varchar("grupo"),
   orden: integer("orden").notNull().default(0),
+  /**
+   * Datos extra de una opción, según el catálogo: `{ numerado: false }` en
+   * `capitulo_tipo` para los tipos que no consumen número de capítulo.
+   */
+  meta: jsonb("meta").$type<Record<string, unknown>>(),
 });

@@ -97,6 +97,23 @@ de mes) y el ensayo de conversión cuadra con lo que espera el autor.
 **Objetivo:** el schema y la lógica de capítulos y actos según §3, §4 y §7, sin
 pantallas todavía.
 
+> **Estado (2026-10-11):** hecha y aplicada. Ajustes respecto a lo previsto:
+> - La intro del capítulo es la columna `descripcion` que ya existía, no una
+>   columna `intro` nueva.
+> - `catalogos.meta` (jsonb) en lugar de una columna `numerado`: servirá también
+>   para color, icono y estilo de las categorías de relación (Fase 8).
+> - El rótulo del capítulo se **guarda** en `numero` (lo reescribe el servidor) para
+>   que buscador, fichas y Atlas lo sigan leyendo igual. Los tipos sin número se
+>   rotulan con su nombre, con ordinal romano si se repiten en el libro
+>   ("Interludio II").
+> - Hilos: `acto_apertura_id` / `acto_cierre_id`, para abrir o cerrar un hilo en
+>   un acto (§4).
+> - Las relaciones del acto van por `vinculo` (sin migración) y sin bloque público
+>   hasta la Fase 5. "Capítulos en los que aparece" del personaje ya sale de los
+>   actos.
+> - El admin genérico de capítulos renumera al guardar hasta que desaparezca
+>   (Fase 4).
+
 1. **Migración `migrate-taller-narrativa.mjs`:**
    - `estructura_plantilla(id, nombre, predeterminada)` y
      `estructura_fase(id, plantilla_id, orden, nombre, abreviatura, color, guia)`;
