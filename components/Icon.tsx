@@ -161,6 +161,9 @@ const REGISTRY: Record<string, LucideIcon> = {
   ChevronDown,
 };
 
+/** Nombres que entiende `Icon`, para elegir uno desde el panel. */
+export const NOMBRES_ICONO = Object.keys(REGISTRY).sort();
+
 export function Icon({
   name,
   className,

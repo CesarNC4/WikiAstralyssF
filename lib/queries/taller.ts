@@ -416,3 +416,69 @@ export async function getLugaresUsados(actoIds: number[]): Promise<{ tipo: strin
   }
   return out.sort((a, b) => b.actos - a.actos || a.nombre.localeCompare(b.nombre));
 }
+
+// ── Universo › Personajes (§10) ────────────────────────────────────────────
+
+export interface PersonajeUniverso {
+  id: number;
+  nombre: string;
+  titulo: string | null;
+  imagenUrl: string | null;
+  estadoVital: string | null;
+  estadoPublicacion: string;
+  razas: number[];
+  naciones: number[];
+  organizaciones: number[];
+}
+
+/**
+ * Todos los personajes fuera de la papelera, con sus razas, naciones y
+ * organizaciones para filtrar en el cliente, y las listas de esas fichas.
+ */
+export async function getPersonajesUniverso() {
+  const [pjs, razas, naciones, orgs, pr, pn, po] = await Promise.all([
+    db
+      .select({
+        id: s.personajes.id,
+        nombre: s.personajes.nombre,
+        surname: s.personajes.surname,
+        titulo: s.personajes.titulo,
+        imagenUrl: s.personajes.imagenUrl,
+        estadoVital: s.personajes.estadoVital,
+        estadoPublicacion: s.personajes.estadoPublicacion,
+      })
+      .from(s.personajes)
+      .where(isNull(s.personajes.eliminadoEn))
+      .orderBy(asc(s.personajes.nombre)),
+    db.select({ id: s.razas.id, nombre: s.razas.nombre }).from(s.razas).where(isNull(s.razas.eliminadoEn)).orderBy(asc(s.razas.nombre)),
+    db.select({ id: s.naciones.id, nombre: s.naciones.nombre }).from(s.naciones).where(isNull(s.naciones.eliminadoEn)).orderBy(asc(s.naciones.nombre)),
+    db
+      .select({ id: s.organizaciones.id, nombre: s.organizaciones.nombre })
+      .from(s.organizaciones)
+      .where(isNull(s.organizaciones.eliminadoEn))
+      .orderBy(asc(s.organizaciones.nombre)),
+    db.select({ p: s.personajeRaza.personajeId, x: s.personajeRaza.razaId }).from(s.personajeRaza),
+    db.select({ p: s.personajeNacion.personajeId, x: s.personajeNacion.nacionId }).from(s.personajeNacion),
+    db.select({ p: s.orgJerarquia.personajeId, x: s.orgJerarquia.organizacionId }).from(s.orgJerarquia),
+  ]);
+
+  const agrupar = (filas: { p: number | null; x: number }[]) => {
+    const m = new Map<number, number[]>();
+    for (const f of filas) if (f.p != null) (m.get(f.p) ?? m.set(f.p, []).get(f.p)!).push(f.x);
+    return m;
+  };
+  const [mr, mn, mo] = [agrupar(pr), agrupar(pn), agrupar(po)];
+
+  const personajes: PersonajeUniverso[] = pjs.map((p) => ({
+    id: p.id,
+    nombre: [p.nombre, p.surname].filter(Boolean).join(" "),
+    titulo: p.titulo,
+    imagenUrl: p.imagenUrl,
+    estadoVital: p.estadoVital,
+    estadoPublicacion: p.estadoPublicacion,
+    razas: mr.get(p.id) ?? [],
+    naciones: mn.get(p.id) ?? [],
+    organizaciones: [...new Set(mo.get(p.id) ?? [])],
+  }));
+  return { personajes, razas, naciones, organizaciones: orgs };
+}

@@ -6,6 +6,7 @@ import * as s from "@/db/schema";
 import { relacionesDelAtlas, CUALQUIERA } from "@/lib/relaciones/registro";
 import { tablaDe } from "@/lib/relaciones/tablas";
 import { entityByKey } from "@/lib/entities";
+import { COLOR_ENTIDAD as COLOR } from "@/lib/relaciones/colores";
 
 /**
  * Grafo global del mundo, construido a partir del registro de relaciones.
@@ -44,29 +45,6 @@ export interface AtlasTipoMeta {
   color: string;
   icon: string;
 }
-
-/** Color por entidad. Los tokens del diseño son clases; aquí hace falta el hex. */
-const COLOR: Record<string, string> = {
-  personajes: "#8b7bff",
-  naciones: "#7b5cff",
-  razas: "#9b8cff",
-  bestias: "#ef6f6f",
-  minerales: "#6fc3d6",
-  organizaciones: "#5b8def",
-  familias: "#e0a44a",
-  artefactos: "#d8a05f",
-  locaciones: "#5fb98f",
-  regiones: "#4f9d7e",
-  misiones: "#e6b450",
-  conceptos: "#c08bff",
-  magia: "#a78bfa",
-  lore: "#8ab4f8",
-  demonios: "#e05252",
-  timeline: "#9aa3b2",
-  capitulos: "#8ab4f8",
-  actos: "#b9a6ff",
-  arcos: "#c08bff",
-};
 
 type Cols = Record<string, PgColumn>;
 const columna = (t: PgTable, clave: string) => (getTableColumns(t) as unknown as Cols)[clave].name;

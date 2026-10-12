@@ -4,7 +4,7 @@ import { getTableColumns } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
-import { rutaEnTaller } from "@/lib/admin/taller";
+import { rutaEditor } from "@/lib/admin/taller";
 import type { RefSuceso, Suceso } from "@/lib/cronologia";
 import {
   eraDeAnio,
@@ -42,14 +42,6 @@ interface Ficha {
   extra: Record<string, unknown>;
 }
 
-function hrefAdmin(tipo: string, id: number): string {
-  const enTaller = rutaEnTaller(tipo, { id });
-  if (enTaller) return enTaller;
-  if (tipo === "timeline") return `/admin/timeline/${id}/editar`;
-  if (tipo === "gremio") return "/admin/gremio";
-  return `/admin/${tipo}/${id}/editar`;
-}
-
 /** Columnas extra que hacen falta de cada tipo, además del nombre. */
 const EXTRA: Record<string, string[]> = {
   timeline: ["descripcion", "categoria", "importancia", "capituloId", "actoId"],
@@ -80,7 +72,7 @@ async function cargarFichas(tipo: string, ids: number[], publico: boolean): Prom
   for (const f of filas) {
     const id = f.id as number;
     let href: string | null;
-    if (!publico) href = hrefAdmin(tipo, id);
+    if (!publico) href = rutaEditor(tipo, id);
     else if (tipo === "lore") href = f.detalle ? `/lore/${f.detalle}` : null;
     else if (tipo === "gremio") href = "/gremio";
     else if (tipo === "timeline") href = null;

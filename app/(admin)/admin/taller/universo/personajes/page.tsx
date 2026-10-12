@@ -1,10 +1,11 @@
 import { assertAdmin } from "@/lib/actions/auth";
+import { PersonajesUniverso } from "@/components/taller/universo/PersonajesUniverso";
+import { getPersonajesUniverso } from "@/lib/queries/taller";
+
+export const dynamic = "force-dynamic";
 
 export default async function UniversoPersonajesPage() {
   await assertAdmin();
-  return (
-    <div className="flex h-[50vh] items-center justify-center">
-      <p className="text-sm italic text-fg-muted">Los personajes del Universo llegan en la Fase 8 del plan del taller.</p>
-    </div>
-  );
+  const datos = await getPersonajesUniverso();
+  return <PersonajesUniverso {...datos} />;
 }

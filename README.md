@@ -125,6 +125,11 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   - *Estructura*: plantillas propias y un tablero de fases por capítulo.
   - *Trama*, *Estadísticas*, *Papelera* y *Universo > Calendario* (vista por
     año con alta de eventos, y configuración de meses, semana y eras).
+  - *Universo > Personajes* (cuadrícula con filtros) y *Universo > Mapa de
+    relaciones*: grafo 2D editable donde se unen dos fichas pulsándolas y se
+    edita o borra una conexión pulsando su línea. Las relaciones entre
+    personajes se pintan por categorías (color, icono y línea) que se definen en
+    `/admin/catalogos`.
 - **Numeración automática**: los capítulos se numeran por libro (los tipos sin
   número se marcan en el catálogo `capitulo_tipo`) y los actos en romanos.
 - **El capítulo se calcula de sus actos**: personajes, lugares, canciones y

@@ -26,3 +26,12 @@ export function rutaEnTaller(entidad: string, destino: Destino): string | null {
       return destino === "nuevo" ? `/admin/taller/trama/${entidad}/nuevo` : `/admin/taller/trama?vista=${entidad}`;
   }
 }
+
+/** Dónde se edita cualquier ficha: el taller, un editor propio o el genérico. */
+export function rutaEditor(entidad: string, id: number): string {
+  const enTaller = rutaEnTaller(entidad, { id });
+  if (enTaller) return enTaller;
+  if (entidad === "timeline") return `/admin/timeline/${id}/editar`;
+  if (entidad === "gremio") return "/admin/gremio";
+  return `/admin/${entidad}/${id}/editar`;
+}

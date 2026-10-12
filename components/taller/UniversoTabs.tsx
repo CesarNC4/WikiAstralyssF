@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const PESTANAS = [
   { href: "/admin/taller/universo/personajes", label: "Personajes" },
+  { href: "/admin/taller/universo/mapa", label: "Mapa de relaciones" },
   { href: "/admin/taller/universo/calendario", label: "Calendario" },
 ];
 

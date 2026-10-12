@@ -241,6 +241,15 @@ derivada devuelve lo esperado sobre los 2 capítulos reales.
 
 ## Fase 8 — Universo: personajes y mapa de relaciones del taller
 
+> **Estado (2026-10-11):** hecha, sin migración. Las categorías son opciones del
+> catálogo `relacion_categoria` con color, icono y estilo en `meta`, y cada tipo
+> de `tipo_relacion` apunta a la suya con `meta.categoriaId` (por id, así
+> renombrar no rompe nada). Se editan en un bloque propio arriba de
+> `/admin/catalogos`. El mapa (`/admin/taller/universo/mapa`) sale del registro
+> en una sentencia (`lib/queries/mapaRelaciones.ts`), incluye las referencias
+> simples y todas las fichas fuera de la papelera, y escribe con las mismas
+> acciones que el panel de conexiones. Dependencia: `react-force-graph-2d@1.29.1`.
+
 1. **Universo > Personajes:** cuadrícula con filtros; cada personaje enlaza a su
    editor.
 2. **Categorías de relación** en `/admin/catalogos`: nombre, color, icono y estilo
