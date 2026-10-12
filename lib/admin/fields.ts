@@ -26,7 +26,9 @@ export type RefTarget =
   | "razas"
   | "monedas"
   | "regiones"
-  | "locaciones";
+  | "locaciones"
+  | "actos"
+  | "arcos";
 
 export interface FieldDef {
   /** Clave de columna en Drizzle (camelCase). */
@@ -521,7 +523,9 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: false,
     orderBy: "orden",
     fields: [
+      f("arcoId", "Arco", "reference", "Identidad", { refTarget: "arcos" }),
       f("capituloId", "Capítulo", "reference", "Identidad", { refTarget: "capitulos" }),
+      f("actoId", "Acto", "reference", "Identidad", { refTarget: "actos" }),
       f("orden", "Orden", "number", "Identidad"),
       f("estado", "Estado", "combobox", "Identidad", { catalogCampo: "estado_narrativo" }),
       f("conflictoCentral", "Conflicto central", "textarea", "Contenido", { rows: 4 }),
@@ -545,8 +549,11 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     fields: [
       f("estado", "Estado", "combobox", "Identidad", { catalogCampo: "estado_narrativo" }),
       f("orden", "Orden", "number", "Identidad"),
+      f("arcoId", "Arco", "reference", "Identidad", { refTarget: "arcos" }),
       f("capituloAperturaId", "Capítulo de apertura", "reference", "Datos clave", { refTarget: "capitulos" }),
+      f("actoAperturaId", "Acto de apertura", "reference", "Datos clave", { refTarget: "actos" }),
       f("capituloCierreId", "Capítulo de cierre", "reference", "Datos clave", { refTarget: "capitulos" }),
+      f("actoCierreId", "Acto de cierre", "reference", "Datos clave", { refTarget: "actos" }),
       f("descripcion", "Descripción", "textarea", "Contenido", { rows: 5 }),
       f("personajesInvolucrados", "Personajes involucrados", "textarea", "Contenido"),
       f("pistasEntregadas", "Pistas entregadas", "textarea", "Contenido"),

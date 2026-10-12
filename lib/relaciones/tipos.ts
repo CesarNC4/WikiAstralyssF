@@ -125,5 +125,7 @@ export interface FilaVinculo {
   detalle?: string | null;
   /** Estado de publicación del otro extremo, para avisar en el admin. */
   estado?: string | null;
+  /** Ruta pública de la ficha del otro extremo, si la tiene. */
+  ruta?: string | null;
   campos: Record<string, string>;
 }

@@ -52,6 +52,6 @@ function aItem(fila: FilaVinculo, objetivo: string): LinkGridItem | null {
     nombre: fila.label,
     img: fila.imagenUrl ?? null,
     nota: nota ?? fila.detalle ?? null,
-    href: `${meta.route}/${fila.objetivoId}`,
+    href: fila.ruta ?? `${meta.route}/${fila.objetivoId}`,
   };
 }

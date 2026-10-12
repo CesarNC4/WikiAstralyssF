@@ -6,7 +6,7 @@ import { ENTITY_LIST } from "@/lib/entities";
 export const revalidate = 3600; // ISR (§4)
 
 export default function HomePage() {
-  const sections = ENTITY_LIST.filter((e) => e.key !== "mapa" && e.key !== "timeline");
+  const sections = ENTITY_LIST.filter((e) => e.key !== "mapa" && e.key !== "timeline" && !e.sinSeccion);
 
   return (
     <div className="relative">

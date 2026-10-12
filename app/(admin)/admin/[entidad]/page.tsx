@@ -1,5 +1,6 @@
+import { rutaEnTaller } from "@/lib/admin/taller";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { EntidadTable } from "@/components/admin/EntidadTable";
@@ -18,6 +19,9 @@ export default async function EntidadListPage({
 }) {
   await assertAdmin();
   const { entidad } = await params;
+  // Lo narrativo se edita en el taller (spec §2).
+  const enTaller = rutaEnTaller(entidad, "lista");
+  if (enTaller) redirect(enTaller);
   const config = getEntidadConfig(entidad);
   if (!config) notFound();
 

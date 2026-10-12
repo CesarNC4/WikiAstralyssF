@@ -22,6 +22,7 @@ export type EntityKey =
   | "lore"
   | "misiones"
   | "capitulos"
+  | "actos"
   | "arcos"
   | "demonios"
   | "artefactos"
@@ -48,6 +49,11 @@ export interface EntityMeta {
   tagline: string;
   /** ¿Tiene página índice navegable con cards? */
   hasIndex: boolean;
+  /**
+   * No tiene sección propia: sus fichas viven dentro de otra (el acto, en su
+   * capítulo). No sale en la portada ni como sección del sitemap.
+   */
+  sinSeccion?: boolean;
 }
 
 export const ENTITIES: Record<EntityKey, EntityMeta> = {
@@ -248,6 +254,18 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     group: "mundo",
     tagline: "Armas y reliquias de poder legendario.",
     hasIndex: true,
+  },
+  actos: {
+    key: "actos",
+    plural: "Actos",
+    singular: "Acto",
+    route: "/capitulos",
+    accent: "text-primary",
+    icon: "BookOpen",
+    group: "lore",
+    tagline: "Los actos de cada capítulo.",
+    hasIndex: false,
+    sinSeccion: true,
   },
   economia: {
     key: "economia",

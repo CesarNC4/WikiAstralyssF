@@ -30,6 +30,7 @@ const COLOR: Record<string, string> = {
   demonios: "#e05252",
   timeline: "#9aa3b2",
   capitulos: "#8ab4f8",
+  actos: "#b9a6ff",
   arcos: "#c08bff",
 };
 
@@ -75,7 +76,7 @@ export async function MiniGrafoFicha({
       grupo.nodos.push({
         id: clave,
         label: fila.label,
-        href: `${meta.route}/${fila.objetivoId}`,
+        href: fila.ruta ?? `${meta.route}/${fila.objetivoId}`,
         img: fila.imagenUrl,
       });
       total++;

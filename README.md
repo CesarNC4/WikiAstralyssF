@@ -115,6 +115,23 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - Dominio narrativo gestionable: capítulos, actos, arcos, hojas de trama e hilos.
   Capítulos y arcos tienen ficha pública e índice propio; las hojas y los hilos se
   quedan en el panel porque guardan giros y notas de autor.
+- **Taller del autor** (`/admin/taller`), a pantalla completa y solo para
+  escritorio, es el único sitio donde se editan capítulos, actos, arcos, hojas e
+  hilos. Ver [docs/taller-del-autor.md](./docs/taller-del-autor.md) y
+  [docs/taller-plan.md](./docs/taller-plan.md).
+  - *Escribe*: los actos, con POV, personajes, lugares, arcos, canciones, fecha,
+    hojas, hilos y eventos.
+  - *Capítulos*: el árbol libro > capítulo > acto, con arrastre.
+  - *Estructura*: plantillas propias y un tablero de fases por capítulo.
+  - *Trama*, *Estadísticas*, *Papelera* y *Universo > Calendario*.
+- **Numeración automática**: los capítulos se numeran por libro (los tipos sin
+  número se marcan en el catálogo `capitulo_tipo`) y los actos en romanos.
+- **El capítulo se calcula de sus actos**: personajes, lugares, canciones y
+  fechas. Cada acto tiene su ficha pública en `/capitulos/<id>/actos/<id>` y
+  entra en el buscador, el sitemap, el feed y el Atlas.
+- **Fechas del lore estructuradas** (`fecha_lore`, `lib/fechas/`): eje absoluto
+  con el año 0 en el inicio de la trama, eras, calendario propio con días fuera
+  de mes.
 - Canciones y catálogo de elementos gestionables desde el panel.
 - Feed RSS en `/feed.xml` con las últimas entidades publicadas.
 - PWA instalable con service worker propio (sin dependencias): navegación sin

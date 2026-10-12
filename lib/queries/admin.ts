@@ -22,6 +22,8 @@ interface DashEntity {
   href: string;
   /** Icono (lucide) — coincide con el sidebar/config de entidad. */
   icon: string;
+  /** Editor de una fila, si no es `${href}/${id}/editar` (las del taller). */
+  editar?: (id: number) => string;
 }
 
 /**
@@ -45,6 +47,9 @@ export const DASH_ENTITIES: DashEntity[] = [
   { key: "artefactos", label: "Armas y Artefactos", table: "armas_artefactos", nameCol: "nombre", href: "/admin/artefactos", icon: "Sword" },
   { key: "economia", label: "Sistema monetario", table: "sistema_monetario", nameCol: "nombre", href: "/admin/economia", icon: "Coins" },
   { key: "lore", label: "Lore", table: "paginas_lore", nameCol: "titulo", href: "/admin/lore", icon: "ScrollText" },
+  // Lo narrativo se edita en el taller (spec del taller §2).
+  { key: "capitulos", label: "Capítulos", table: "capitulos", nameCol: "titulo", href: "/admin/taller/capitulos", icon: "BookOpen", editar: (id) => `/admin/taller/capitulos/${id}` },
+  { key: "actos", label: "Actos", table: "actos", nameCol: "nombre", href: "/admin/taller/escribe", icon: "PenLine", editar: (id) => `/admin/taller/escribe?acto=${id}` },
 ];
 
 export interface AdminStat {
@@ -137,7 +142,7 @@ export async function getRecentActivity(limit = 8): Promise<RecentItem[]> {
     return {
       key: r.key,
       label: e.label,
-      href: `${e.href}/${r.id}/editar`,
+      href: e.editar ? e.editar(r.id) : `${e.href}/${r.id}/editar`,
       nombre: r.nombre?.trim() || `#${r.id}`,
       estado: r.estado,
       actualizadoEn: new Date(r.actualizado_en),

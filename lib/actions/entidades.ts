@@ -137,7 +137,12 @@ export async function guardarEntidad(
       imagenUrl: data.imagenUrl as string | null | undefined,
     });
   }
-  if (created) redirect(`/admin/${key}/${savedId}/editar`);
+  if (created) {
+    // El taller pasa dónde vive su editor; cualquier otra cosa se ignora para
+    // no convertir esto en una redirección abierta.
+    const base = String(formData.get("base") ?? "");
+    redirect(/^\/admin\/taller\/[a-z/]+$/.test(base) ? `${base}/${savedId}` : `/admin/${key}/${savedId}/editar`);
+  }
   return { ok: true, id: savedId };
 }
 

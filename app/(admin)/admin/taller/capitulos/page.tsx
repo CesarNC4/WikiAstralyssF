@@ -1,7 +1,17 @@
 import { assertAdmin } from "@/lib/actions/auth";
-import { Proximamente } from "@/components/taller/TallerShell";
+import { Organizar } from "@/components/taller/capitulos/Organizar";
+import { getCapituloEditor, getOpcionesCapitulo, getTallerIndice } from "@/lib/queries/taller";
 
-export default async function Page() {
+export const dynamic = "force-dynamic";
+
+/** Capítulos (spec §6): organizar libro > capítulo > acto, con edición rápida al lado. */
+export default async function CapitulosPage({ searchParams }: { searchParams: Promise<{ capitulo?: string }> }) {
   await assertAdmin();
-  return <Proximamente titulo="Capítulos" fase="Fase 3" />;
+  const { capitulo } = await searchParams;
+  const [indice, opciones, seleccionado] = await Promise.all([
+    getTallerIndice(),
+    getOpcionesCapitulo(),
+    capitulo ? getCapituloEditor(Number(capitulo)) : Promise.resolve(null),
+  ]);
+  return <Organizar indice={indice} opciones={opciones} seleccionado={seleccionado} />;
 }

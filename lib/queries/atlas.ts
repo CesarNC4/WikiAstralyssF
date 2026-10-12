@@ -63,6 +63,9 @@ const COLOR: Record<string, string> = {
   lore: "#8ab4f8",
   demonios: "#e05252",
   timeline: "#9aa3b2",
+  capitulos: "#8ab4f8",
+  actos: "#b9a6ff",
+  arcos: "#c08bff",
 };
 
 type Cols = Record<string, PgColumn>;

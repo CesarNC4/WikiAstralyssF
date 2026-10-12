@@ -1,5 +1,6 @@
+import { rutaEnTaller } from "@/lib/admin/taller";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { EntidadForm } from "@/components/admin/EntidadForm";
@@ -11,6 +12,8 @@ export const dynamic = "force-dynamic";
 export default async function EditarEntidadPage({ params }: { params: Promise<{ entidad: string; id: string }> }) {
   await assertAdmin();
   const { entidad, id } = await params;
+  const enTaller = rutaEnTaller(entidad, { id: Number(id) });
+  if (enTaller) redirect(enTaller);
   const config = getEntidadConfig(entidad);
   if (!config) notFound();
 

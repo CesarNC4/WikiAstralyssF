@@ -55,7 +55,14 @@ export function EntidadForm({
   catalogos,
   elementos = [],
   referencias = {},
+  rutaBase,
 }: {
+  /**
+   * Dentro del taller: dónde vive el editor de esta entidad
+   * (`/admin/taller/trama/hilos`). Al crear se redirige a `${rutaBase}/${id}` y
+   * la barra de acciones deja sitio al menú del taller.
+   */
+  rutaBase?: string;
   config: EntidadConfig;
   inicial: Record<string, unknown> | null;
   catalogos: MapaCatalogos;
@@ -166,6 +173,7 @@ export function EntidadForm({
     const fd = new FormData();
     fd.set("entidad", config.key);
     if (id) fd.set("id", String(id));
+    if (rutaBase) fd.set("base", rutaBase);
     fd.set("payload", JSON.stringify(payload));
     setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
@@ -259,7 +267,7 @@ export function EntidadForm({
       )}
 
       {/* Barra de acciones */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
+      <div className={`fixed bottom-0 right-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur ${rutaBase ? "left-[220px]" : "left-0"}`}>
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <div className="ml-auto flex items-center gap-2">
             <select

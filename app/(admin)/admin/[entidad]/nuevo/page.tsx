@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { rutaEnTaller } from "@/lib/admin/taller";
+import { notFound, redirect } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { EntidadForm } from "@/components/admin/EntidadForm";
@@ -10,6 +11,8 @@ export const dynamic = "force-dynamic";
 export default async function NuevaEntidadPage({ params }: { params: Promise<{ entidad: string }> }) {
   await assertAdmin();
   const { entidad } = await params;
+  const enTaller = rutaEnTaller(entidad, "nuevo");
+  if (enTaller) redirect(enTaller);
   const config = getEntidadConfig(entidad);
   if (!config) notFound();
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { ToastProvider } from "@/components/admin/Toast";
 import { ENTIDADES } from "@/lib/admin/fields";
+import { ENTIDADES_DEL_TALLER } from "@/lib/admin/taller";
 
 /** Marco del panel: barra superior + navegación lateral (sobrio, coherente con el sitio). */
 export function AdminShell({
@@ -26,9 +27,12 @@ export function AdminShell({
             <NavLink href="/admin/taller" icon="PenLine" label="Taller del autor" />
             <div className="my-2 border-t border-border-base" />
             <NavLink href="/admin/personajes" icon="Users" label="Personajes" />
-            {Object.values(ENTIDADES).map((e) => (
-              <NavLink key={e.key} href={`/admin/${e.key}`} icon={e.icon} label={e.plural} />
-            ))}
+            {/* Lo narrativo vive en el taller, enlazado arriba. */}
+            {Object.values(ENTIDADES)
+              .filter((e) => !ENTIDADES_DEL_TALLER.has(e.key))
+              .map((e) => (
+                <NavLink key={e.key} href={`/admin/${e.key}`} icon={e.icon} label={e.plural} />
+              ))}
             <NavLink href="/admin/organizaciones" icon="Shield" label="Organizaciones" />
             <NavLink href="/admin/familias" icon="Users2" label="Familias" />
             <NavLink href="/admin/gremio" icon="Landmark" label="Gremio" />

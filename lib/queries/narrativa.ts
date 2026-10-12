@@ -85,6 +85,9 @@ export interface CancionDelCapitulo {
   id: number;
   titulo: string;
   artista: string | null;
+  url: string | null;
+  tipoFuente: string | null;
+  imagenUrl: string | null;
   /** Vinculada al capítulo entero, a alguno de sus actos, o a ambos. */
   desde: "capitulo" | "acto" | "ambos";
 }
@@ -175,15 +178,33 @@ async function lugaresDe(vinculos: FilaVinculo[], publico: boolean): Promise<Lug
   return out;
 }
 
+const CANCION = {
+  id: s.canciones.id,
+  titulo: s.canciones.titulo,
+  artista: s.canciones.artista,
+  url: s.canciones.url,
+  tipoFuente: s.canciones.tipoFuente,
+  imagenUrl: s.canciones.imagenUrl,
+  estado: s.canciones.estadoPublicacion,
+};
+
+/** Fila de `CANCION` → canción del capítulo, sin el estado (que solo sirve para filtrar). */
+function aCancion(
+  c: { id: number; titulo: string; artista: string | null; url: string | null; tipoFuente: string | null; imagenUrl: string | null },
+  desde: CancionDelCapitulo["desde"],
+): CancionDelCapitulo {
+  return { id: c.id, titulo: c.titulo, artista: c.artista, url: c.url, tipoFuente: c.tipoFuente, imagenUrl: c.imagenUrl, desde };
+}
+
 async function cancionesDelCapitulo(capituloId: number, publico: boolean): Promise<CancionDelCapitulo[]> {
   const filas = await db
-    .select({ id: s.canciones.id, titulo: s.canciones.titulo, artista: s.canciones.artista, estado: s.canciones.estadoPublicacion })
+    .select(CANCION)
     .from(s.capituloCancion)
     .innerJoin(s.canciones, eq(s.capituloCancion.cancionId, s.canciones.id))
     .where(and(eq(s.capituloCancion.capituloId, capituloId), isNull(s.canciones.eliminadoEn)));
   return filas
     .filter((c) => !publico || c.estado === "publicado")
-    .map((c) => ({ id: c.id, titulo: c.titulo, artista: c.artista, desde: "capitulo" as const }));
+    .map((c) => aCancion(c, "capitulo"));
 }
 
 /** Manuales del capítulo + las de sus actos, sin repetir (§3). */
@@ -192,14 +213,14 @@ async function cancionesDe(vinculos: FilaVinculo[], manual: CancionDelCapitulo[]
   const ids = [...new Set(vinculos.filter((v) => v.relacion === "acto_cancion").map((v) => v.destinoId))];
   if (ids.length) {
     const filas = await db
-      .select({ id: s.canciones.id, titulo: s.canciones.titulo, artista: s.canciones.artista, estado: s.canciones.estadoPublicacion })
+      .select(CANCION)
       .from(s.canciones)
       .where(and(inArray(s.canciones.id, ids), isNull(s.canciones.eliminadoEn)));
     for (const c of filas) {
       if (publico && c.estado !== "publicado") continue;
       const ya = porId.get(c.id);
       if (ya) ya.desde = "ambos";
-      else porId.set(c.id, { id: c.id, titulo: c.titulo, artista: c.artista, desde: "acto" });
+      else porId.set(c.id, aCancion(c, "acto"));
     }
   }
   return [...porId.values()];
@@ -233,4 +254,24 @@ async function fechaDe(actos: ActoDelCapitulo[]): Promise<Fecha | null> {
       : { anio: ultimo.iniAnio, segmentoId: ultimo.iniSegmentoId, dia: ultimo.iniDia };
   const mismo = ini.anio === fin.anio && ini.segmentoId === fin.segmentoId && ini.dia === fin.dia;
   return { ini, fin: mismo ? null : fin, aproximada: filas.some((f) => f.aproximada) };
+}
+
+/**
+ * Canciones de un acto (las suyas, no las del capítulo), para su ficha pública.
+ */
+export async function getCancionesDeActo(actoId: number): Promise<CancionDelCapitulo[]> {
+  const filas = await db
+    .select(CANCION)
+    .from(s.vinculo)
+    .innerJoin(s.canciones, eq(s.vinculo.destinoId, s.canciones.id))
+    .where(
+      and(
+        eq(s.vinculo.origenTipo, "actos"),
+        eq(s.vinculo.origenId, actoId),
+        eq(s.vinculo.relacion, "acto_cancion"),
+        eq(s.canciones.estadoPublicacion, "publicado"),
+        isNull(s.canciones.eliminadoEn),
+      ),
+    );
+  return filas.map((c) => aCancion(c, "acto"));
 }

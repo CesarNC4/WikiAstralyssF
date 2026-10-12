@@ -532,13 +532,49 @@ export async function getCapitulo(id: number) {
   );
 }
 
-/** Actos publicados de un capítulo, en su orden. */
-export async function getActosDeCapitulo(capituloId: number) {
-  return db
-    .select({ id: s.actos.id, nombre: s.actos.nombre, descripcion: s.actos.descripcion, estado: s.actos.estado })
+/**
+ * Un acto público: publicado, fuera de la papelera y dentro de un capítulo que
+ * también lo está (spec del taller §4). El capítulo de la URL tiene que ser el
+ * suyo, para que no haya dos direcciones para el mismo acto.
+ */
+export async function getActoPublico(capituloId: number, actoId: number) {
+  const [fila] = await db
+    .select({ acto: s.actos, capitulo: s.capitulos })
     .from(s.actos)
-    .where(and(eq(s.actos.capituloId, capituloId), eq(s.actos.estadoPublicacion, "publicado"), isNull(s.actos.eliminadoEn)))
-    .orderBy(asc(s.actos.numeroOrden));
+    .innerJoin(s.capitulos, eq(s.actos.capituloId, s.capitulos.id))
+    .where(
+      and(
+        eq(s.actos.id, actoId),
+        eq(s.actos.capituloId, capituloId),
+        eq(s.actos.estadoPublicacion, "publicado"),
+        isNull(s.actos.eliminadoEn),
+        eq(s.capitulos.estadoPublicacion, "publicado"),
+        isNull(s.capitulos.eliminadoEn),
+      ),
+    )
+    .limit(1);
+  if (!fila) return null;
+  // Las notas privadas del acto no salen nunca de aquí.
+  const { notasPrivadas: _n, ...acto } = fila.acto;
+  void _n;
+  return { acto, capitulo: fila.capitulo };
+}
+
+/** Pares capítulo/acto visibles al público, para el sitemap y el prerender. */
+export async function getActosVisibles(): Promise<{ capituloId: number; actoId: number }[]> {
+  const filas = await db
+    .select({ capituloId: s.actos.capituloId, actoId: s.actos.id })
+    .from(s.actos)
+    .innerJoin(s.capitulos, eq(s.actos.capituloId, s.capitulos.id))
+    .where(
+      and(
+        eq(s.actos.estadoPublicacion, "publicado"),
+        isNull(s.actos.eliminadoEn),
+        eq(s.capitulos.estadoPublicacion, "publicado"),
+        isNull(s.capitulos.eliminadoEn),
+      ),
+    );
+  return filas.map((f) => ({ capituloId: f.capituloId!, actoId: f.actoId }));
 }
 
 export async function getArco(id: number) {

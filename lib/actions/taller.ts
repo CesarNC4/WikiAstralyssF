@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, count, eq, inArray, isNull, max, ne } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, max, ne, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db/client";
@@ -551,5 +551,200 @@ export async function guardarFechaFicha(
     return undefined;
   });
   if (r.ok) revalidatePath("/timeline");
+  return r;
+}
+
+// ── Trama desde el acto (§4) ───────────────────────────────────────────────
+
+/** Capítulo de un acto vivo, o rechazo si no existe. */
+async function capituloDelActo(ex: Ejecutor, actoId: number): Promise<number | null> {
+  const [a] = await ex
+    .select({ capituloId: s.actos.capituloId })
+    .from(s.actos)
+    .where(and(eq(s.actos.id, actoId), isNull(s.actos.eliminadoEn)));
+  if (!a) throw new Rechazo("El acto ya no existe.");
+  return a.capituloId;
+}
+
+/** Crea una hoja de trama ya ligada al acto (y a su capítulo). */
+export async function crearHojaEnActo(actoId: number, titulo: string): Promise<Resultado<{ id: number }>> {
+  await assertAdmin();
+  const t = titulo.trim();
+  if (!t) return { ok: false, error: "La hoja necesita un título." };
+  const r = await intentar("crearHojaEnActo", () =>
+    db.transaction(async (tx) => {
+      const capituloId = await capituloDelActo(tx, actoId);
+      const [h] = await tx.insert(s.tramaHojas).values({ titulo: t, actoId, capituloId }).returning({ id: s.tramaHojas.id });
+      return { id: h.id };
+    }),
+  );
+  if (r.ok) revalidatePath("/admin/taller", "layout");
+  return r;
+}
+
+/**
+ * Marca que un hilo se abre o se cierra en este acto (o lo desmarca con
+ * `activo` false). Al marcarlo se apunta también el capítulo, que es lo que ya
+ * leían las pantallas anteriores al taller.
+ */
+export async function marcarHiloEnActo(hiloId: number, actoId: number, cual: "apertura" | "cierre", activo: boolean): Promise<Resultado> {
+  await assertAdmin();
+  const r = await intentar("marcarHiloEnActo", () =>
+    db.transaction(async (tx) => {
+      const capituloId = await capituloDelActo(tx, actoId);
+      const set =
+        cual === "apertura"
+          ? { actoAperturaId: activo ? actoId : null, ...(activo ? { capituloAperturaId: capituloId } : {}) }
+          : { actoCierreId: activo ? actoId : null, ...(activo ? { capituloCierreId: capituloId } : {}) };
+      const hecho = await tx.update(s.hiloNarrativo).set(set).where(eq(s.hiloNarrativo.id, hiloId)).returning({ id: s.hiloNarrativo.id });
+      if (hecho.length === 0) throw new Rechazo("El hilo ya no existe.");
+      return undefined;
+    }),
+  );
+  if (r.ok) revalidatePath("/admin/taller", "layout");
+  return r;
+}
+
+/** Crea un hilo que se abre en este acto. */
+export async function crearHiloEnActo(actoId: number, nombre: string): Promise<Resultado<{ id: number }>> {
+  await assertAdmin();
+  const n = nombre.trim();
+  if (!n) return { ok: false, error: "El hilo necesita un nombre." };
+  const r = await intentar("crearHiloEnActo", () =>
+    db.transaction(async (tx) => {
+      const capituloId = await capituloDelActo(tx, actoId);
+      const [h] = await tx
+        .insert(s.hiloNarrativo)
+        .values({ nombre: n, actoAperturaId: actoId, capituloAperturaId: capituloId })
+        .returning({ id: s.hiloNarrativo.id });
+      return { id: h.id };
+    }),
+  );
+  if (r.ok) revalidatePath("/admin/taller", "layout");
+  return r;
+}
+
+/**
+ * Liga un evento de la cronología a un acto (o lo desliga con `actoId` null).
+ * El evento conserva o recibe también el capítulo del acto (§14).
+ */
+export async function vincularEventoActo(eventoId: number, actoId: number | null): Promise<Resultado> {
+  await assertAdmin();
+  const r = await intentar("vincularEventoActo", () =>
+    db.transaction(async (tx) => {
+      const set = actoId == null ? { actoId: null } : { actoId, capituloId: await capituloDelActo(tx, actoId) };
+      const hecho = await tx.update(s.timelineEventos).set(set).where(eq(s.timelineEventos.id, eventoId)).returning({ id: s.timelineEventos.id });
+      if (hecho.length === 0) throw new Rechazo("El evento ya no existe.");
+      return undefined;
+    }),
+  );
+  if (r.ok) {
+    revalidatePath("/admin/taller", "layout");
+    revalidatePath("/timeline");
+  }
+  return r;
+}
+
+// ── Papelera del taller (§9) ───────────────────────────────────────────────
+
+const TABLAS_PAPELERA = {
+  capitulos: s.capitulos,
+  actos: s.actos,
+  arcos: s.tramaArcos,
+  hojas: s.tramaHojas,
+  hilos: s.hiloNarrativo,
+} as const;
+
+export type TipoPapelera = keyof typeof TABLAS_PAPELERA;
+
+function esTipoPapelera(t: string): t is TipoPapelera {
+  return t in TABLAS_PAPELERA;
+}
+
+/**
+ * Saca algo de la papelera. Un capítulo vuelve al final de su libro y un acto
+ * al final de su capítulo (y a su primera fase si la plantilla cambió mientras
+ * estaba borrado), para no pisar el orden que se haya hecho entretanto.
+ */
+export async function restaurarDelTaller(tipo: string, id: number): Promise<Resultado> {
+  await assertAdmin();
+  if (!esTipoPapelera(tipo)) return { ok: false, error: "Tipo desconocido." };
+  const r = await intentar("restaurar", () =>
+    db.transaction(async (tx) => {
+      if (tipo === "capitulos") {
+        const [c] = await tx.select({ libro: s.capitulos.libro }).from(s.capitulos).where(eq(s.capitulos.id, id));
+        if (!c) throw new Rechazo("Ya no existe.");
+        const [{ ultimo }] = await tx
+          .select({ ultimo: max(s.capitulos.orden) })
+          .from(s.capitulos)
+          .where(and(c.libro ? eq(s.capitulos.libro, c.libro) : isNull(s.capitulos.libro), isNull(s.capitulos.eliminadoEn)));
+        await tx.update(s.capitulos).set({ eliminadoEn: null, orden: (ultimo ?? -1) + 1 }).where(eq(s.capitulos.id, id));
+        await renumerarCapitulos(tx);
+      } else if (tipo === "actos") {
+        const [a] = await tx.select({ capituloId: s.actos.capituloId, faseId: s.actos.faseId }).from(s.actos).where(eq(s.actos.id, id));
+        if (!a) throw new Rechazo("Ya no existe.");
+        let faseId = a.faseId;
+        let orden = 0;
+        if (a.capituloId != null) {
+          const [cap] = await tx.select({ plantillaId: s.capitulos.plantillaId }).from(s.capitulos).where(eq(s.capitulos.id, a.capituloId));
+          if (cap?.plantillaId != null) {
+            const [f] = faseId != null ? await tx.select({ p: s.estructuraFase.plantillaId }).from(s.estructuraFase).where(eq(s.estructuraFase.id, faseId)) : [];
+            if (!f || f.p !== cap.plantillaId) faseId = await primeraFase(tx, cap.plantillaId);
+          }
+          const [{ ultimo }] = await tx
+            .select({ ultimo: max(s.actos.numeroOrden) })
+            .from(s.actos)
+            .where(and(eq(s.actos.capituloId, a.capituloId), isNull(s.actos.eliminadoEn)));
+          orden = (ultimo ?? -1) + 1;
+        }
+        await tx.update(s.actos).set({ eliminadoEn: null, faseId, numeroOrden: orden }).where(eq(s.actos.id, id));
+      } else {
+        const t = TABLAS_PAPELERA[tipo];
+        await tx.update(t).set({ eliminadoEn: null }).where(eq(t.id, id));
+      }
+      return undefined;
+    }),
+  );
+  if (r.ok) revalidarNarrativa();
+  return r;
+}
+
+/**
+ * Borra para siempre algo que está en la papelera. Un capítulo con actos no se
+ * borra: sus actos se quedarían sueltos. Lo que apuntaba a lo borrado (hojas,
+ * hilos, eventos) se desliga en lugar de borrarse, y sus fechas y vínculos
+ * genéricos se limpian.
+ */
+export async function eliminarDelTaller(tipo: string, id: number): Promise<Resultado> {
+  await assertAdmin();
+  if (!esTipoPapelera(tipo)) return { ok: false, error: "Tipo desconocido." };
+  const r = await intentar("eliminar", () =>
+    db.transaction(async (tx) => {
+      const t = TABLAS_PAPELERA[tipo];
+      const [fila] = await tx.select({ eliminadoEn: t.eliminadoEn }).from(t).where(eq(t.id, id));
+      if (!fila) throw new Rechazo("Ya no existe.");
+      if (!fila.eliminadoEn) throw new Rechazo("Solo se borra para siempre lo que está en la papelera.");
+
+      if (tipo === "capitulos") {
+        const [{ n }] = await tx.select({ n: count() }).from(s.actos).where(eq(s.actos.capituloId, id));
+        if (n > 0) throw new Rechazo(`Tiene ${n} actos (vivos o en la papelera). Muévelos o bórralos antes.`);
+        await tx.delete(s.capituloCancion).where(eq(s.capituloCancion.capituloId, id));
+      }
+      if (tipo === "actos") {
+        await tx.update(s.tramaHojas).set({ actoId: null }).where(eq(s.tramaHojas.actoId, id));
+      }
+      if (tipo === "arcos") {
+        await tx.update(s.tramaHojas).set({ arcoId: null }).where(eq(s.tramaHojas.arcoId, id));
+        await tx.update(s.hiloNarrativo).set({ arcoId: null }).where(eq(s.hiloNarrativo.arcoId, id));
+      }
+      await tx.delete(s.fechaLore).where(and(eq(s.fechaLore.entidadTipo, tipo), eq(s.fechaLore.entidadId, id)));
+      await tx
+        .delete(s.vinculo)
+        .where(or(and(eq(s.vinculo.origenTipo, tipo), eq(s.vinculo.origenId, id)), and(eq(s.vinculo.destinoTipo, tipo), eq(s.vinculo.destinoId, id))));
+      await tx.delete(t).where(eq(t.id, id));
+      return undefined;
+    }),
+  );
+  if (r.ok) revalidarNarrativa();
   return r;
 }

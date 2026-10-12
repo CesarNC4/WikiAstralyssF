@@ -209,8 +209,9 @@ export const RELACIONES: RelacionDef[] = [
   },
 
   // ── Actos (spec del taller §4) ────────────────────────────────────────────
-  // Sin bloque público por ahora en ningún lado: el acto aún no tiene ficha y
-  // el capítulo pinta estos datos agregados. La Fase 5 decide su presentación.
+  // La ficha del acto los pinta todos. Del lado del personaje no hay bloque
+  // público: su ficha ya resume "Apariciones" por capítulo y serían dos listas
+  // de lo mismo.
   ...(
     [
       ["acto_pov", "personajes", "POV", "Users", "Actos como POV", "BookOpen"],
@@ -226,8 +227,8 @@ export const RELACIONES: RelacionDef[] = [
       id,
       medio: "vinculo",
       relacion: id,
-      a: { entidad: "actos", titulo: tituloA, icon: iconA, orden: 20 + i, sinPublico: true },
-      b: { entidad: entB, titulo: tituloB, icon: iconB, orden: 80 + i, sinPublico: true },
+      a: { entidad: "actos", titulo: tituloA, icon: iconA, orden: 20 + i },
+      b: { entidad: entB, titulo: tituloB, icon: iconB, orden: 80 + i, sinPublico: entB === "personajes" },
       campos: [NOTA],
     }),
   ),

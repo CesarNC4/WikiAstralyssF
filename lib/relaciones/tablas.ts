@@ -1,4 +1,5 @@
 import "server-only";
+import { sql, type SQL } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import * as s from "@/db/schema";
 
@@ -23,6 +24,16 @@ export interface EntidadInfo {
   papelera?: boolean;
   /** Ruta pública de la ficha, para enlazar desde los bloques. */
   ruta?: string;
+  /**
+   * Ruta que depende de otra columna de la fila, para fichas anidadas: el acto
+   * vive en `/capitulos/<capítulo>/actos/<id>`. Manda sobre `ruta`.
+   */
+  rutaAnidada?: { col: string; hacer: (id: number, valor: unknown) => string | null };
+  /**
+   * Estado de publicación calculado en lugar de la columna: un acto solo es
+   * público si también lo es su capítulo (spec del taller §4).
+   */
+  estadoSql?: SQL<string>;
 }
 
 export const ENTIDAD_INFO: Record<string, EntidadInfo> = {
@@ -42,9 +53,18 @@ export const ENTIDAD_INFO: Record<string, EntidadInfo> = {
   demonios: { tabla: s.lordDemonio, label: "nombre", detalle: "titulo", imagen: "imagenUrl", estado: true, papelera: true, ruta: "/demonios" },
   conceptos: { tabla: s.conceptos, label: "nombre", imagen: "imagenUrl", estado: true, papelera: true, ruta: "/conceptos" },
   magia: { tabla: s.magiaFundamentos, label: "nombre", imagen: "imagenUrl", estado: true, papelera: true, ruta: "/magia" },
-  capitulos: { tabla: s.capitulos, label: "titulo", detalle: "numero", estado: true },
-  // Sin `ruta` hasta la Fase 5, cuando el acto tenga ficha pública.
-  actos: { tabla: s.actos, label: "nombre", estado: true, papelera: true },
+  capitulos: { tabla: s.capitulos, label: "titulo", detalle: "numero", estado: true, papelera: true, ruta: "/capitulos" },
+  actos: {
+    tabla: s.actos,
+    label: "nombre",
+    estado: true,
+    papelera: true,
+    rutaAnidada: { col: "capituloId", hacer: (id, cap) => (cap == null ? null : `/capitulos/${cap}/actos/${id}`) },
+    estadoSql: sql<string>`case when ${s.actos.estadoPublicacion} = 'publicado' and exists (
+      select 1 from capitulos c where c.id = ${s.actos.capituloId}
+         and c.estado_publicacion = 'publicado' and c.eliminado_en is null)
+      then 'publicado' else 'borrador' end`,
+  },
   arcos: { tabla: s.tramaArcos, label: "nombre", estado: true, papelera: true, ruta: "/arcos" },
   canciones: { tabla: s.canciones, label: "titulo", detalle: "artista", imagen: "imagenUrl", estado: true },
   gremio: { tabla: s.gremio, label: "nombre", imagen: "imagenUrl", ruta: "/gremio" },

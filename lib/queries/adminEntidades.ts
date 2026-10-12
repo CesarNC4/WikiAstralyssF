@@ -4,7 +4,8 @@ import { db } from "@/db/client";
 import { catalogos } from "@/db/schema/admin";
 import { elementos } from "@/db/schema/elementos";
 import type { OpcionCatalogo } from "@/components/admin/fields";
-import { capitulos } from "@/db/schema/narrativa";
+import { actos, capitulos, tramaArcos } from "@/db/schema/narrativa";
+import { etiquetaActo } from "@/lib/narrativa/numeracion";
 import { naciones, razas, sistemaMonetario } from "@/db/schema/mundo";
 import { regiones, locaciones } from "@/db/schema/mapa";
 import { getEntidadTable } from "@/lib/admin/tables";
@@ -28,6 +29,25 @@ export async function getOpcionesReferencia(target: RefTarget): Promise<OpcionRe
       .from(capitulos)
       .orderBy(asc(capitulos.libro), asc(capitulos.orden), asc(capitulos.id));
     return rows.map((r) => ({ id: r.id, label: `${r.numero} — ${r.titulo}` }));
+  }
+  if (target === "actos") {
+    // "Capítulo 3 · Acto II — Nombre": el acto solo se entiende dentro de su capítulo.
+    const rows = await db
+      .select({ id: actos.id, nombre: actos.nombre, capituloId: actos.capituloId, numero: capitulos.numero })
+      .from(actos)
+      .leftJoin(capitulos, eq(actos.capituloId, capitulos.id))
+      .where(isNull(actos.eliminadoEn))
+      .orderBy(asc(capitulos.libro), asc(capitulos.orden), asc(actos.numeroOrden), asc(actos.id));
+    const pos = new Map<number | null, number>();
+    return rows.map((r) => {
+      const i = pos.get(r.capituloId) ?? 0;
+      pos.set(r.capituloId, i + 1);
+      return { id: r.id, label: `${r.numero ?? "Sin capítulo"} · ${etiquetaActo(i)} — ${r.nombre}` };
+    });
+  }
+  if (target === "arcos") {
+    const rows = await db.select({ id: tramaArcos.id, label: tramaArcos.nombre }).from(tramaArcos).where(isNull(tramaArcos.eliminadoEn)).orderBy(asc(tramaArcos.orden), asc(tramaArcos.nombre));
+    return rows.map((r) => ({ id: r.id, label: r.label ?? `#${r.id}` }));
   }
   if (target === "naciones") {
     const rows = await db.select({ id: naciones.id, label: naciones.nombre }).from(naciones).where(isNull(naciones.eliminadoEn)).orderBy(asc(naciones.nombre));

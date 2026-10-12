@@ -41,7 +41,8 @@ export async function etiquetas(entidad: string, ids: number[]): Promise<Map<num
   const sel: Record<string, PgColumn> = { id: c.id, label: c[info.label] };
   if (info.detalle) sel.detalle = c[info.detalle];
   if (info.imagen) sel.imagen = c[info.imagen];
-  if (info.estado) sel.estado = c.estadoPublicacion;
+  if (info.estado) sel.estado = (info.estadoSql ?? c.estadoPublicacion) as PgColumn;
+  if (info.rutaAnidada) sel.anidada = c[info.rutaAnidada.col];
 
   const filas = await db.select(sel).from(info.tabla).where(inArray(c.id, [...new Set(ids)]));
 
@@ -52,7 +53,11 @@ export async function etiquetas(entidad: string, ids: number[]): Promise<Map<num
       detalle: (f.detalle as string) ?? null,
       imagenUrl: (f.imagen as string) ?? null,
       estado: (f.estado as string) ?? null,
-      ruta: info.ruta ? `${info.ruta}/${id}` : null,
+      ruta: info.rutaAnidada
+        ? info.rutaAnidada.hacer(id, f.anidada)
+        : info.ruta
+          ? `${info.ruta}/${id}`
+          : null,
     });
   }
   return out;
@@ -135,6 +140,7 @@ async function leerDeTabla(
       imagenUrl: e?.imagenUrl ?? null,
       detalle: e?.detalle ?? null,
       estado: e?.estado ?? null,
+      ruta: e?.ruta ?? null,
       campos,
     });
   }
@@ -188,6 +194,7 @@ async function leerDeVinculo(
       imagenUrl: e.imagenUrl,
       detalle: e.detalle,
       estado: e.estado,
+      ruta: e.ruta,
       campos: { tipo: f.tipo ?? "", nota: f.nota ?? "" },
       objetivoTipo: f.otroTipo,
     });
@@ -697,7 +704,7 @@ async function leerDeReferencia(
     if (destino == null) return [];
     const e = (await etiquetas(rel.b.entidad, [destino])).get(destino);
     if (!e || (opts.publico && !visible(e))) return [];
-    return [{ id: ownerId, objetivoId: destino, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, campos: {} }];
+    return [{ id: ownerId, objetivoId: destino, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, ruta: e.ruta, campos: {} }];
   }
 
   const filtros: SQL[] = [eq(ref.c[ref.columna], ownerId)];
@@ -717,7 +724,7 @@ async function leerDeReferencia(
   for (const f of filas) {
     const e = etiq.get(f.id);
     if (!e) continue;
-    out.push({ id: f.id, objetivoId: f.id, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, campos: {} });
+    out.push({ id: f.id, objetivoId: f.id, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, ruta: e.ruta, campos: {} });
   }
   return out;
 }

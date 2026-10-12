@@ -140,6 +140,12 @@ derivada devuelve lo esperado sobre los 2 capítulos reales.
 
 ## Fase 3 — Taller: Escribe, Capítulos y Estructura
 
+> **Estado (2026-10-11):** hecha. Escribe (lista con filtros + editor del acto con
+> fecha, relaciones, hojas, hilos y eventos), Organizar (arrastre nativo, panel
+> rápido), pantalla del capítulo (con lo calculado de sus actos y canciones
+> propias) y Estructura (tablero y plantillas). Hojas e hilos ganaron arco y
+> acto en sus formularios.
+
 1. **Escribe:** lista de actos con los filtros de §5 y editor del acto con todos
    los campos de §4 (relaciones a través del motor del registro, fechas con
    `FechaInput`).
@@ -151,6 +157,11 @@ derivada devuelve lo esperado sobre los 2 capítulos reales.
 
 ## Fase 4 — Taller: Trama, Estadísticas y Papelera
 
+> **Estado (2026-10-11):** hecha. Trama reutiliza el formulario genérico dentro del
+> taller (`rutaBase`). Las rutas viejas de `/admin/<capitulos|actos|arcos|hojas|hilos>`
+> redirigen al taller (`lib/admin/taller.ts`); el dashboard y la actividad
+> reciente enlazan allí. Un capítulo con actos no se borra para siempre.
+
 1. **Trama:** pantallas propias para arcos, hojas e hilos, con los mismos datos
    (§8).
 2. **Estadísticas** (§9).
@@ -160,6 +171,16 @@ derivada devuelve lo esperado sobre los 2 capítulos reales.
    taller.
 
 ## Fase 5 — Narrativa pública
+
+> **Estado (2026-10-11):** hecha y migración aplicada. Ficha de capítulo (intro +
+> resúmenes, personajes con POV, lugares, banda sonora, fechas), ficha de acto
+> anidada con navegación anterior/siguiente, buscador, sitemap, feed y Atlas.
+> Los enlaces de los bloques usan la ruta real de la ficha (`FilaVinculo.ruta`).
+>
+> **Corrección de infraestructura:** el cliente de base pasa a `max_pipeline: 0`
+> (`db/client.ts`). Con pipelining, postgres.js + el pooler de Supabase en modo
+> transacción dejaban consultas colgadas hasta el statement_timeout al mezclar
+> consultas con y sin parámetros; lo destapó la ficha del acto.
 
 1. **Ficha de capítulo:** intro + resúmenes, personajes, lugares, canciones y
    rango de fechas calculados, y lista de actos visibles.
