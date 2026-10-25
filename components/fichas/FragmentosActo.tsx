@@ -72,7 +72,8 @@ export function FragmentosActo({ fragmentos }: { fragmentos: FragmentoPublico[] 
                 <span className="hidden shrink-0 sm:block sm:w-40" />
               )}
 
-              <span className="min-w-0 flex-1">
+              {/* En el móvil, título y fecha bajan a su propia línea bajo el POV. */}
+              <span className="w-full min-w-0 pl-9 sm:w-auto sm:flex-1 sm:pl-0">
                 {f.titulo && <span className="block truncate text-sm text-fg">{f.titulo}</span>}
                 {(f.fecha || salto) && (
                   <span className="flex flex-wrap items-center gap-x-2 text-xs text-fg-muted">
@@ -91,7 +92,7 @@ export function FragmentosActo({ fragmentos }: { fragmentos: FragmentoPublico[] 
                   href={f.enlace}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border-glow px-3 py-1 text-xs text-fg-secondary hover:text-fg"
+                  className="ml-9 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border-glow px-3 py-1 text-xs text-fg-secondary hover:text-fg sm:ml-0"
                 >
                   {/discord\.(com|gg)/i.test(f.enlace) ? "Leer en Discord" : "Leer"} <Icon name="ArrowRight" size={12} />
                 </a>

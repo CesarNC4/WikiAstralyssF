@@ -358,7 +358,8 @@ export async function getFragmentosPublicos(actoId: number): Promise<FragmentoPu
       pov: povVisible ? { id: f.personajeId!, nombre: f.nombre!, imagenUrl: f.imagenUrl } : null,
       titulo: f.titulo,
       enlace: f.enlace,
-      fecha: g ? textosFecha(cal, g.fecha, true) : null,
+      // Formato completo: entre fragmentos lo que cuenta es el día, no el año.
+      fecha: g ? textosFecha(cal, g.fecha) : null,
       clave: g?.claveIni ?? null,
       saltoLectura: null,
       saltoFecha: null,
