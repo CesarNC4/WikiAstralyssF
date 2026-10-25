@@ -15,11 +15,7 @@ import {
   armasArtefactos,
 } from "./schema/mundo";
 import { magiaFundamentos, timelineEventos } from "./schema/lore";
-import {
-  canciones,
-  personajeCancion,
-  mediaAssets,
-} from "./schema/media";
+import { mediaAssets } from "./schema/media";
 import {
   personajeNacion,
   personajeRaza,
@@ -54,7 +50,6 @@ export const personajesRelations = relations(personajes, ({ one, many }) => ({
   eventos: many(personajeEvento),
   narrativa: one(personajeNarrativa),
   objetos: many(personajeObjeto),
-  canciones: many(personajeCancion),
   naciones: many(personajeNacion),
   razas: many(personajeRaza),
   // La pertenencia a organizaciones vive en org_jerarquia desde la unificación.
@@ -128,17 +123,6 @@ export const personajeObjetoRelations = relations(personajeObjeto, ({ one }) => 
   objeto: one(armasArtefactos, {
     fields: [personajeObjeto.armaArtefactoId],
     references: [armasArtefactos.id],
-  }),
-}));
-
-export const personajeCancionRelations = relations(personajeCancion, ({ one }) => ({
-  personaje: one(personajes, {
-    fields: [personajeCancion.personajeId],
-    references: [personajes.id],
-  }),
-  cancion: one(canciones, {
-    fields: [personajeCancion.cancionId],
-    references: [canciones.id],
   }),
 }));
 

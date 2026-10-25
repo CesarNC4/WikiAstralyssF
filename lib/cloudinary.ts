@@ -42,9 +42,14 @@ export function firmarParams(params: Record<string, unknown>): string {
  * Devuelve `true` también cuando Cloudinary responde `not found`: el objetivo
  * (que el archivo no siga ahí) se cumple igual, y así un asset borrado a mano
  * desde la Media Library no bloquea la limpieza de su fila en la base.
+ *
+ * `tipo` es el de `media_assets`: Cloudinary guarda el audio como recurso
+ * `video`, y pedir `/image/destroy` de un audio respondería `not found` sin
+ * borrarlo (y la fila se purgaría dejando el archivo ocupando cuota).
  */
-export async function borrarDeCloudinary(publicId: string): Promise<boolean> {
+export async function borrarDeCloudinary(publicId: string, tipo = "imagen"): Promise<boolean> {
   if (!cloudinaryListo()) return false;
+  const recurso = tipo === "audio" || tipo === "video" ? "video" : "image";
   const timestamp = Math.floor(Date.now() / 1000);
   const body = new URLSearchParams({
     public_id: publicId,
@@ -53,7 +58,7 @@ export async function borrarDeCloudinary(publicId: string): Promise<boolean> {
     signature: firmarParams({ public_id: publicId, timestamp }),
   });
   try {
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/destroy`, {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${recurso}/destroy`, {
       method: "POST",
       body,
     });

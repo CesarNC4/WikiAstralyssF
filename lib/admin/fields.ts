@@ -80,6 +80,11 @@ export interface EntidadConfig {
   nameLabel?: string;
   hasImage: boolean;
   hasBanner: boolean;
+  /**
+   * Sección "Audio": subir un archivo propio o pegar un enlace (`url`,
+   * `audioAssetId`, `duracion`). La fuente la deduce el servidor al guardar.
+   */
+  hasAudio?: boolean;
   /** ¿Tiene ficha pública /ruta/[id] (para enlazar preview/ver)? */
   hasFicha: boolean;
   /** Columna por la que ordenar la lista del admin (default: nameField). */
@@ -584,12 +589,12 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     nameLabel: "Título",
     hasImage: true,
     hasBanner: false,
+    hasAudio: true,
     hasFicha: false,
     fields: [
       f("artista", "Artista", "text", "Identidad"),
-      f("tipoFuente", "Fuente", "combobox", "Datos clave", { catalogCampo: "cancion_fuente" }),
       f("uso", "Uso", "combobox", "Identidad", { catalogCampo: "cancion_uso", hint: "Tema de personaje, de batalla, ambiente…" }),
-      f("url", "Enlace", "text", "Datos clave"),
+      f("letra", "Letra", "textarea", "Contenido", { rows: 12 }),
       f("notas", "Notas", "textarea", "Contenido"),
     ],
   },

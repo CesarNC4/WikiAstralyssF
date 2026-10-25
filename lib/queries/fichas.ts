@@ -35,7 +35,6 @@ export async function getPersonajeFicha(id: number) {
           },
         },
       },
-      canciones: { with: { cancion: true } },
       naciones: {
         with: { nacion: { columns: { id: true, nombre: true, subtitulo: true, imagenUrl: true } } },
       },
@@ -80,7 +79,6 @@ export async function getPersonajePreview(id: number) {
           },
         },
       },
-      canciones: { with: { cancion: true } },
       naciones: {
         with: { nacion: { columns: { id: true, nombre: true, subtitulo: true, imagenUrl: true } } },
       },

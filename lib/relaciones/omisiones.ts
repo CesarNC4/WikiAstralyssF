@@ -51,6 +51,10 @@ export const BLOQUES_A_MANO: Record<string, string[]> = {
   regiones: ["region_nacion:a", "nacimiento_region:b"],
   locaciones: ["locacion_nacion:a", "locacion_region:a", "nacimiento_locacion:b"],
   misiones: ["mision_encargante:a"],
+  // La banda sonora del capítulo (suya y de sus actos) y la del acto se pintan
+  // con el reproductor (`SongList`), no como bloque.
+  capitulos: ["capitulo_cancion:a"],
+  actos: ["acto_cancion:a"],
 };
 
 export function bloquesAMano(entidad: string): string[] {

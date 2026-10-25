@@ -5,6 +5,7 @@ import * as s from "@/db/schema";
 import { saltoTemporal, textosFecha, type Extremo, type Fecha, type TextosFecha } from "@/lib/fechas";
 import { etiquetaActo, numerarCapitulos } from "@/lib/narrativa/numeracion";
 import { escribirFecha, fechasDeEntidades, getCalendario } from "@/lib/queries/fechas";
+import { cancionesDe } from "@/lib/queries/canciones";
 
 /**
  * Lógica de servidor del modelo narrativo (spec del taller §3, §4 y §7):
@@ -140,7 +141,7 @@ export async function getCapituloDerivado(capituloId: number, { publico }: { pub
   const [personajes, lugares, canciones, fecha] = await Promise.all([
     personajesDe(vinculos, publico),
     lugaresDe(vinculos, publico),
-    cancionesDe(vinculos, cancionesManual, publico),
+    cancionesDeActos(vinculos, cancionesManual, publico),
     fechaDe(actos),
   ]);
   return { actos, personajes, lugares, canciones, fecha };
@@ -197,19 +198,13 @@ function aCancion(
   return { id: c.id, titulo: c.titulo, artista: c.artista, url: c.url, tipoFuente: c.tipoFuente, imagenUrl: c.imagenUrl, desde };
 }
 
+/** Las vinculadas al capítulo entero (un opening, por ejemplo). */
 async function cancionesDelCapitulo(capituloId: number, publico: boolean): Promise<CancionDelCapitulo[]> {
-  const filas = await db
-    .select(CANCION)
-    .from(s.capituloCancion)
-    .innerJoin(s.canciones, eq(s.capituloCancion.cancionId, s.canciones.id))
-    .where(and(eq(s.capituloCancion.capituloId, capituloId), isNull(s.canciones.eliminadoEn)));
-  return filas
-    .filter((c) => !publico || c.estado === "publicado")
-    .map((c) => aCancion(c, "capitulo"));
+  return (await cancionesDe("capitulos", capituloId, { publico })).map((c) => aCancion(c, "capitulo"));
 }
 
 /** Manuales del capítulo + las de sus actos, sin repetir (§3). */
-async function cancionesDe(vinculos: FilaVinculo[], manual: CancionDelCapitulo[], publico: boolean): Promise<CancionDelCapitulo[]> {
+async function cancionesDeActos(vinculos: FilaVinculo[], manual: CancionDelCapitulo[], publico: boolean): Promise<CancionDelCapitulo[]> {
   const porId = new Map(manual.map((c) => [c.id, { ...c }]));
   const ids = [...new Set(vinculos.filter((v) => v.relacion === "acto_cancion").map((v) => v.destinoId))];
   if (ids.length) {

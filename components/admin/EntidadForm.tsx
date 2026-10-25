@@ -9,6 +9,7 @@ import type { EstadoPublicacion } from "@/db/schema/enums";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
+import { AudioField, type AudioValue } from "@/components/admin/AudioField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { RelacionesEditor } from "@/components/admin/blocks/RelacionEditor";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
@@ -135,6 +136,11 @@ export function EntidadForm({
 
   const [imagen, setImagen] = useState<ImageValue>({ assetId: null, url: s(inicial?.imagenUrl) || null });
   const [banner, setBanner] = useState<ImageValue>({ assetId: null, url: s(inicial?.bannerUrl) || null });
+  const [audio, setAudio] = useState<AudioValue>({
+    assetId: inicial?.audioAssetId != null ? Number(inicial.audioAssetId) : null,
+    url: s(inicial?.url) || null,
+    duracion: inicial?.duracion != null ? Number(inicial.duracion) : null,
+  });
   const [estado, setEstado] = useState<EstadoPublicacion>(
     (inicial?.estadoPublicacion as EstadoPublicacion) ?? "borrador",
   );
@@ -175,6 +181,11 @@ export function EntidadForm({
     if (config.hasBanner) {
       payload.bannerUrl = banner.url;
       payload.bannerAssetId = banner.assetId;
+    }
+    if (config.hasAudio) {
+      payload.url = audio.url;
+      payload.audioAssetId = audio.assetId;
+      payload.duracion = audio.duracion;
     }
     const fd = new FormData();
     fd.set("entidad", config.key);
@@ -228,6 +239,12 @@ export function EntidadForm({
       </AccordionSection>
 
       {fechas}
+
+      {config.hasAudio && (
+        <AccordionSection title="Audio" defaultOpen>
+          <AudioField value={audio} onChange={(v) => { setAudio(v); mark(); }} />
+        </AccordionSection>
+      )}
 
       {/* Resto de grupos */}
       {groups

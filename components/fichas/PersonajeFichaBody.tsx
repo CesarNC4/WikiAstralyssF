@@ -20,6 +20,7 @@ import type { Track } from "@/hooks/usePlayerStore";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { FechaTexto } from "@/components/fechas/Lectura";
 import { textosDeFechas } from "@/lib/queries/fechas";
+import { cancionesDe } from "@/lib/queries/canciones";
 import type { TextosFecha } from "@/lib/fechas";
 
 /** Cuerpo de la ficha de personaje: hero cinematográfico + secciones (§ punto 2). */
@@ -27,7 +28,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   const nombre = [p.nombre, p.surname].filter(Boolean).join(" ");
   const stats = p.estadisticas?.[0];
 
-  const [galeria, magiaLinksMap, familias, misiones, capitulos, fechasEventos] = await Promise.all([
+  const [galeria, magiaLinksMap, familias, misiones, capitulos, fechasEventos, canciones] = await Promise.all([
     getGaleria("personajes", p.id).catch(() => []),
     resolveMagiaLinks([p.tipoMagiaPrincipal, p.magiaSecundaria]).catch(() => new Map<string, number>()),
     getFamiliasDePersonaje(p.id).catch(() => []),
@@ -36,6 +37,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
     textosDeFechas("timeline", (p.eventos ?? []).map((e) => e.timelineEventoId).filter((x): x is number => x != null)).catch(
       () => new Map<number, TextosFecha>(),
     ),
+    cancionesDe("personajes", p.id).catch((): Track[] => []),
   ]);
   const magiaLinks = Object.fromEntries(magiaLinksMap);
 
@@ -49,17 +51,8 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
     href: h.fundamento && h.fundamento.estadoPublicacion === "publicado" ? `/magia/${h.fundamento.id}` : null,
   }));
 
-  const tracks: Track[] = (p.canciones ?? [])
-    .filter((c) => c.cancion)
-    .map((c) => ({
-      id: c.cancion!.id,
-      titulo: c.cancion!.titulo,
-      artista: c.cancion!.artista,
-      url: c.cancion!.url,
-      tipoFuente: c.cancion!.tipoFuente,
-      imagenUrl: c.cancion!.imagenUrl ?? p.imagenUrl,
-      contexto: c.contexto,
-    }));
+  // Sin portada propia, la canción toma la imagen del personaje.
+  const tracks: Track[] = canciones.map((c) => ({ ...c, imagenUrl: c.imagenUrl ?? p.imagenUrl }));
 
   const primary = stats
     ? [
@@ -202,7 +195,8 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         </Section>
 
         {/* Historia y personalidad */}
-        {(p.historia || p.rasgosPersonalidad || p.motivacion || p.miedos || (p.eventos?.length ?? 0) > 0) && (
+        {/* La banda sonora vive en esta sección: sin contarla, un personaje con canciones pero sin historia no las enseñaba. */}
+        {(p.historia || p.rasgosPersonalidad || p.motivacion || p.miedos || (p.eventos?.length ?? 0) > 0 || tracks.length > 0) && (
           <Section icon="ScrollText" title="Historia">
             <ProseBlock title="Historia">{p.historia}</ProseBlock>
             <ProseBlock title="Personalidad">{p.rasgosPersonalidad}</ProseBlock>

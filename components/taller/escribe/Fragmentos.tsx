@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/admin/Toast";
 import { FechaInput } from "@/components/admin/FechaInput";
+import { BloqueVinculos } from "@/components/admin/vinculos/BloqueVinculos";
+import { bloqueDe } from "@/lib/relaciones/registro";
 import {
   borrarFragmento,
   crearFragmento,
@@ -292,6 +294,15 @@ function FilaFragmento({
           {fechaSinGuardar && <p className="mt-1 text-xs text-warning">La fecha se guarda al salir del campo.</p>}
         </div>
       )}
+
+      {/* El "momento exacto" en que suena una canción se elige desde aquí (§3.5). */}
+      {bloqueCanciones && (
+        <div className="pl-8">
+          <BloqueVinculos bloque={bloqueCanciones} ownerId={f.id} />
+        </div>
+      )}
     </div>
   );
 }
+
+const bloqueCanciones = bloqueDe("fragmentos", "fragmento_cancion", "a");

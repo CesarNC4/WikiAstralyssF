@@ -882,7 +882,8 @@ export async function eliminarDelTaller(tipo: string, id: number): Promise<Resul
       if (tipo === "capitulos") {
         const [{ n }] = await tx.select({ n: count() }).from(s.actos).where(eq(s.actos.capituloId, id));
         if (n > 0) throw new Rechazo(`Tiene ${n} actos (vivos o en la papelera). Muévelos o bórralos antes.`);
-        await tx.delete(s.capituloCancion).where(eq(s.capituloCancion.capituloId, id));
+        // Sus canciones van en `vinculo` desde la Fase 3 de fragmentos-y-musica:
+        // las borra el barrido de vínculos de abajo.
       }
       if (tipo === "actos") {
         await tx.update(s.tramaHojas).set({ actoId: null }).where(eq(s.tramaHojas.actoId, id));

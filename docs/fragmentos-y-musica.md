@@ -1,9 +1,19 @@
 # Fragmentos del acto y sección Música — especificación y plan
 
-> **Estado (2026-10-24): Fases 1 y 2 implementadas.** `migrate-fragmentos.ts`
-> aplicada el 2026-10-24. Para las preguntas abiertas 1 y 2 de §6 se tomó la
-> propuesta: enlace opcional y borrado directo con confirmación. Fases 3–6
-> pendientes.
+> **Estado (2026-10-24): Fases 1, 2 y 3 implementadas.** `migrate-fragmentos.ts`
+> y `migrate-canciones.ts` aplicadas el 2026-10-24. Para las preguntas abiertas 1 y 2
+> de §6 se tomó la propuesta: enlace opcional y borrado directo con
+> confirmación. Fases 4–6 pendientes.
+>
+> Decisiones de la Fase 3:
+> - Panel: se amplió el admin genérico (`hasAudio` en `EntidadConfig`, sección
+>   "Audio" con `AudioField`) en lugar de un editor propio.
+> - Con audio propio, `canciones.url` guarda la URL de Cloudinary y
+>   `tipo_fuente = 'audio'`: el reproductor lee siempre `url` + `tipo_fuente`.
+> - `tipo_fuente` queda como dato derivado (`lib/media/fuentes.ts`). El catálogo
+>   `cancion_fuente` ya no está enlazado a la columna; retirarlo es la pregunta 3.
+> - `ENTIDAD_INFO.canciones.ruta` se deja para la Fase 5: hasta que exista
+>   `/canciones`, el enlace daría 404.
 >
 > En el equipo personal sí se prueba en local (`pnpm dev` + navegador); la
 > regla de "no probar en el navegador local" de §0 es solo del equipo con

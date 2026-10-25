@@ -193,20 +193,34 @@ export const RELACIONES: RelacionDef[] = [
   // ── Narrativa ─────────────────────────────────────────────────────────────
   // Los personajes de un capítulo ya no se vinculan a mano: salen de sus actos
   // (spec del taller §3). Por eso no hay relación capítulo↔personaje.
-  {
-    id: "personaje_cancion",
-    medio: "tabla",
-    a: { entidad: "personajes", titulo: "Canciones", icon: "Music", orden: 43 },
-    b: { entidad: "canciones", titulo: "Personajes", icon: "Users", orden: 20 },
-    campos: [{ name: "contexto", label: "Contexto", tipo: "text", destacado: true }],
-  },
-  {
-    id: "capitulo_cancion",
-    medio: "tabla",
-    a: { entidad: "capitulos", titulo: "Canciones", icon: "Music", orden: 21 },
-    b: { entidad: "canciones", titulo: "Capítulos", icon: "BookOpen", orden: 21 },
-    campos: [{ name: "contexto", label: "Contexto", tipo: "text", destacado: true }],
-  },
+
+  // ── Canciones (docs/fragmentos-y-musica.md §3.3) ──────────────────────────
+  // Todas en la tabla genérica, con una nota ("suena cuando Aqua despierta") y
+  // fuera del Atlas: una canción enlazada a medio mundo sería solo ruido. Las
+  // del acto están más abajo, con el resto de relaciones del acto. Los
+  // "momentos" son los fragmentos de un acto: el instante exacto en que suena.
+  ...(
+    [
+      ["personaje_cancion", "personajes", 43, "Personajes", "Users"],
+      ["capitulo_cancion", "capitulos", 21, "Capítulos", "BookOpen"],
+      ["fragmento_cancion", "fragmentos", 10, "Momentos", "Hourglass"],
+      ["nacion_cancion", "naciones", 60, "Naciones", "Globe2"],
+      ["organizacion_cancion", "organizaciones", 60, "Organizaciones", "Building2"],
+      ["region_cancion", "regiones", 60, "Regiones", "MapPinned"],
+      ["locacion_cancion", "locaciones", 60, "Locaciones", "MapPin"],
+      ["evento_cancion", "timeline", 60, "Eventos", "Clock"],
+    ] as const
+  ).map(
+    ([id, entA, ordenA, tituloB, iconB], i): RelacionDef => ({
+      id,
+      medio: "vinculo",
+      relacion: id,
+      a: { entidad: entA, titulo: "Canciones", icon: "Music", orden: ordenA },
+      b: { entidad: "canciones", titulo: tituloB, icon: iconB, orden: 20 + i },
+      campos: [{ ...NOTA, destacado: true }],
+      fueraDelAtlas: true,
+    }),
+  ),
 
   // ── Actos (spec del taller §4) ────────────────────────────────────────────
   // La ficha del acto los pinta todos. Del lado del personaje no hay bloque
@@ -230,6 +244,8 @@ export const RELACIONES: RelacionDef[] = [
       a: { entidad: "actos", titulo: tituloA, icon: iconA, orden: 20 + i },
       b: { entidad: entB, titulo: tituloB, icon: iconB, orden: 80 + i, sinPublico: entB === "personajes" },
       campos: [NOTA],
+      // Como el resto de relaciones de canciones (ver arriba).
+      fueraDelAtlas: entB === "canciones",
     }),
   ),
 

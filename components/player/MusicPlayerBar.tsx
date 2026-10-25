@@ -29,7 +29,8 @@ export function MusicPlayerBar() {
     usePlayerStore();
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const isLocal = (current?.tipoFuente ?? "LOCAL").toUpperCase() === "LOCAL";
+  // "audio" es el audio propio desde la Fase 3 de fragmentos-y-musica; "LOCAL", el nombre viejo.
+  const isLocal = ["LOCAL", "AUDIO"].includes((current?.tipoFuente ?? "LOCAL").toUpperCase());
 
   useEffect(() => {
     const a = audioRef.current;

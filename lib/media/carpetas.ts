@@ -36,20 +36,21 @@ export function faltaConfigSubida(): string | null {
  *
  * Se separa la galería porque es de muchos a uno: una ficha tiene una imagen
  * principal pero puede tener docenas de imágenes de galería, y mezclarlas hace
- * inmanejable la vista de Cloudinary.
+ * inmanejable la vista de Cloudinary. El audio propio de las canciones va en
+ * `astralys/canciones/audio`, aparte de sus portadas.
  */
-export function carpetaDe(entidad: string, rol: "principal" | "galeria" = "principal"): string {
+export function carpetaDe(entidad: string, rol: "principal" | "galeria" | "audio" = "principal"): string {
   const limpia = entidad
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
   const base = `${CARPETA_RAIZ}/${limpia || "otros"}`;
-  return rol === "galeria" ? `${base}/galeria` : base;
+  return rol === "principal" ? base : `${base}/${rol}`;
 }
 
 /** Forma que debe tener una carpeta gestionada por la wiki. */
-const CARPETA_VALIDA = new RegExp(`^${CARPETA_RAIZ}/[a-z0-9_-]+(/galeria)?$`);
+const CARPETA_VALIDA = new RegExp(`^${CARPETA_RAIZ}/[a-z0-9_-]+(/galeria|/audio)?$`);
 
 /**
  * La ruta de firma rechaza cualquier carpeta que no case con esto. Es defensa

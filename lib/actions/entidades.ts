@@ -11,7 +11,8 @@ import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadTable } from "@/lib/admin/tables";
 import { REL_TABLES } from "@/lib/admin/relacionesTables";
 import { clonarVinculos } from "@/lib/relaciones/consultas";
-import { entidadMedia } from "@/db/schema/media";
+import { entidadMedia, mediaAssets } from "@/db/schema/media";
+import { deducirFuente } from "@/lib/media/fuentes";
 import { actos } from "@/db/schema/narrativa";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
@@ -80,6 +81,27 @@ export async function guardarEntidad(
   const bannerAssetId = (data.bannerAssetId as number | null | undefined) ?? null;
   delete data.imagenAssetId;
   delete data.bannerAssetId;
+
+  // Audio de una canción (docs/fragmentos-y-musica.md §3.3): o archivo propio o
+  // enlace, nunca los dos. La fuente no se elige: se deduce aquí. Con archivo,
+  // `url` es la suya en Cloudinary, así el reproductor no necesita otra lectura.
+  if (config.hasAudio) {
+    const audioAssetId = (data.audioAssetId as number | null | undefined) ?? null;
+    if (audioAssetId != null) {
+      const [asset] = await db
+        .select({ url: mediaAssets.urlPublica, tipo: mediaAssets.tipo })
+        .from(mediaAssets)
+        .where(eq(mediaAssets.id, audioAssetId))
+        .limit(1);
+      if (!asset || asset.tipo !== "audio") return { ok: false, error: "El audio subido ya no existe. Súbelo otra vez." };
+      data.url = asset.url;
+      data.tipoFuente = "audio";
+    } else {
+      data.audioAssetId = null;
+      data.duracion = null;
+      data.tipoFuente = deducirFuente(data.url as string | null | undefined);
+    }
+  }
 
   // Un evento ligado a un acto va en el capítulo de ese acto (§14): el acto es
   // la precisión opcional dentro del capítulo, no otra cosa que pueda discrepar.

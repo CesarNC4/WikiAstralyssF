@@ -27,7 +27,10 @@ async function generarBlur(url: string): Promise<string | null> {
   }
 }
 
-/** Registra en media_assets una imagen ya subida a Cloudinary por el widget. */
+/**
+ * Registra en media_assets un archivo ya subido a Cloudinary por el widget: una
+ * imagen o, con `tipo: "audio"`, el audio propio de una canción.
+ */
 export async function registrarAsset(input: {
   publicId: string;
   url: string;
@@ -36,17 +39,19 @@ export async function registrarAsset(input: {
   bytes?: number | null;
   format?: string | null;
   alt?: string | null;
+  tipo?: "imagen" | "audio";
 }): Promise<AssetRegistrado> {
   await assertAdmin();
-  const blur = await generarBlur(input.url);
+  const tipo = input.tipo === "audio" ? "audio" : "imagen";
+  const blur = tipo === "imagen" ? await generarBlur(input.url) : null;
   const [row] = await db
     .insert(mediaAssets)
     .values({
       storage: "cloudinary",
       publicId: input.publicId,
       urlPublica: input.url,
-      tipo: "imagen",
-      mime: input.format ? `image/${input.format}` : null,
+      tipo,
+      mime: input.format ? `${tipo === "audio" ? "audio" : "image"}/${input.format}` : null,
       alt: input.alt ?? null,
       ancho: input.width ?? null,
       alto: input.height ?? null,

@@ -18,7 +18,9 @@ function filas<T>(res: unknown): T[] {
  * así que no hay que acordarse de purgar en cada sitio que borra algo.
  *
  * Un asset cuenta como referenciado si aparece en `entidad_media` o en alguna
- * columna `imagen_asset_id` / `banner_asset_id`. Esas columnas se buscan en
+ * columna `imagen_asset_id` / `banner_asset_id` / `audio_asset_id` (el audio
+ * propio de las canciones: sin ella, cada audio subido se daría por huérfano y
+ * se borraría en el siguiente guardado). Esas columnas se buscan en
  * `information_schema` y NO en el schema de Drizzle: varias tablas las tienen en
  * la base pero no las declaran en Drizzle (se escriben con SQL crudo desde
  * `guardarEntidad`), así que fiarse del schema borraría imágenes en uso.
@@ -35,7 +37,7 @@ export async function purgarMediosHuerfanos(): Promise<number> {
       select table_name, column_name
       from information_schema.columns
       where table_schema = 'public'
-        and column_name in ('imagen_asset_id', 'banner_asset_id')
+        and column_name in ('imagen_asset_id', 'banner_asset_id', 'audio_asset_id')
     `),
   );
 
@@ -51,10 +53,10 @@ export async function purgarMediosHuerfanos(): Promise<number> {
     );
   }
 
-  const huerfanos = filas<{ id: number; publicId: string | null }>(
+  const huerfanos = filas<{ id: number; publicId: string | null; tipo: string }>(
     await db.execute(sql`
       with referenciados as (${sql.join(fuentes, sql` union `)})
-      select a.id, a.public_id as "publicId"
+      select a.id, a.public_id as "publicId", a.tipo
       from media_assets a
       where not exists (select 1 from referenciados r where r.id = a.id)
     `),
@@ -64,7 +66,7 @@ export async function purgarMediosHuerfanos(): Promise<number> {
   for (const h of huerfanos) {
     // Si Cloudinary falla, dejamos la fila en pie: el siguiente barrido lo
     // reintenta, en vez de perder para siempre la pista del archivo.
-    if (h.publicId && !(await borrarDeCloudinary(h.publicId))) continue;
+    if (h.publicId && !(await borrarDeCloudinary(h.publicId, h.tipo))) continue;
     await db.delete(mediaAssets).where(eq(mediaAssets.id, h.id));
     purgados++;
   }

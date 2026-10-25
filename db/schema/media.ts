@@ -8,12 +8,22 @@ export const canciones = pgTable("canciones", {
   id: serial("id").primaryKey(),
   titulo: varchar("titulo").notNull(),
   artista: varchar("artista"),
-  /** Del catalogo `cancion_fuente`: Local, YouTube, Spotify... */
+  /**
+   * De dónde suena (`lib/media/fuentes.ts`): audio, youtube, soundcloud, suno,
+   * bandcamp, spotify o externo. Dato derivado: lo escribe el servidor a partir
+   * de la subida o del enlace, ya no se elige a mano.
+   */
   tipoFuente: varchar("tipo_fuente"),
   /** Para que es la cancion: tema de personaje, de batalla, ambiente... */
   uso: varchar("uso"),
+  /** Lo que se reproduce: el enlace pegado o, con audio propio, la URL de Cloudinary. */
   url: varchar("url"),
   notas: text("notas"),
+  letra: text("letra"),
+  /** Segundos. Solo con audio propio (lo da Cloudinary al subir). */
+  duracion: integer("duracion"),
+  /** El archivo propio en `media_assets` (`tipo = 'audio'`). Con él, `url` es la suya. */
+  audioAssetId: integer("audio_asset_id"),
   imagenUrl: varchar("imagen_url"),
   estadoPublicacion: estadoPublicacion("estado_publicacion").notNull().default("borrador"),
   publicadoPrimeraVezEn: timestamp("publicado_primera_vez_en", { mode: "date" }),

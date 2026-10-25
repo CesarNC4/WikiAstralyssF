@@ -35,7 +35,7 @@ export function SongList({ tracks }: { tracks: Track[] }) {
                     {t.artista ?? t.contexto ?? (t.tipoFuente ?? "").toLowerCase()}
                   </span>
                 </span>
-                {t.tipoFuente && t.tipoFuente.toUpperCase() !== "LOCAL" && (
+                {t.tipoFuente && !["LOCAL", "AUDIO"].includes(t.tipoFuente.toUpperCase()) && (
                   <span className="text-[10px] uppercase text-fg-muted">{t.tipoFuente}</span>
                 )}
               </button>

@@ -136,8 +136,8 @@ export const TABLAS_REL: Record<string, TablaRel> = {
   bestia_drop: { tabla: s.bestiaDrop, colA: "bestiaId", colB: "mineralId", pk: "id", orden: "orden" },
   bestia_relacion: { tabla: s.bestiaRelacion, colA: "bestiaId", colB: "relacionadaId", pk: "id" },
   mineral_artefacto: { tabla: s.mineralArtefacto, colA: "mineralId", colB: "artefactoId", pk: "id" },
-  personaje_cancion: { tabla: s.personajeCancion, colA: "personajeId", colB: "cancionId", pk: "id" },
-  capitulo_cancion: { tabla: s.capituloCancion, colA: "capituloId", colB: "cancionId", pk: "id" },
+  // personaje_cancion y capitulo_cancion pasaron a la tabla genérica `vinculo`
+  // (docs/fragmentos-y-musica.md §3.3); sus tablas se retiran en la Fase 6.
 };
 
 // Elementos: una entrada por entidad sobre la misma tabla polimórfica.

@@ -73,6 +73,30 @@ una sub-raza desde la ficha madre escribe `raza_padre_id` en la ficha hija.
 dos sentidos. Una referencia reflexiva da **dos**: "de quién deriva" y "qué deriva
 de esto" son listas distintas.
 
+## Canciones
+
+Desde la Fase 3 de [fragmentos-y-musica.md](./fragmentos-y-musica.md), todas
+las relaciones con canciones van en `vinculo`, con la ficha en el lado A, la
+canción en el B, una nota ("suena cuando Aqua despierta") y `fueraDelAtlas`:
+
+| id | lado A | bloque en la canción |
+|---|---|---|
+| `personaje_cancion` | personajes | Personajes |
+| `capitulo_cancion` | capitulos | Capítulos |
+| `acto_cancion` | actos | Actos |
+| `fragmento_cancion` | fragmentos | Momentos |
+| `nacion_cancion` | naciones | Naciones |
+| `organizacion_cancion` | organizaciones | Organizaciones |
+| `region_cancion` | regiones | Regiones |
+| `locacion_cancion` | locaciones | Locaciones |
+| `evento_cancion` | timeline | Eventos |
+
+`personaje_cancion` y `capitulo_cancion` eran de medio `tabla`; sus tablas
+viejas ya no se leen y se retiran en la Fase 6. Las fichas las leen con
+`cancionesDe()` (`lib/queries/canciones.ts`), una sola consulta para cualquier
+entidad. El momento exacto (fragmento) se elige desde la fila del fragmento en
+el editor del acto.
+
 ## Archivos
 
 | Archivo | Qué es |

@@ -95,5 +95,10 @@ export function buildEntidadSchema(config: EntidadConfig) {
     shape.bannerUrl = str;
     shape.bannerAssetId = idField;
   }
+  if (config.hasAudio) {
+    shape.url = str;
+    shape.audioAssetId = idField;
+    shape.duracion = intField;
+  }
   return z.object(shape);
 }
