@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { EntityImage } from "@/components/media/EntityImage";
@@ -70,9 +70,24 @@ export function BloqueVinculos({
     if (abriendo && !cargado) void cargar();
   };
 
+  // Un bloque que nace abierto (el editor del acto, las canciones del capítulo)
+  // nunca pasa por `alternar`, así que se carga al montarse. `cargar` sólo
+  // cambia con relId, lado y ownerId (`toast` es estable), nunca con el
+  // descriptor `bloque`, que puede llegar como objeto nuevo en cada render:
+  // depender de él reintroduciría el bucle de peticiones de ed7dbe1. En el
+  // panel de conexiones `abiertoInicial` llega falso en el primer render (el
+  // conteo aún no está), así que allí no cambia nada.
+  const nacioAbierto = useRef(abiertoInicial ?? false);
+  useEffect(() => {
+    if (nacioAbierto.current) void cargar();
+  }, [cargar]);
+
+  // Toda escritura devuelve la lista completa del bloque, así que una que
+  // termina bien también lo deja cargado.
   const conError = async (fn: () => Promise<FilaVinculo[]>) => {
     try {
       setFilas(await fn());
+      setCargado(true);
     } catch {
       toast("No se pudo guardar el cambio.", "error");
       void cargar();
