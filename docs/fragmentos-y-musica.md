@@ -1,11 +1,12 @@
 # Fragmentos del acto y sección Música — especificación y plan
 
-> **Estado (2026-10-24): Fases 1–5 implementadas.** `migrate-fragmentos.ts`
-> y `migrate-canciones.ts` aplicadas el 2026-10-24. Para las preguntas abiertas 1 y 2
-> de §6 se tomó la propuesta: enlace opcional y borrado directo con
-> confirmación. La 4 está respondida: el embed de Suno funciona (probado con
-> una canción real del autor). Fase 6: código listo y `migrate-canciones-retirada.ts`
-> ensayada; falta el visto bueno del autor para `--aplicar`.
+> **Estado (2026-10-24): plan terminado, Fases 1–6 implementadas y desplegadas.**
+> Las tres migraciones (`migrate-fragmentos.ts`, `migrate-canciones.ts` y
+> `migrate-canciones-retirada.ts`) están aplicadas; lo borrado en la Fase 6
+> está en `respaldo_canciones`. Preguntas abiertas de §6: para la 1 y la 2 se
+> tomó la propuesta (enlace opcional y borrado directo con confirmación); la 3
+> es sí (catálogo `cancion_fuente` retirado en la Fase 6); la 4 está hecha (el
+> embed de Suno funciona con una canción real del autor).
 >
 > Decisiones de la Fase 5:
 > - Las canciones de los fragmentos cuentan como del acto (y por tanto del
@@ -32,7 +33,7 @@
 > - Con audio propio, `canciones.url` guarda la URL de Cloudinary y
 >   `tipo_fuente = 'audio'`: el reproductor lee siempre `url` + `tipo_fuente`.
 > - `tipo_fuente` queda como dato derivado (`lib/media/fuentes.ts`). El catálogo
->   `cancion_fuente` ya no está enlazado a la columna; retirarlo es la pregunta 3.
+>   `cancion_fuente` se desenlazó de la columna y se retiró en la Fase 6.
 > - `ENTIDAD_INFO.canciones.ruta` se deja para la Fase 5: hasta que exista
 >   `/canciones`, el enlace daría 404.
 >
@@ -491,4 +492,6 @@ Propuestas por Claude y no discutidas en detalle. El autor puede corregirlas:
 - ¿Papelera para fragmentos o borrado directo? Propuesta: **borrado directo con
   confirmación**, porque el acto ya tiene papelera.
 - ¿Se retira el catálogo `cancion_fuente` cuando la fuente pase a deducirse sola?
+  **Sí** (2026-10-24): retirado en la Fase 6.
 - ¿Probar el embed de Suno con una canción real del autor antes de la fase 4?
+  **Hecho** (2026-10-24): funciona con el id largo de la canción.

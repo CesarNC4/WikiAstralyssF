@@ -11,8 +11,9 @@
  *  3. Retira las tablas viejas `acto_cancion`, `hoja_cancion` (sin uso desde
  *     antes del plan), `personaje_cancion` y `capitulo_cancion` (sin uso desde
  *     la Fase 3: esas relaciones van en `vinculo`).
- *
- * El catálogo `cancion_fuente` NO se toca: retirarlo es la pregunta abierta 3.
+ *  4. Retira el catálogo `cancion_fuente` (pregunta abierta 3, el autor dijo
+ *     que sí): la fuente se deduce sola desde la Fase 3. La columna
+ *     `canciones.tipo_fuente` se queda, como dato derivado.
  *
  * Uso:
  *     node --env-file=.env.local scripts/migrations/migrate-canciones-retirada.ts            (ENSAYO)
@@ -86,6 +87,15 @@ async function trabajo(tx: Tx) {
     const n = await respaldar(tx, t, "");
     await tx.unsafe(`drop table ${t}`);
     console.log(`✅ ${t}: retirada (${n} filas respaldadas).`);
+  }
+
+  // 4. Catálogo cancion_fuente.
+  const nCat = await respaldar(tx, "catalogos", "where campo = 'cancion_fuente'");
+  if (nCat) {
+    await tx`delete from catalogos where campo = 'cancion_fuente'`;
+    console.log(`✅ Catálogo cancion_fuente: ${nCat} opciones retiradas (respaldadas).`);
+  } else {
+    console.log("·  Catálogo cancion_fuente: ya retirado.");
   }
 
   const [quedan] = await tx<{ n: number }[]>`select count(*)::int as n from canciones`;

@@ -89,7 +89,6 @@ export const ETIQUETAS_CATALOGO: Record<string, EtiquetaCatalogo> = {
   // ── Narrativa y medios ───────────────────────────────────────────────────
   capitulo_tipo: { titulo: "Tipo de capítulo" },
   narrador_tipo: { titulo: "Cómo narra el narrador" },
-  cancion_fuente: { titulo: "Fuente de la canción", descripcion: "Ya no se usa: la fuente se deduce sola del enlace o del audio subido." },
   cancion_uso: { titulo: "Uso de la canción" },
   moneda_denominacion: { titulo: "Denominación de moneda" },
   lore_seccion_tipo: { titulo: "Tipo de sección de lore" },
@@ -176,7 +175,6 @@ export const USOS_LEGIBLES: Record<string, string[]> = {
 
   capitulo_tipo: ["Capítulos"],
   narrador_tipo: ["Capítulos"],
-  cancion_fuente: [],
   cancion_uso: ["Canciones"],
   moneda_denominacion: ["Economía"],
   lore_seccion_tipo: ["Páginas de lore"],
@@ -262,10 +260,6 @@ export const USOS_DE_CATALOGO: Record<string, [string, string][]> = {
   capitulo_tipo: [["capitulos", "tipo"]],
   narrador_tipo: [["capitulos", "narrador_tipo"]],
 
-  // Sin uso desde la Fase 3 de docs/fragmentos-y-musica.md: la fuente se deduce
-  // del enlace o de la subida y ya no se elige. Sin columnas aquí, renombrar una
-  // opción del catálogo no reescribe `canciones.tipo_fuente`.
-  cancion_fuente: [],
   cancion_uso: [["canciones", "uso"]],
 
   moneda_denominacion: [["sistema_monetario", "denominacion"]],

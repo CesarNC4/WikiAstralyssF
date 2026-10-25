@@ -132,7 +132,6 @@ export const CATALOGOS = {
   narrador_tipo: ["Omnisciente", "Primera persona", "Tercera limitada", "Epistolar", "Múltiple", "Sin narrador"],
 
   // ── Canciones ────────────────────────────────────────────────────────────
-  cancion_fuente: ["Local", "YouTube", "Spotify", "SoundCloud", "Bandcamp", "Suno", "Enlace externo"],
   cancion_uso: ["Tema principal", "Tema de personaje", "Tema de batalla", "Ambiente", "Créditos", "Tema de nación", "Tema de villano"],
 
   // ── Economía ─────────────────────────────────────────────────────────────
