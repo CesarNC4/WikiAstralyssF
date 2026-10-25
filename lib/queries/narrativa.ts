@@ -205,7 +205,11 @@ async function cancionesDelCapitulo(capituloId: number, publico: boolean): Promi
 /** Manuales del capítulo + las de sus actos, sin repetir (§3). */
 async function cancionesDeActos(vinculos: FilaVinculo[], manual: CancionDelCapitulo[], publico: boolean): Promise<CancionDelCapitulo[]> {
   const porId = new Map(manual.map((c) => [c.id, { ...c }]));
-  const ids = [...new Set(vinculos.filter((v) => v.relacion === "acto_cancion").map((v) => v.destinoId))];
+  // Las de los fragmentos cuentan como del acto: es el momento exacto en que suenan.
+  const actos = [...new Set(vinculos.map((v) => v.origenId))];
+  const ids = [
+    ...new Set([...vinculos.filter((v) => v.relacion === "acto_cancion").map((v) => v.destinoId), ...(await cancionesDeFragmentos(actos))]),
+  ];
   if (ids.length) {
     const filas = await db
       .select(CANCION_TRACK)
@@ -384,18 +388,31 @@ function ordenPorFecha<T extends { clave: number | null; numero: number }>(lista
  * Canciones de un acto (las suyas, no las del capítulo), para su ficha pública.
  */
 export async function getCancionesDeActo(actoId: number): Promise<CancionDelCapitulo[]> {
+  const delActo = await cancionesDe("actos", actoId);
+  const deFragmentos = await cancionesDeFragmentos([actoId]);
+  const faltan = deFragmentos.filter((id) => !delActo.some((c) => c.id === id));
+  const extra = faltan.length
+    ? await db
+        .select(CANCION_TRACK)
+        .from(s.canciones)
+        .where(and(inArray(s.canciones.id, faltan), eq(s.canciones.estadoPublicacion, "publicado"), isNull(s.canciones.eliminadoEn)))
+    : [];
+  return [...delActo, ...extra].map((c) => aCancion(c, "acto"));
+}
+
+/** Ids de las canciones vinculadas a algún fragmento de estos actos. */
+async function cancionesDeFragmentos(actoIds: number[]): Promise<number[]> {
+  if (actoIds.length === 0) return [];
   const filas = await db
-    .select(CANCION_TRACK)
+    .select({ id: s.vinculo.destinoId })
     .from(s.vinculo)
-    .innerJoin(s.canciones, eq(s.vinculo.destinoId, s.canciones.id))
+    .innerJoin(s.actoFragmento, eq(s.vinculo.origenId, s.actoFragmento.id))
     .where(
       and(
-        eq(s.vinculo.origenTipo, "actos"),
-        eq(s.vinculo.origenId, actoId),
-        eq(s.vinculo.relacion, "acto_cancion"),
-        eq(s.canciones.estadoPublicacion, "publicado"),
-        isNull(s.canciones.eliminadoEn),
+        eq(s.vinculo.origenTipo, "fragmentos"),
+        eq(s.vinculo.relacion, "fragmento_cancion"),
+        inArray(s.actoFragmento.actoId, actoIds),
       ),
     );
-  return filas.map((c) => aCancion(c, "acto"));
+  return [...new Set(filas.map((f) => f.id))];
 }

@@ -12,6 +12,7 @@ const ITEMS = [
   { href: "/personajes", icon: "Users", label: "Personajes" },
   { href: "__search__", icon: "Search", label: "Buscar" },
   { href: "/naciones", icon: "Globe2", label: "Mundo" },
+  { href: "/canciones", icon: "Music", label: "Música" },
   { href: "/mapa", icon: "Map", label: "Mapa" },
 ];
 

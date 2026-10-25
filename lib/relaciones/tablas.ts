@@ -81,7 +81,7 @@ export const ENTIDAD_INFO: Record<string, EntidadInfo> = {
       then 'publicado' else 'borrador' end`,
   },
   arcos: { tabla: s.tramaArcos, label: "nombre", estado: true, papelera: true, ruta: "/arcos" },
-  canciones: { tabla: s.canciones, label: "titulo", detalle: "artista", imagen: "imagenUrl", estado: true },
+  canciones: { tabla: s.canciones, label: "titulo", detalle: "artista", imagen: "imagenUrl", estado: true, papelera: true, ruta: "/canciones" },
   gremio: { tabla: s.gremio, label: "nombre", imagen: "imagenUrl", ruta: "/gremio" },
   elementos: { tabla: s.elementos, label: "nombre", detalle: "slug" },
   // Sin `ruta`: la economía tiene página propia pero no ficha por moneda.

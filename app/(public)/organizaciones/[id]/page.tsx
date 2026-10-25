@@ -4,6 +4,7 @@ import { OrgFichaBody } from "@/components/fichas/OrgFichaBody";
 import { getOrganizacionFicha, getVisibleIds } from "@/lib/queries/fichas";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
+import { BandaSonora } from "@/components/fichas/BandaSonora";
 
 export const revalidate = 3600;
 
@@ -33,6 +34,7 @@ export default async function OrganizacionPage({ params }: { params: Promise<{ i
       {/* Conexiones generadas desde el registro de relaciones. */}
       <div className="mx-auto max-w-5xl space-y-12 px-4 pb-10">
         <FechasDeFicha entidad="organizaciones" id={data.org.id} />
+        <BandaSonora entidad="organizaciones" id={data.org.id} />
         <Conexiones entidad="organizaciones" id={data.org.id} nombre={data.org.nombre} imagen={data.org.imagenUrl} />
       </div>
     </>

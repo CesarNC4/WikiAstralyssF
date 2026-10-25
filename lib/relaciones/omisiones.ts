@@ -34,6 +34,7 @@ export const BLOQUES_A_MANO: Record<string, string[]> = {
     "bestia_nacion:b",
     "region_nacion:b",
     "nacimiento_nacion:b",
+    "nacion_cancion:a",
   ],
   razas: ["nacion_raza:b", "personaje_raza:b", "entidad_elemento:razas:a", "raza_padre:b"],
   bestias: [
@@ -44,17 +45,20 @@ export const BLOQUES_A_MANO: Record<string, string[]> = {
     "entidad_elemento:bestias:a",
   ],
   minerales: ["mineral_artefacto:a", "bestia_drop:b"],
-  organizaciones: ["org_jerarquia:a"],
+  organizaciones: ["org_jerarquia:a", "organizacion_cancion:a"],
   familias: ["familia_jerarquia:a"],
   gremio: ["gremio_jerarquia:a"],
   artefactos: ["artefacto_propietario:a"],
-  regiones: ["region_nacion:a", "nacimiento_region:b"],
-  locaciones: ["locacion_nacion:a", "locacion_region:a", "nacimiento_locacion:b"],
+  regiones: ["region_nacion:a", "nacimiento_region:b", "region_cancion:a"],
+  locaciones: ["locacion_nacion:a", "locacion_region:a", "nacimiento_locacion:b", "locacion_cancion:a"],
   misiones: ["mision_encargante:a"],
   // La banda sonora del capítulo (suya y de sus actos) y la del acto se pintan
   // con el reproductor (`SongList`), no como bloque.
   capitulos: ["capitulo_cancion:a"],
   actos: ["acto_cancion:a"],
+  // Los momentos (fragmentos) se pintan con su acto y su capítulo, que el bloque
+  // genérico no sabe enlazar.
+  canciones: ["fragmento_cancion:b"],
 };
 
 export function bloquesAMano(entidad: string): string[] {

@@ -17,6 +17,7 @@ import { STATS_POR_ENTIDAD, tieneStats } from "@/lib/stats";
 import { estiloLocacion } from "@/lib/mapa";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
+import { BandaSonora } from "@/components/fichas/BandaSonora";
 
 const DIPLO_COLOR: Record<string, string> = {
   Aliada: "#5fb98f", Rival: "#e0a44a", Neutral: "#9aa3b2", Vasalla: "#5b8def", "En guerra": "#ef6f6f",
@@ -240,6 +241,7 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
         )}
 
 
+        <BandaSonora entidad="naciones" id={n.id} />
         {/* Conexiones generadas desde el registro de relaciones. */}
         <Conexiones entidad="naciones" id={n.id} nombre={n.nombre} imagen={n.imagenUrl} />
 

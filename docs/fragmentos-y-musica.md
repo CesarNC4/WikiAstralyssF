@@ -1,10 +1,19 @@
 # Fragmentos del acto y sección Música — especificación y plan
 
-> **Estado (2026-10-24): Fases 1–4 implementadas.** `migrate-fragmentos.ts`
+> **Estado (2026-10-24): Fases 1–5 implementadas.** `migrate-fragmentos.ts`
 > y `migrate-canciones.ts` aplicadas el 2026-10-24. Para las preguntas abiertas 1 y 2
 > de §6 se tomó la propuesta: enlace opcional y borrado directo con
 > confirmación. La 4 está respondida: el embed de Suno funciona (probado con
-> una canción real del autor). Fases 5 y 6 pendientes.
+> una canción real del autor). Fase 6 (limpieza destructiva) pendiente.
+>
+> Decisiones de la Fase 5:
+> - Las canciones de los fragmentos cuentan como del acto (y por tanto del
+>   capítulo) en su banda sonora.
+> - Nación, organización, región y locación pintan su banda sonora con
+>   `BandaSonora` (y sus bloques `*_cancion:a` están en `BLOQUES_A_MANO`). Los
+>   eventos no tienen ficha: salen en la de la canción.
+> - El filtro por personaje del índice usa el vínculo directo personaje ↔
+>   canción.
 >
 > Decisiones de la Fase 4:
 > - Motores en `components/player/motores.tsx`, barra y panel en

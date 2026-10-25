@@ -12,6 +12,7 @@ import { getGaleria } from "@/lib/queries/galeria";
 import { estiloLocacion } from "@/lib/mapa";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
+import { BandaSonora } from "@/components/fichas/BandaSonora";
 
 export const revalidate = 3600;
 
@@ -128,6 +129,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         )}
 
         <FechasDeFicha entidad="locaciones" id={data.locacion.id} />
+        <BandaSonora entidad="locaciones" id={data.locacion.id} />
         {/* Conexiones generadas desde el registro de relaciones. */}
         <Conexiones entidad="locaciones" id={data.locacion.id} nombre={data.locacion.nombre} imagen={data.locacion.imagenUrl} />
 

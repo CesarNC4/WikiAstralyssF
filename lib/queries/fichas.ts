@@ -614,7 +614,7 @@ export async function getCapitulosDeArco(arcoId: number) {
 }
 
 export async function getVisibleIds(
-  key: "personajes" | "naciones" | "organizaciones" | "familias" | "razas" | "bestias" | "minerales" | "conceptos" | "magia" | "misiones" | "demonios" | "artefactos" | "capitulos" | "arcos",
+  key: "personajes" | "naciones" | "organizaciones" | "familias" | "razas" | "bestias" | "minerales" | "conceptos" | "magia" | "misiones" | "demonios" | "artefactos" | "capitulos" | "arcos" | "canciones",
 ): Promise<number[]> {
   const table = {
     personajes: s.personajes,
@@ -631,6 +631,7 @@ export async function getVisibleIds(
     artefactos: s.armasArtefactos,
     capitulos: s.capitulos,
     arcos: s.tramaArcos,
+    canciones: s.canciones,
   }[key];
   const rows = await db
     .select({ id: table.id })

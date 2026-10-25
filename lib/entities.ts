@@ -4,7 +4,7 @@
  * acentos de color y la presentación de resultados de búsqueda.
  */
 
-export type EntityGroup = "personajes" | "mundo" | "lore" | "explorar";
+export type EntityGroup = "personajes" | "mundo" | "lore" | "musica" | "explorar";
 
 export type EntityKey =
   | "personajes"
@@ -31,7 +31,8 @@ export type EntityKey =
   | "mapa"
   | "compendio"
   | "atlas"
-  | "alturas";
+  | "alturas"
+  | "canciones";
 
 export interface EntityMeta {
   key: EntityKey;
@@ -334,6 +335,20 @@ export const ENTITIES: Record<EntityKey, EntityMeta> = {
     tagline: "Personajes, bestias y demonios, uno al lado del otro y a escala real.",
     hasIndex: false,
   },
+  // Sección Música (docs/fragmentos-y-musica.md §3.7). Fuera del buscador ⌘K y
+  // del Atlas: no tiene triggers de search_index y sus relaciones van con
+  // `fueraDelAtlas`.
+  canciones: {
+    key: "canciones",
+    plural: "Música",
+    singular: "Canción",
+    route: "/canciones",
+    accent: "text-accent",
+    icon: "Music",
+    group: "musica",
+    tagline: "La banda sonora de Astralys.",
+    hasIndex: true,
+  },
 };
 
 export const ENTITY_LIST = Object.values(ENTITIES);
@@ -370,6 +385,7 @@ export const NAV_GROUPS: { id: EntityGroup; label: string; keys: EntityKey[] }[]
     keys: ["naciones", "razas", "organizaciones", "familias", "gremio", "bestias", "minerales", "demonios", "artefactos"],
   },
   { id: "lore", label: "Lore", keys: ["conceptos", "magia", "lore", "capitulos", "arcos", "misiones", "economia"] },
+  { id: "musica", label: "Música", keys: ["canciones"] },
   { id: "explorar", label: "Explorar", keys: ["timeline", "mapa", "compendio", "atlas", "alturas"] },
 ];
 

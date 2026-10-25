@@ -79,7 +79,10 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - Búsqueda global ⌘K sobre índice FTS materializado (`search_index`, mantenido
   por triggers): tsquery en español + similitud trigram + prefijo, tolerante a
   acentos y erratas.
-- Reproductor de música global persistente (Zustand + `<audio>` + embeds).
+- **Reproductor de música global** que sigue sonando al navegar: audio propio
+  (`<audio>`), YouTube y SoundCloud controlados desde la barra (play, pausa,
+  salto, cola, volumen), Suno y Spotify en su reproductor embebido, Media
+  Session en la pantalla de bloqueo, y aviso cuando algo no se puede reproducir.
 - Índices de las 13 secciones + fichas (personaje con tabs; nación, organización,
   familia con árbol; genéricas para el resto) + lore por slug.
 - Timeline vertical, mapa de naciones, páginas de error temáticas.
@@ -156,7 +159,13 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   las fichas, ordenado por día absoluto, con filtros por tipo, era y ficha, y
   solo lo importante por defecto. Submenú con el calendario por año
   (`/timeline/calendario`).
-- Canciones y catálogo de elementos gestionables desde el panel.
+- **Sección Música** (`/canciones`, quinto apartado del menú y sexto icono de
+  la barra móvil): la banda sonora como un álbum, por uso o por historia (libro
+  › capítulo donde suena), con filtros y "Reproducir todo"; ficha por canción
+  con letra, los momentos exactos (fragmentos) en que suena y dónde más suena.
+  En el panel, cada canción sube su audio a Cloudinary o pega un enlace, y la
+  fuente se reconoce sola. Ver [docs/fragmentos-y-musica.md](./docs/fragmentos-y-musica.md).
+- Catálogo de elementos gestionable desde el panel.
 - Feed RSS en `/feed.xml` con las últimas entidades publicadas.
 - PWA instalable con service worker propio (sin dependencias): navegación sin
   conexión de lo ya visitado. El panel y las APIs nunca se cachean.
