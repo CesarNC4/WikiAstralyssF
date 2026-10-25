@@ -9,7 +9,8 @@ import { assertAdmin } from "@/lib/actions/auth";
 import { notificarNuevaPublicacion } from "@/lib/discord";
 import type { Fecha } from "@/lib/fechas";
 import { escribirFecha } from "@/lib/queries/fechas";
-import { normalizarOrdenActos, renumerarCapitulos, type Ejecutor } from "@/lib/queries/narrativa";
+import { contarFragmentosConFecha, normalizarOrdenActos, recalcularFechaActo, renumerarCapitulos, type Ejecutor } from "@/lib/queries/narrativa";
+import { getFragmentosActo, type FragmentosActo } from "@/lib/queries/taller";
 import { FechaSchema } from "@/lib/validation/fecha";
 
 /**
@@ -446,13 +447,22 @@ export async function guardarActo(id: number, cambios: z.input<typeof ActoCambio
       if (d.estadoPublicacion === "publicado" && !antes.publicadoPrimeraVezEn) set.publicadoPrimeraVezEn = new Date();
       if (Object.keys(set).length) await tx.update(s.actos).set(set).where(eq(s.actos.id, id));
 
-      if (fecha !== undefined) {
+      // Con fragmentos fechados la fecha del acto se calcula de ellos: la del
+      // formulario se ignora y solo se guarda si es importante.
+      if (await contarFragmentosConFecha(tx, id)) {
+        if (importante !== undefined)
+          await tx
+            .update(s.fechaLore)
+            .set({ importante })
+            .where(and(eq(s.fechaLore.entidadTipo, "actos"), eq(s.fechaLore.entidadId, id), eq(s.fechaLore.rol, "principal")));
+      } else if (fecha !== undefined) {
         const error = await escribirFecha(tx, { entidadTipo: "actos", entidadId: id, rol: "principal" }, fecha as Fecha | null, importante ?? false);
         if (error) throw new Rechazo(error);
       }
       return antes.capituloId;
     }),
   );
+  if (r.ok && r.data != null) revalidatePath(`/capitulos/${r.data}/actos/${id}`);
   return conCapitulo(r);
 }
 
@@ -624,6 +634,171 @@ export async function vincularEventoActo(eventoId: number, actoId: number | null
   return r;
 }
 
+// ── Fragmentos del acto (docs/fragmentos-y-musica.md §2) ───────────────────
+//
+// Se guardan al momento, como los vínculos, y cada acción devuelve el bloque
+// entero (fragmentos y fecha del acto) para que el editor lo pinte sin recargar.
+// Reglas: el POV de un fragmento entra en el bloque POV del acto si no estaba
+// (borrar el fragmento no lo quita), y cada cambio de fecha recalcula la del
+// acto en la misma transacción.
+
+/** Resultado de una acción de fragmentos. `povAnadido`: el bloque POV del acto ganó una ficha. */
+export type ResultadoFragmentos = Resultado<FragmentosActo & { povAnadido: boolean }>;
+
+const FragmentoCambios = z
+  .object({
+    personajeId: z.number().int().nullable(),
+    titulo: textoOpcional,
+    // Se pinta como enlace en la ficha pública: solo http(s), nada de javascript:.
+    enlace: z
+      .string()
+      .trim()
+      .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "El enlace debe empezar por http:// o https://.")
+      .nullable()
+      .optional(),
+    /** null la borra, ausente no la toca. */
+    fecha: FechaSchema.nullable(),
+  })
+  .partial();
+
+export type FragmentoCambios = z.input<typeof FragmentoCambios>;
+
+/** Añade el personaje al bloque POV del acto si aún no está. Devuelve si lo añadió. */
+async function asegurarPov(ex: Ejecutor, actoId: number, personajeId: number): Promise<boolean> {
+  const donde = and(
+    eq(s.vinculo.origenTipo, "actos"),
+    eq(s.vinculo.origenId, actoId),
+    eq(s.vinculo.relacion, "acto_pov"),
+    eq(s.vinculo.destinoTipo, "personajes"),
+    eq(s.vinculo.destinoId, personajeId),
+  );
+  const [ya] = await ex.select({ id: s.vinculo.id }).from(s.vinculo).where(donde).limit(1);
+  if (ya) return false;
+  const [p] = await ex.select({ id: s.personajes.id }).from(s.personajes).where(eq(s.personajes.id, personajeId));
+  if (!p) throw new Rechazo("Ese personaje ya no existe.");
+  await ex.insert(s.vinculo).values({ origenTipo: "actos", origenId: actoId, destinoTipo: "personajes", destinoId: personajeId, relacion: "acto_pov" });
+  return true;
+}
+
+/** Acto y capítulo de un fragmento, o rechazo si no existe. */
+async function actoDelFragmento(ex: Ejecutor, id: number): Promise<{ actoId: number; capituloId: number | null }> {
+  const [f] = await ex
+    .select({ actoId: s.actoFragmento.actoId, capituloId: s.actos.capituloId })
+    .from(s.actoFragmento)
+    .innerJoin(s.actos, eq(s.actoFragmento.actoId, s.actos.id))
+    .where(eq(s.actoFragmento.id, id));
+  if (!f) throw new Rechazo("El fragmento ya no existe.");
+  return f;
+}
+
+/** Revalida lo que depende del acto y devuelve el bloque recién leído. */
+async function trasFragmentos(
+  r: Resultado<{ actoId: number; capituloId: number | null; povAnadido: boolean }>,
+): Promise<ResultadoFragmentos> {
+  if (!r.ok) return r;
+  const { actoId, capituloId, povAnadido } = r.data;
+  revalidarNarrativa(capituloId ?? undefined);
+  if (capituloId != null) revalidatePath(`/capitulos/${capituloId}/actos/${actoId}`);
+  return { ok: true, data: { ...(await getFragmentosActo(actoId)), povAnadido } };
+}
+
+/** Añade un fragmento al final del acto, en orden de lectura. */
+export async function crearFragmento(actoId: number, personajeId: number | null = null): Promise<ResultadoFragmentos> {
+  await assertAdmin();
+  if (personajeId != null && !Number.isInteger(personajeId)) return { ok: false, error: "Datos inválidos." };
+  const r = await intentar("crearFragmento", () =>
+    db.transaction(async (tx) => {
+      const capituloId = await capituloDelActo(tx, actoId);
+      const [{ ultimo }] = await tx
+        .select({ ultimo: max(s.actoFragmento.orden) })
+        .from(s.actoFragmento)
+        .where(eq(s.actoFragmento.actoId, actoId));
+      await tx.insert(s.actoFragmento).values({ actoId, personajeId, orden: (ultimo ?? -1) + 1 });
+      const povAnadido = personajeId != null ? await asegurarPov(tx, actoId, personajeId) : false;
+      return { actoId, capituloId, povAnadido };
+    }),
+  );
+  return trasFragmentos(r);
+}
+
+/** Guarda POV, título, enlace o fecha de un fragmento. Lo que no llega no se toca. */
+export async function guardarFragmento(id: number, cambios: FragmentoCambios): Promise<ResultadoFragmentos> {
+  await assertAdmin();
+  const p = FragmentoCambios.safeParse(cambios);
+  if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "Datos inválidos." };
+  const { fecha, ...d } = p.data;
+
+  const r = await intentar("guardarFragmento", () =>
+    db.transaction(async (tx) => {
+      const { actoId, capituloId } = await actoDelFragmento(tx, id);
+      const set: Partial<typeof s.actoFragmento.$inferInsert> = { actualizadoEn: new Date() };
+      for (const [k, v] of Object.entries(d)) (set as Record<string, unknown>)[k] = v === "" ? null : v;
+      await tx.update(s.actoFragmento).set(set).where(eq(s.actoFragmento.id, id));
+
+      const povAnadido = d.personajeId != null ? await asegurarPov(tx, actoId, d.personajeId) : false;
+      if (fecha !== undefined) {
+        const error = await escribirFecha(tx, { entidadTipo: "fragmentos", entidadId: id, rol: "principal" }, fecha as Fecha | null);
+        if (error) throw new Rechazo(error);
+        const errorActo = await recalcularFechaActo(tx, actoId);
+        if (errorActo) throw new Rechazo(errorActo);
+      }
+      return { actoId, capituloId, povAnadido };
+    }),
+  );
+  return trasFragmentos(r);
+}
+
+/**
+ * Borra un fragmento (sin papelera: el acto ya tiene la suya), con su fecha y
+ * sus vínculos. Su POV se queda en el acto. Si era el último con fecha, la del
+ * acto se queda como estaba y vuelve a ser manual.
+ */
+export async function borrarFragmento(id: number): Promise<ResultadoFragmentos> {
+  await assertAdmin();
+  const r = await intentar("borrarFragmento", () =>
+    db.transaction(async (tx) => {
+      const { actoId, capituloId } = await actoDelFragmento(tx, id);
+      await borrarRastroDeFragmentos(tx, [id]);
+      await tx.delete(s.actoFragmento).where(eq(s.actoFragmento.id, id));
+      const error = await recalcularFechaActo(tx, actoId);
+      if (error) throw new Rechazo(error);
+      return { actoId, capituloId, povAnadido: false };
+    }),
+  );
+  return trasFragmentos(r);
+}
+
+/** Fija el orden de lectura: `ids` son todos los fragmentos del acto, en su nuevo orden. */
+export async function reordenarFragmentos(actoId: number, ids: number[]): Promise<ResultadoFragmentos> {
+  await assertAdmin();
+  const r = await intentar("reordenarFragmentos", () =>
+    db.transaction(async (tx) => {
+      const capituloId = await capituloDelActo(tx, actoId);
+      const propios = await tx.select({ id: s.actoFragmento.id }).from(s.actoFragmento).where(eq(s.actoFragmento.actoId, actoId));
+      const set = new Set(propios.map((f) => f.id));
+      if (ids.length !== set.size || !ids.every((x) => set.has(x)))
+        throw new Rechazo("La lista de fragmentos ha cambiado. Recarga y vuelve a intentarlo.");
+      for (const [orden, fid] of ids.entries()) await tx.update(s.actoFragmento).set({ orden }).where(eq(s.actoFragmento.id, fid));
+      return { actoId, capituloId, povAnadido: false };
+    }),
+  );
+  return trasFragmentos(r);
+}
+
+/** Fechas y vínculos de unos fragmentos: lo que no se va solo con la clave foránea. */
+async function borrarRastroDeFragmentos(ex: Ejecutor, ids: number[]): Promise<void> {
+  if (ids.length === 0) return;
+  await ex.delete(s.fechaLore).where(and(eq(s.fechaLore.entidadTipo, "fragmentos"), inArray(s.fechaLore.entidadId, ids)));
+  await ex
+    .delete(s.vinculo)
+    .where(
+      or(
+        and(eq(s.vinculo.origenTipo, "fragmentos"), inArray(s.vinculo.origenId, ids)),
+        and(eq(s.vinculo.destinoTipo, "fragmentos"), inArray(s.vinculo.destinoId, ids)),
+      ),
+    );
+}
+
 // ── Papelera del taller (§9) ───────────────────────────────────────────────
 
 const TABLAS_PAPELERA = {
@@ -711,6 +886,11 @@ export async function eliminarDelTaller(tipo: string, id: number): Promise<Resul
       }
       if (tipo === "actos") {
         await tx.update(s.tramaHojas).set({ actoId: null }).where(eq(s.tramaHojas.actoId, id));
+        // La clave foránea (on delete cascade) también se llevaría los
+        // fragmentos, pero no sus fechas ni sus vínculos, que no la tienen.
+        const fragmentos = await tx.select({ id: s.actoFragmento.id }).from(s.actoFragmento).where(eq(s.actoFragmento.actoId, id));
+        await borrarRastroDeFragmentos(tx, fragmentos.map((f) => f.id));
+        await tx.delete(s.actoFragmento).where(eq(s.actoFragmento.actoId, id));
       }
       if (tipo === "arcos") {
         await tx.update(s.tramaHojas).set({ arcoId: null }).where(eq(s.tramaHojas.arcoId, id));

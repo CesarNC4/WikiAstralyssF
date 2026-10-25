@@ -135,6 +135,12 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - **El capítulo se calcula de sus actos**: personajes, lugares, canciones y
   fechas. Cada acto tiene su ficha pública en `/capitulos/<id>/actos/<id>` y
   entra en el buscador, el sitemap, el feed y el Atlas.
+- **Fragmentos del acto** (`acto_fragmento`): varios tramos por acto, cada uno
+  con su POV, su enlace y su fecha, en orden de lectura (se reordena
+  arrastrando). La fecha del acto se calcula de ellos, el POV de cada fragmento
+  entra solo en el bloque POV del acto, y la ficha pública los lista con el salto
+  temporal respecto al anterior ("3 días antes", "+1 mes") y un conmutador entre
+  orden de lectura y fecha. Ver [docs/fragmentos-y-musica.md](./docs/fragmentos-y-musica.md).
 - **Fechas del lore estructuradas** (`fecha_lore`, `lib/fechas/`): eje absoluto
   con el año 0 en el inicio de la trama, eras, calendario propio con días fuera
   de mes. Cada ficha tiene sus fechas (nacimiento y muerte, fundación y caída…,

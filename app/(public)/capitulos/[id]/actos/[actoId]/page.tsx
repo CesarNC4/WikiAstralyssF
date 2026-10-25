@@ -10,7 +10,8 @@ import { textosFecha } from "@/lib/fechas";
 import { FechaTexto, FijarMomento } from "@/components/fechas/Lectura";
 import { getCalendario, leerFecha } from "@/lib/queries/fechas";
 import { getActoPublico, getActosVisibles } from "@/lib/queries/fichas";
-import { getCancionesDeActo, getCapituloDerivado } from "@/lib/queries/narrativa";
+import { getCancionesDeActo, getCapituloDerivado, getFragmentosPublicos } from "@/lib/queries/narrativa";
+import { FragmentosActo } from "@/components/fichas/FragmentosActo";
 
 export const revalidate = 3600;
 
@@ -43,11 +44,12 @@ export default async function ActoPage({ params }: { params: Params }) {
   if (!x) notFound();
   const { acto, capitulo } = x;
 
-  const [hermanos, fecha, cal, canciones] = await Promise.all([
+  const [hermanos, fecha, cal, canciones, fragmentos] = await Promise.all([
     getCapituloDerivado(capitulo.id, { publico: true }).then((d) => d.actos).catch(() => []),
     leerFecha({ entidadTipo: "actos", entidadId: acto.id, rol: "principal" }).catch(() => null),
     getCalendario().catch(() => null),
     getCancionesDeActo(acto.id).catch(() => []),
+    getFragmentosPublicos(acto.id).catch(() => []),
   ]);
 
   const i = hermanos.findIndex((a) => a.id === acto.id);
@@ -83,6 +85,8 @@ export default async function ActoPage({ params }: { params: Params }) {
       {fecha && <FijarMomento clave={fecha.claveIni} origen={`al inicio de «${acto.nombre}»`} />}
 
       <ProseFields fields={[{ label: "Resumen", value: acto.descripcion }]} />
+
+      <FragmentosActo fragmentos={fragmentos} />
 
       <SongList tracks={canciones} />
 

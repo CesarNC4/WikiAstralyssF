@@ -9,3 +9,4 @@ export * from "./formato.ts";
 export * from "./texto.ts";
 export * from "./roles.ts";
 export * from "./edad.ts";
+export * from "./salto.ts";

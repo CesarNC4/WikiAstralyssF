@@ -201,9 +201,15 @@ export function ListaActos({
                       <span className="text-fg-muted">{a.etiqueta} · </span>
                       {a.nombre}
                     </span>
-                    {a.pov.length > 0 && (
+                    {(a.pov.length > 0 || a.fragmentos > 0) && (
                       <span className="block truncate text-[11px] text-accent">
-                        POV: {a.pov.map((p) => p.nombre).join(", ")}
+                        {a.pov.length > 0 && `POV: ${a.pov.map((p) => p.nombre).join(", ")}`}
+                        {a.fragmentos > 0 && (
+                          <span className="text-fg-muted">
+                            {a.pov.length > 0 && " · "}
+                            {a.fragmentos} {a.fragmentos === 1 ? "fragmento" : "fragmentos"}
+                          </span>
+                        )}
                       </span>
                     )}
                   </span>

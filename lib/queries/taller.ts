@@ -1,10 +1,10 @@
 import "server-only";
-import { and, asc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import type { Fecha } from "@/lib/fechas";
 import { etiquetaActo } from "@/lib/narrativa/numeracion";
-import { leerFecha, textosDeFechas } from "@/lib/queries/fechas";
+import { fechasDeEntidades, leerFecha, textosDeFechas } from "@/lib/queries/fechas";
 
 /**
  * Lecturas del taller del autor. Todo es material de autor: incluye borradores
@@ -54,6 +54,8 @@ export interface ActoTaller {
   pov: { id: number; nombre: string }[];
   /** Ids de los personajes que aparecen (POV incluidos), para filtrar. */
   personajes: number[];
+  /** Cuántos fragmentos tiene. */
+  fragmentos: number;
 }
 
 export interface TallerIndice {
@@ -125,20 +127,28 @@ export async function getTallerIndice(): Promise<TallerIndice> {
   if (capitulos.some((c) => !c.libro)) libros.push("");
 
   const ids = actosRaw.map((a) => a.id);
-  const vinculos = ids.length
-    ? await db
-        .select({ actoId: s.vinculo.origenId, relacion: s.vinculo.relacion, personajeId: s.vinculo.destinoId, nombre: s.personajes.nombre })
-        .from(s.vinculo)
-        .innerJoin(s.personajes, eq(s.vinculo.destinoId, s.personajes.id))
-        .where(
-          and(
-            eq(s.vinculo.origenTipo, "actos"),
-            inArray(s.vinculo.origenId, ids),
-            inArray(s.vinculo.relacion, ["acto_pov", "acto_personaje"]),
-            isNull(s.personajes.eliminadoEn),
+  const [vinculos, fragmentos] = ids.length
+    ? await Promise.all([
+        db
+          .select({ actoId: s.vinculo.origenId, relacion: s.vinculo.relacion, personajeId: s.vinculo.destinoId, nombre: s.personajes.nombre })
+          .from(s.vinculo)
+          .innerJoin(s.personajes, eq(s.vinculo.destinoId, s.personajes.id))
+          .where(
+            and(
+              eq(s.vinculo.origenTipo, "actos"),
+              inArray(s.vinculo.origenId, ids),
+              inArray(s.vinculo.relacion, ["acto_pov", "acto_personaje"]),
+              isNull(s.personajes.eliminadoEn),
+            ),
           ),
-        )
-    : [];
+        db
+          .select({ actoId: s.actoFragmento.actoId, n: count() })
+          .from(s.actoFragmento)
+          .where(inArray(s.actoFragmento.actoId, ids))
+          .groupBy(s.actoFragmento.actoId),
+      ])
+    : [[], []];
+  const fragmentosPorActo = new Map(fragmentos.map((f) => [f.actoId, f.n]));
 
   const posicion = new Map<number | null, number>();
   const actos: ActoTaller[] = actosRaw.map((a) => {
@@ -151,6 +161,7 @@ export async function getTallerIndice(): Promise<TallerIndice> {
       etiqueta: etiquetaActo(i),
       pov: propios.filter((v) => v.relacion === "acto_pov").map((v) => ({ id: v.personajeId, nombre: v.nombre })),
       personajes: [...new Set(propios.map((v) => v.personajeId))],
+      fragmentos: fragmentosPorActo.get(a.id) ?? 0,
     };
   });
 
@@ -180,6 +191,46 @@ export interface ActoEditor {
   /** Para los selectores de "vincular": todos los hilos y eventos vivos. */
   todosHilos: { id: number; nombre: string }[];
   todosEventos: { id: number; titulo: string; fecha: string | null }[];
+  /** Fragmentos en orden de lectura, y la fecha del acto que sale de ellos. */
+  fragmentos: FragmentosActo;
+  /** Para el selector de POV de los fragmentos: los personajes vivos. */
+  personajes: { id: number; nombre: string }[];
+}
+
+export interface FragmentoEditor {
+  id: number;
+  personajeId: number | null;
+  titulo: string | null;
+  enlace: string | null;
+  fecha: Fecha | null;
+  /** Inicio en días absolutos, para la vista "Por fecha". */
+  clave: number | null;
+}
+
+/** Lo que devuelven las acciones de fragmentos: el estado completo del bloque. */
+export interface FragmentosActo {
+  fragmentos: FragmentoEditor[];
+  /** Fecha del acto tal como queda en la base. */
+  fechaActo: Fecha | null;
+  /** Fragmentos con fecha. Con alguno, la fecha del acto es calculada y no se edita a mano. */
+  conFecha: number;
+}
+
+export async function getFragmentosActo(actoId: number): Promise<FragmentosActo> {
+  const [filas, fechaActo] = await Promise.all([
+    db
+      .select({ id: s.actoFragmento.id, personajeId: s.actoFragmento.personajeId, titulo: s.actoFragmento.titulo, enlace: s.actoFragmento.enlace })
+      .from(s.actoFragmento)
+      .where(eq(s.actoFragmento.actoId, actoId))
+      .orderBy(asc(s.actoFragmento.orden), asc(s.actoFragmento.id)),
+    leerFecha({ entidadTipo: "actos", entidadId: actoId, rol: "principal" }),
+  ]);
+  const fechas = await fechasDeEntidades("fragmentos", filas.map((f) => f.id));
+  return {
+    fragmentos: filas.map((f) => ({ ...f, fecha: fechas.get(f.id)?.fecha ?? null, clave: fechas.get(f.id)?.claveIni ?? null })),
+    fechaActo: fechaActo?.fecha ?? null,
+    conFecha: fechas.size,
+  };
 }
 
 export async function getActoEditor(id: number): Promise<ActoEditor | null> {
@@ -189,7 +240,7 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
     .where(and(eq(s.actos.id, id), isNull(s.actos.eliminadoEn)));
   if (!acto) return null;
 
-  const [fecha, hojas, hilos, eventos, todosHilos, todosEventos] = await Promise.all([
+  const [fecha, hojas, hilos, eventos, todosHilos, todosEventos, fragmentos, personajes] = await Promise.all([
     leerFecha({ entidadTipo: "actos", entidadId: id, rol: "principal" }),
     db
       .select({ id: s.tramaHojas.id, titulo: s.tramaHojas.titulo, estado: s.tramaHojas.estado })
@@ -214,6 +265,12 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
       .from(s.timelineEventos)
       .where(isNull(s.timelineEventos.eliminadoEn))
       .orderBy(asc(s.timelineEventos.orden), asc(s.timelineEventos.id)),
+    getFragmentosActo(id),
+    db
+      .select({ id: s.personajes.id, nombre: s.personajes.nombre })
+      .from(s.personajes)
+      .where(isNull(s.personajes.eliminadoEn))
+      .orderBy(asc(s.personajes.nombre)),
   ]);
 
   const textos = await textosDeFechas("timeline", todosEventos.map((e) => e.id), { corto: true });
@@ -229,6 +286,8 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
     eventos: eventos.map(conFecha),
     todosHilos,
     todosEventos: todosEventos.map(conFecha),
+    fragmentos,
+    personajes,
   };
 }
 

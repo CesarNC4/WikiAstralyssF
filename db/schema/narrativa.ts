@@ -81,6 +81,31 @@ export const actos = pgTable("actos", {
   ...auditColumns(),
 });
 
+/**
+ * Fragmento de un acto (docs/fragmentos-y-musica.md §2): un tramo con su POV,
+ * su enlace y su fecha. La historia no se escribe de corrido —un POV de Lloyd,
+ * luego Aqua días antes, luego Lloyd un mes después— y un enlace único por acto
+ * no lo dejaba ver.
+ *
+ * La fecha va en `fecha_lore` (`entidad_tipo = 'fragmentos'`, rol 'principal'),
+ * y de las de todos sus fragmentos sale la del acto. Sin estado propio: se ve si
+ * se ve su acto. Sin papelera: se borra directamente (el acto ya tiene la suya).
+ */
+export const actoFragmento = pgTable("acto_fragmento", {
+  id: serial("id").primaryKey(),
+  actoId: integer("acto_id").notNull(),
+  /** Orden de lectura dentro del acto. */
+  orden: integer("orden").notNull().default(0),
+  /** El POV. */
+  personajeId: integer("personaje_id"),
+  /** Corto y opcional ("Despertar"). */
+  titulo: varchar("titulo"),
+  /** Discord u otro. Opcional: se puede planificar antes de publicar. */
+  enlace: varchar("enlace"),
+  creadoEn: timestamp("creado_en", { mode: "date" }).notNull().defaultNow(),
+  actualizadoEn: timestamp("actualizado_en", { mode: "date" }).notNull().defaultNow(),
+});
+
 export const tramaArcos = pgTable("trama_arcos", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),

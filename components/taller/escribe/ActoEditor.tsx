@@ -16,11 +16,12 @@ import {
   marcarHiloEnActo,
   vincularEventoActo,
 } from "@/lib/actions/taller";
-import type { Calendario, Fecha } from "@/lib/fechas";
-import type { ActoEditor as DatosActo, FaseTaller } from "@/lib/queries/taller";
+import { formatoFecha, type Calendario, type Fecha } from "@/lib/fechas";
+import type { ActoEditor as DatosActo, FaseTaller, FragmentosActo } from "@/lib/queries/taller";
 import { bloqueDe } from "@/lib/relaciones/registro";
 import { cn } from "@/lib/utils";
 import { botonCls, botonPrimarioCls, Campo, inputCls, InsigniaFase, SelectEstado, SelectTexto } from "../ui";
+import { Fragmentos } from "./Fragmentos";
 
 /** Relaciones del acto que se editan aquí, en este orden (spec §4). */
 const RELACIONES_ACTO = ["acto_pov", "acto_personaje", "acto_nacion", "acto_region", "acto_locacion", "acto_arco", "acto_cancion"];
@@ -59,6 +60,24 @@ export function ActoEditor({
   const [fecha, setFecha] = useState<Fecha | null>(datos.fecha);
   const [importante, setImportante] = useState(datos.importante);
   const [cambios, setCambios] = useState(false);
+  // Fragmentos con fecha: con alguno, la fecha del acto se calcula de ellos.
+  const [conFecha, setConFecha] = useState(datos.fragmentos.conFecha);
+  // Sube cuando un fragmento añade su POV al acto, para que el bloque POV se recargue.
+  const [versionPov, setVersionPov] = useState(0);
+  const [nFragmentos, setNFragmentos] = useState(datos.fragmentos.fragmentos.length);
+
+  const alCambiarFragmentos = (r: FragmentosActo & { povAnadido: boolean }) => {
+    setConFecha(r.conFecha);
+    // Se sigue la fecha calculada sin marcar cambios: si el acto vuelve a fecha
+    // manual, el editor arranca desde el último valor calculado.
+    if (r.conFecha > 0) setFecha(r.fechaActo);
+    if (r.povAnadido) setVersionPov((v) => v + 1);
+    // La lista de la izquierda enseña los POV y cuántos fragmentos hay.
+    if (r.povAnadido || r.fragmentos.length !== nFragmentos) {
+      setNFragmentos(r.fragmentos.length);
+      router.refresh();
+    }
+  };
 
   const marcar =
     <T,>(set: (v: T) => void) =>
@@ -170,7 +189,24 @@ export function ActoEditor({
       <Campo label="Fecha (inicio y fin)">
         {cal ? (
           <>
-            <FechaInput cal={cal} value={fecha} onChange={marcar(setFecha)} />
+            {conFecha > 0 ? (
+              <p className="rounded-lg border border-border-base bg-surface/40 px-3 py-2 text-sm text-fg-secondary">
+                {fecha ? (
+                  <>
+                    {formatoFecha(cal, fecha, "eras")}
+                    <span className="mx-2 text-fg-muted">·</span>
+                    <span className="text-fg-muted">{formatoFecha(cal, fecha, "absoluto")}</span>
+                  </>
+                ) : (
+                  "—"
+                )}
+                <span className="mt-0.5 block text-xs text-fg-muted">
+                  Calculada de {conFecha} {conFecha === 1 ? "fragmento" : "fragmentos"}: del más temprano al más tardío.
+                </span>
+              </p>
+            ) : (
+              <FechaInput cal={cal} value={fecha} onChange={marcar(setFecha)} />
+            )}
             <label className="mt-2 flex items-center gap-1.5 text-xs text-fg-secondary">
               <input type="checkbox" checked={importante} onChange={(e) => marcar(setImportante)(e.target.checked)} />
               Importante (sale en la cronología destacada)
@@ -190,6 +226,8 @@ export function ActoEditor({
         </Campo>
       </div>
 
+      <Fragmentos actoId={a.id} inicial={datos.fragmentos} personajes={datos.personajes} cal={cal} onCambio={alCambiarFragmentos} />
+
       {/* ── Relaciones ───────────────────────────────────────────────── */}
       <section className="space-y-2">
         <h2 className="font-display text-lg text-fg">Personajes, lugares y trama</h2>
@@ -197,7 +235,8 @@ export function ActoEditor({
         <div className="grid grid-cols-2 gap-2">
           {RELACIONES_ACTO.map((relId) => {
             const b = bloqueDe("actos", relId, "a");
-            return b ? <BloqueVinculos key={relId} bloque={b} ownerId={a.id} abiertoInicial /> : null;
+            const key = relId === "acto_pov" ? `${relId}-${versionPov}` : relId;
+            return b ? <BloqueVinculos key={key} bloque={b} ownerId={a.id} abiertoInicial /> : null;
           })}
         </div>
       </section>

@@ -65,6 +65,21 @@ export const ENTIDAD_INFO: Record<string, EntidadInfo> = {
          and c.estado_publicacion = 'publicado' and c.eliminado_en is null)
       then 'publicado' else 'borrador' end`,
   },
+  // Imprescindible aunque aún no tenga bloques: `purgarVinculosHuerfanos` da por
+  // huérfano (y borra) todo vínculo cuyo tipo no reconoce `etiquetas`. Sin
+  // `ruta` propia: el fragmento vive dentro de la ficha de su acto. Se ve si se
+  // ve su acto (acto y capítulo publicados).
+  fragmentos: {
+    tabla: s.actoFragmento,
+    label: "titulo",
+    estado: true,
+    estadoSql: sql<string>`case when exists (
+      select 1 from actos a join capitulos c on c.id = a.capitulo_id
+       where a.id = ${s.actoFragmento.actoId}
+         and a.estado_publicacion = 'publicado' and a.eliminado_en is null
+         and c.estado_publicacion = 'publicado' and c.eliminado_en is null)
+      then 'publicado' else 'borrador' end`,
+  },
   arcos: { tabla: s.tramaArcos, label: "nombre", estado: true, papelera: true, ruta: "/arcos" },
   canciones: { tabla: s.canciones, label: "titulo", detalle: "artista", imagen: "imagenUrl", estado: true },
   gremio: { tabla: s.gremio, label: "nombre", imagen: "imagenUrl", ruta: "/gremio" },

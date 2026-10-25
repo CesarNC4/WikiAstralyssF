@@ -1,8 +1,16 @@
 # Fragmentos del acto y sección Música — especificación y plan
 
-> **Estado (2026-10-23): acordado con el autor, sin implementar.** Falta su visto
-> bueno final para empezar por la Fase 1. Este documento está pensado para
-> retomar el trabajo en otra conversación: se puede seguir sin más contexto.
+> **Estado (2026-10-24): Fases 1 y 2 implementadas.** `migrate-fragmentos.ts`
+> aplicada el 2026-10-24. Para las preguntas abiertas 1 y 2 de §6 se tomó la
+> propuesta: enlace opcional y borrado directo con confirmación. Fases 3–6
+> pendientes.
+>
+> En el equipo personal sí se prueba en local (`pnpm dev` + navegador); la
+> regla de "no probar en el navegador local" de §0 es solo del equipo con
+> FortiEDR.
+>
+> Este documento está pensado para retomar el trabajo en otra conversación: se
+> puede seguir sin más contexto.
 >
 > Tres encargos:
 > 1. **Arreglo:** los bloques de relaciones del editor del acto se quedan en
@@ -33,6 +41,9 @@ Next 16. Las dependencias ya están instaladas.
 
 - Node 24 portable en `C:\Users\clnegretec\node`, **fuera del PATH**. En cada
   terminal: `$env:PATH = "C:\Users\clnegretec\node;$env:PATH"`.
+- En el equipo personal (`C:\Users\cesar`), Node 24 está en `C:\Users\cesar\node`
+  **dentro del PATH** de usuario y `corepack enable` ya está hecho: `pnpm …`
+  funciona directamente.
 - pnpm **solo a través de corepack**: `corepack pnpm typecheck`, `corepack pnpm lint`,
   `corepack pnpm build`. No se instala nada global ni se añaden dependencias sin
   permiso del autor.

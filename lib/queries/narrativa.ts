@@ -2,8 +2,9 @@ import "server-only";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
-import type { Extremo, Fecha } from "@/lib/fechas";
+import { saltoTemporal, textosFecha, type Extremo, type Fecha, type TextosFecha } from "@/lib/fechas";
 import { etiquetaActo, numerarCapitulos } from "@/lib/narrativa/numeracion";
+import { escribirFecha, fechasDeEntidades, getCalendario } from "@/lib/queries/fechas";
 
 /**
  * Lógica de servidor del modelo narrativo (spec del taller §3, §4 y §7):
@@ -240,20 +241,148 @@ async function fechaDe(actos: ActoDelCapitulo[]): Promise<Fecha | null> {
 
   const pos = new Map(actos.map((a) => [a.id, a.posicion]));
   const enOrden = [...filas].sort((a, b) => pos.get(a.entidadId)! - pos.get(b.entidadId)!);
-  let primero = enOrden[0];
-  let ultimo = enOrden[enOrden.length - 1];
-  if (ultimo.claveFin < primero.claveIni) {
-    primero = filas.reduce((m, f) => (f.claveIni < m.claveIni ? f : m));
-    ultimo = filas.reduce((m, f) => (f.claveFin > m.claveFin ? f : m));
-  }
+  const primero = enOrden[0];
+  const ultimo = enOrden[enOrden.length - 1];
+  if (ultimo.claveFin < primero.claveIni) return tramoQueCubre(filas);
+  return fechaEntre(primero, ultimo, filas.some((f) => f.aproximada));
+}
 
+type FilaFecha = typeof s.fechaLore.$inferSelect;
+
+/** Del inicio de `primero` al final de `ultimo`; un punto si coinciden. */
+function fechaEntre(primero: FilaFecha, ultimo: FilaFecha, aproximada: boolean): Fecha {
   const ini: Extremo = { anio: primero.iniAnio, segmentoId: primero.iniSegmentoId, dia: primero.iniDia };
   const fin: Extremo =
     ultimo.finAnio != null
       ? { anio: ultimo.finAnio, segmentoId: ultimo.finSegmentoId, dia: ultimo.finDia }
       : { anio: ultimo.iniAnio, segmentoId: ultimo.iniSegmentoId, dia: ultimo.iniDia };
   const mismo = ini.anio === fin.anio && ini.segmentoId === fin.segmentoId && ini.dia === fin.dia;
-  return { ini, fin: mismo ? null : fin, aproximada: filas.some((f) => f.aproximada) };
+  return { ini, fin: mismo ? null : fin, aproximada };
+}
+
+/** El tramo que cubre a todas: del inicio más temprano al final más tardío. */
+function tramoQueCubre(filas: FilaFecha[]): Fecha {
+  const primero = filas.reduce((m, f) => (f.claveIni < m.claveIni ? f : m));
+  const ultimo = filas.reduce((m, f) => (f.claveFin > m.claveFin ? f : m));
+  return fechaEntre(primero, ultimo, filas.some((f) => f.aproximada));
+}
+
+// ── Fragmentos del acto (docs/fragmentos-y-musica.md §2) ───────────────────
+
+/** Fechas de los fragmentos de un acto. */
+async function fechasDeFragmentos(ex: Ejecutor, actoId: number): Promise<FilaFecha[]> {
+  return ex
+    .select()
+    .from(s.fechaLore)
+    .where(
+      and(
+        eq(s.fechaLore.entidadTipo, "fragmentos"),
+        eq(s.fechaLore.rol, "principal"),
+        inArray(s.fechaLore.entidadId, ex.select({ id: s.actoFragmento.id }).from(s.actoFragmento).where(eq(s.actoFragmento.actoId, actoId))),
+      ),
+    );
+}
+
+/** Cuántos fragmentos del acto tienen fecha. Con alguno, la fecha del acto es calculada. */
+export async function contarFragmentosConFecha(ex: Ejecutor, actoId: number): Promise<number> {
+  return (await fechasDeFragmentos(ex, actoId)).length;
+}
+
+/**
+ * Recalcula la fecha del acto a partir de sus fragmentos: del inicio del más
+ * temprano al final del más tardío. Conserva el `importante` que ya tuviera. Si
+ * ningún fragmento tiene fecha no toca nada: la fecha del acto vuelve a ser
+ * manual, con el último valor que tuviera. Devuelve el error de `escribirFecha`.
+ *
+ * Al quedar guardada como fecha del acto, el rango del capítulo, la cronología y
+ * las edades siguen funcionando sin cambios, y el recálculo de claves al cambiar
+ * el calendario la alcanza como a cualquier otra.
+ */
+export async function recalcularFechaActo(ex: Ejecutor, actoId: number): Promise<string | null> {
+  const filas = await fechasDeFragmentos(ex, actoId);
+  if (filas.length === 0) return null;
+  const destino = { entidadTipo: "actos", entidadId: actoId, rol: "principal" };
+  const [actual] = await ex
+    .select({ importante: s.fechaLore.importante })
+    .from(s.fechaLore)
+    .where(and(eq(s.fechaLore.entidadTipo, destino.entidadTipo), eq(s.fechaLore.entidadId, actoId), eq(s.fechaLore.rol, destino.rol)));
+  return escribirFecha(ex, destino, tramoQueCubre(filas), actual?.importante ?? false);
+}
+
+export interface FragmentoPublico {
+  id: number;
+  /** Posición en orden de lectura, desde 1. */
+  numero: number;
+  /** Solo si su ficha está publicada. */
+  pov: { id: number; nombre: string; imagenUrl: string | null } | null;
+  titulo: string | null;
+  enlace: string | null;
+  fecha: TextosFecha | null;
+  /** Para ordenar por fecha del mundo. */
+  clave: number | null;
+  /** Respecto al anterior con fecha, en orden de lectura y por fecha. */
+  saltoLectura: string | null;
+  saltoFecha: string | null;
+}
+
+/**
+ * Fragmentos de un acto para su ficha pública. No filtran por estado: el
+ * fragmento no tiene uno propio y la ficha solo existe si el acto es visible.
+ */
+export async function getFragmentosPublicos(actoId: number): Promise<FragmentoPublico[]> {
+  const filas = await db
+    .select({
+      id: s.actoFragmento.id,
+      titulo: s.actoFragmento.titulo,
+      enlace: s.actoFragmento.enlace,
+      personajeId: s.actoFragmento.personajeId,
+      nombre: s.personajes.nombre,
+      imagenUrl: s.personajes.imagenUrl,
+      estado: s.personajes.estadoPublicacion,
+      eliminado: s.personajes.eliminadoEn,
+    })
+    .from(s.actoFragmento)
+    .leftJoin(s.personajes, eq(s.actoFragmento.personajeId, s.personajes.id))
+    .where(eq(s.actoFragmento.actoId, actoId))
+    .orderBy(asc(s.actoFragmento.orden), asc(s.actoFragmento.id));
+  if (filas.length === 0) return [];
+
+  const [cal, fechas] = await Promise.all([getCalendario(), fechasDeEntidades("fragmentos", filas.map((f) => f.id))]);
+
+  const out: FragmentoPublico[] = filas.map((f, i) => {
+    const g = fechas.get(f.id);
+    const povVisible = f.personajeId != null && f.nombre != null && f.estado === "publicado" && !f.eliminado;
+    return {
+      id: f.id,
+      numero: i + 1,
+      pov: povVisible ? { id: f.personajeId!, nombre: f.nombre!, imagenUrl: f.imagenUrl } : null,
+      titulo: f.titulo,
+      enlace: f.enlace,
+      fecha: g ? textosFecha(cal, g.fecha, true) : null,
+      clave: g?.claveIni ?? null,
+      saltoLectura: null,
+      saltoFecha: null,
+    };
+  });
+
+  // Cada salto se mide desde el último fragmento con fecha que lo precede.
+  const saltos = (orden: FragmentoPublico[], campo: "saltoLectura" | "saltoFecha") => {
+    let previa: Fecha | null = null;
+    for (const f of orden) {
+      const g = fechas.get(f.id);
+      if (!g) continue;
+      if (previa) f[campo] = saltoTemporal(cal, previa, g.fecha);
+      previa = g.fecha;
+    }
+  };
+  saltos(out, "saltoLectura");
+  saltos(ordenPorFecha(out), "saltoFecha");
+  return out;
+}
+
+/** Por fecha del mundo; los que no tienen fecha, al final y en orden de lectura. */
+function ordenPorFecha<T extends { clave: number | null; numero: number }>(lista: T[]): T[] {
+  return [...lista].sort((a, b) => (a.clave ?? Infinity) - (b.clave ?? Infinity) || a.numero - b.numero);
 }
 
 /**
