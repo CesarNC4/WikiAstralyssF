@@ -4,7 +4,8 @@
 > y `migrate-canciones.ts` aplicadas el 2026-10-24. Para las preguntas abiertas 1 y 2
 > de §6 se tomó la propuesta: enlace opcional y borrado directo con
 > confirmación. La 4 está respondida: el embed de Suno funciona (probado con
-> una canción real del autor). Fase 6 (limpieza destructiva) pendiente.
+> una canción real del autor). Fase 6: código listo y `migrate-canciones-retirada.ts`
+> ensayada; falta el visto bueno del autor para `--aplicar`.
 >
 > Decisiones de la Fase 5:
 > - Las canciones de los fragmentos cuentan como del acto (y por tanto del

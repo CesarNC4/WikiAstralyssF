@@ -2,7 +2,7 @@ import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/
 import { estadoPublicacion } from "./enums";
 import { auditColumns } from "./_audit";
 
-/** Dominio Media: canciones y sus tablas de unión con narrativa/personajes. */
+/** Dominio Media: canciones, el catálogo de medios y la galería. */
 
 export const canciones = pgTable("canciones", {
   id: serial("id").primaryKey(),
@@ -55,30 +55,6 @@ export const entidadMedia = pgTable("entidad_media", {
   orden: integer("orden").notNull().default(0),
 });
 
-export const actoCancion = pgTable("acto_cancion", {
-  id: serial("id").primaryKey(),
-  actoId: integer("acto_id").notNull(),
-  cancionId: integer("cancion_id").notNull(),
-  contexto: varchar("contexto"),
-});
-
-export const capituloCancion = pgTable("capitulo_cancion", {
-  id: serial("id").primaryKey(),
-  capituloId: integer("capitulo_id").notNull(),
-  cancionId: integer("cancion_id").notNull(),
-  contexto: varchar("contexto"),
-});
-
-export const personajeCancion = pgTable("personaje_cancion", {
-  id: serial("id").primaryKey(),
-  personajeId: integer("personaje_id").notNull(),
-  cancionId: integer("cancion_id").notNull(),
-  contexto: varchar("contexto"),
-});
-
-export const hojaCancion = pgTable("hoja_cancion", {
-  id: serial("id").primaryKey(),
-  hojaId: integer("hoja_id").notNull(),
-  cancionId: integer("cancion_id").notNull(),
-  nota: varchar("nota"),
-});
+// acto_cancion, hoja_cancion, personaje_cancion y capitulo_cancion se retiraron
+// en la Fase 6 de docs/fragmentos-y-musica.md: las relaciones con canciones
+// van todas en `vinculo`.
