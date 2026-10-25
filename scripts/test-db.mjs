@@ -20,9 +20,9 @@ try {
 
 console.log("\n== 2) Probando conexiones Postgres (Drizzle) ==");
 const candidates = [
-  { label: "Transaction pooler aws-0/6543", host: `aws-0-us-east-1.pooler.supabase.co`, port: 6543, user: `postgres.${ref}` },
-  { label: "Transaction pooler aws-1/6543", host: `aws-1-us-east-1.pooler.supabase.co`, port: 6543, user: `postgres.${ref}` },
-  { label: "Session pooler aws-0/5432", host: `aws-0-us-east-1.pooler.supabase.co`, port: 5432, user: `postgres.${ref}` },
+  { label: "Transaction pooler aws-0/6543", host: `aws-0-us-east-1.pooler.supabase.com`, port: 6543, user: `postgres.${ref}` },
+  { label: "Transaction pooler aws-1/6543", host: `aws-1-us-east-1.pooler.supabase.com`, port: 6543, user: `postgres.${ref}` },
+  { label: "Session pooler aws-0/5432", host: `aws-0-us-east-1.pooler.supabase.com`, port: 5432, user: `postgres.${ref}` },
   { label: "Conexión directa/5432", host: `db.${ref}.supabase.co`, port: 5432, user: `postgres` },
 ];
 
