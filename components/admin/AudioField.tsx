@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { registrarAsset } from "@/lib/actions/media";
 import { carpetaDe, faltaConfigSubida, RUTA_FIRMA } from "@/lib/media/carpetas";
-import { deducirFuente, NOMBRE_FUENTE } from "@/lib/media/fuentes";
+import { deducirFuente, embedDe, formatoDuracion, idYoutube, NOMBRE_FUENTE } from "@/lib/media/fuentes";
 import { useToast } from "@/components/admin/Toast";
 import { cn } from "@/lib/utils";
 
@@ -25,16 +25,6 @@ export interface AudioValue {
   url: string | null;
   /** Segundos; solo con audio propio. */
   duracion: number | null;
-}
-
-export function formatoDuracion(s: number | null | undefined): string | null {
-  if (!s || s <= 0) return null;
-  return `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
-}
-
-/** Id de un vídeo de YouTube a partir de cualquiera de sus formas de enlace. */
-export function idYoutube(url: string): string | null {
-  return url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([\w-]{11})/)?.[1] ?? null;
 }
 
 /**
@@ -148,7 +138,12 @@ export function AudioField({ value, onChange }: { value: AudioValue; onChange: (
             placeholder="https://www.youtube.com/watch?v=… · https://suno.com/song/… · https://soundcloud.com/…"
             className="w-full rounded-lg border border-border-base bg-surface px-3 py-2 text-sm text-fg outline-none focus:border-border-glow"
           />
-          {fuente && <p className="text-xs text-fg-muted">Se reconoce: {NOMBRE_FUENTE[fuente]}.</p>}
+          {fuente && (
+            <p className="text-xs text-fg-muted">
+              Se reconoce: {NOMBRE_FUENTE[fuente]}.
+              {fuente === "suno" && /suno\.(com|ai)\/s\//i.test(value.url ?? "") && " El enlace corto se convierte en el largo al guardar, para poder incrustarlo."}
+            </p>
+          )}
         </div>
       )}
 
@@ -180,6 +175,16 @@ function Prueba({ value, fuente }: { value: AudioValue; fuente: ReturnType<typeo
         />
       );
   }
+  const embed = embedDe(fuente, value.url);
+  if (embed)
+    return (
+      <iframe
+        src={embed}
+        title="Prueba del reproductor embebido"
+        allow="autoplay; encrypted-media"
+        className="h-[152px] w-full max-w-md rounded-lg border border-border-base"
+      />
+    );
   return (
     <a href={value.url} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:underline">
       Abrir el enlace para probarlo →

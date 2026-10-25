@@ -1,7 +1,7 @@
 import { SearchProvider } from "@/components/search/SearchProvider";
 import { TopNav } from "@/components/layout/TopNav";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { MusicPlayerBar } from "@/components/player/MusicPlayerBar";
+import { MusicPlayer } from "@/components/player/MusicPlayer";
 import { Starfield } from "@/components/visual/Starfield";
 
 /**
@@ -15,7 +15,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <TopNav />
       {/* padding-bottom para no tapar contenido con bottom nav + player en móvil */}
       <main className="flex-1 pb-32 md:pb-24">{children}</main>
-      <MusicPlayerBar />
+      <MusicPlayer />
       <BottomNav />
     </SearchProvider>
   );

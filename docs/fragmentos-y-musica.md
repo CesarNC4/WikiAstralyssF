@@ -1,9 +1,20 @@
 # Fragmentos del acto y sección Música — especificación y plan
 
-> **Estado (2026-10-24): Fases 1, 2 y 3 implementadas.** `migrate-fragmentos.ts`
+> **Estado (2026-10-24): Fases 1–4 implementadas.** `migrate-fragmentos.ts`
 > y `migrate-canciones.ts` aplicadas el 2026-10-24. Para las preguntas abiertas 1 y 2
 > de §6 se tomó la propuesta: enlace opcional y borrado directo con
-> confirmación. Fases 4–6 pendientes.
+> confirmación. La 4 está respondida: el embed de Suno funciona (probado con
+> una canción real del autor). Fases 5 y 6 pendientes.
+>
+> Decisiones de la Fase 4:
+> - Motores en `components/player/motores.tsx`, barra y panel en
+>   `MusicPlayer.tsx`. Las fuentes sin control se resuelven en el estado
+>   (`alCambiar` en `usePlayerStore`): al llegar a una, la cola se para y se
+>   abre el panel con su embed, o se avisa si no lo hay.
+> - Los enlaces cortos de Suno (`suno.com/s/…`) se convierten al guardar en
+>   `suno.com/song/<uuid>` (`lib/media/suno.ts`): solo ese se puede incrustar.
+> - Con el panel abierto, la ventanita de YouTube sube a la esquina superior
+>   por encima del fondo del panel, para no dejar de verse.
 >
 > Decisiones de la Fase 3:
 > - Panel: se amplió el admin genérico (`hasAudio` en `EntidadConfig`, sección
@@ -378,7 +389,9 @@ siga sonando al navegar dentro de la wiki:
   pantalla o cambiar de app. El audio propio sigue sonando.
 - **Suno:** un enlace "solo con enlace" se escucha en suno.com sin hacerlo
   público. El embed `suno.com/embed/<ID>` solo está documentado por terceros, no
-  por Suno: **hay que probarlo con una canción real**. Para que un tema de Suno
+  por Suno: **hay que probarlo con una canción real**. *(Probado el 2026-10-24:
+  funciona con el id largo de la canción; el corto de "Compartir" se resuelve
+  al guardar.)* Para que un tema de Suno
   funcione como los demás, el autor puede descargarlo y subirlo como audio propio.
   Según esa fuente, Suno cambió las descargas el 3 de septiembre de 2026; hay que
   comprobar qué permite su plan.

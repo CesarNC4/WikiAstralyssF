@@ -5,7 +5,7 @@ import * as s from "@/db/schema";
 import { saltoTemporal, textosFecha, type Extremo, type Fecha, type TextosFecha } from "@/lib/fechas";
 import { etiquetaActo, numerarCapitulos } from "@/lib/narrativa/numeracion";
 import { escribirFecha, fechasDeEntidades, getCalendario } from "@/lib/queries/fechas";
-import { cancionesDe } from "@/lib/queries/canciones";
+import { CANCION_TRACK, cancionesDe } from "@/lib/queries/canciones";
 
 /**
  * Lógica de servidor del modelo narrativo (spec del taller §3, §4 y §7):
@@ -90,6 +90,8 @@ export interface CancionDelCapitulo {
   url: string | null;
   tipoFuente: string | null;
   imagenUrl: string | null;
+  letra: string | null;
+  duracion: number | null;
   /** Vinculada al capítulo entero, a alguno de sus actos, o a ambos. */
   desde: "capitulo" | "acto" | "ambos";
 }
@@ -180,22 +182,19 @@ async function lugaresDe(vinculos: FilaVinculo[], publico: boolean): Promise<Lug
   return out;
 }
 
-const CANCION = {
-  id: s.canciones.id,
-  titulo: s.canciones.titulo,
-  artista: s.canciones.artista,
-  url: s.canciones.url,
-  tipoFuente: s.canciones.tipoFuente,
-  imagenUrl: s.canciones.imagenUrl,
-  estado: s.canciones.estadoPublicacion,
-};
-
-/** Fila de `CANCION` → canción del capítulo, sin el estado (que solo sirve para filtrar). */
-function aCancion(
-  c: { id: number; titulo: string; artista: string | null; url: string | null; tipoFuente: string | null; imagenUrl: string | null },
-  desde: CancionDelCapitulo["desde"],
-): CancionDelCapitulo {
-  return { id: c.id, titulo: c.titulo, artista: c.artista, url: c.url, tipoFuente: c.tipoFuente, imagenUrl: c.imagenUrl, desde };
+/** Fila de `CANCION_TRACK` (o un Track) → canción del capítulo, sin el estado (que solo sirve para filtrar). */
+function aCancion(c: Omit<CancionDelCapitulo, "desde" | "letra" | "duracion"> & { letra?: string | null; duracion?: number | null }, desde: CancionDelCapitulo["desde"]): CancionDelCapitulo {
+  return {
+    id: c.id,
+    titulo: c.titulo,
+    artista: c.artista,
+    url: c.url,
+    tipoFuente: c.tipoFuente,
+    imagenUrl: c.imagenUrl,
+    letra: c.letra ?? null,
+    duracion: c.duracion ?? null,
+    desde,
+  };
 }
 
 /** Las vinculadas al capítulo entero (un opening, por ejemplo). */
@@ -209,7 +208,7 @@ async function cancionesDeActos(vinculos: FilaVinculo[], manual: CancionDelCapit
   const ids = [...new Set(vinculos.filter((v) => v.relacion === "acto_cancion").map((v) => v.destinoId))];
   if (ids.length) {
     const filas = await db
-      .select(CANCION)
+      .select(CANCION_TRACK)
       .from(s.canciones)
       .where(and(inArray(s.canciones.id, ids), isNull(s.canciones.eliminadoEn)));
     for (const c of filas) {
@@ -386,7 +385,7 @@ function ordenPorFecha<T extends { clave: number | null; numero: number }>(lista
  */
 export async function getCancionesDeActo(actoId: number): Promise<CancionDelCapitulo[]> {
   const filas = await db
-    .select(CANCION)
+    .select(CANCION_TRACK)
     .from(s.vinculo)
     .innerJoin(s.canciones, eq(s.vinculo.destinoId, s.canciones.id))
     .where(

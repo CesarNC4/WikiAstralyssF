@@ -24,6 +24,8 @@ export const CANCION_TRACK = {
   url: s.canciones.url,
   tipoFuente: s.canciones.tipoFuente,
   imagenUrl: s.canciones.imagenUrl,
+  letra: s.canciones.letra,
+  duracion: s.canciones.duracion,
   estado: s.canciones.estadoPublicacion,
 };
 

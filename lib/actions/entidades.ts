@@ -13,6 +13,7 @@ import { REL_TABLES } from "@/lib/admin/relacionesTables";
 import { clonarVinculos } from "@/lib/relaciones/consultas";
 import { entidadMedia, mediaAssets } from "@/db/schema/media";
 import { deducirFuente } from "@/lib/media/fuentes";
+import { resolverEnlaceSuno } from "@/lib/media/suno";
 import { actos } from "@/db/schema/narrativa";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
@@ -100,6 +101,7 @@ export async function guardarEntidad(
       data.audioAssetId = null;
       data.duracion = null;
       data.tipoFuente = deducirFuente(data.url as string | null | undefined);
+      if (data.tipoFuente === "suno") data.url = await resolverEnlaceSuno(String(data.url));
     }
   }
 
