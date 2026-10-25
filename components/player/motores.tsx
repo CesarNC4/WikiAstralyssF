@@ -37,6 +37,22 @@ function cargarScript(src: string): Promise<void> {
   });
 }
 
+/**
+ * Lo que flota encima de la barra (la ventanita de YouTube, el reproductor de
+ * Suno o Spotify) taparía el final de la página: mientras está, la página
+ * crece por abajo lo que mide.
+ */
+export function useHuecoInferior(alto: number) {
+  useEffect(() => {
+    if (!alto) return;
+    const previo = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = `${alto + 16}px`;
+    return () => {
+      document.body.style.paddingBottom = previo;
+    };
+  }, [alto]);
+}
+
 // ── Audio propio ───────────────────────────────────────────────────────────
 
 /** `<audio>`: control completo (progreso, salto, volumen). */
@@ -154,6 +170,7 @@ export function MotorYouTube({ track }: { track: Track }) {
   const volumen = usePlayerStore((s) => s.volumen);
   const expanded = usePlayerStore((s) => s.expanded);
   const id = idYoutube(track.url ?? "");
+  useHuecoInferior(id ? 200 : 0);
 
   useEffect(() => {
     if (!id) {

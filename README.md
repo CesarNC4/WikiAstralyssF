@@ -81,8 +81,9 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   acentos y erratas.
 - **Reproductor de música global** que sigue sonando al navegar: audio propio
   (`<audio>`), YouTube y SoundCloud controlados desde la barra (play, pausa,
-  salto, cola, volumen), Suno y Spotify en su reproductor embebido, Media
-  Session en la pantalla de bloqueo, y aviso cuando algo no se puede reproducir.
+  salto, cola, volumen), Suno y Spotify en su reproductor embebido (que flota
+  sobre la barra y sigue sonando al navegar), Media Session en la pantalla de
+  bloqueo, y aviso cuando algo no se puede reproducir.
 - Índices de las 13 secciones + fichas (personaje con tabs; nación, organización,
   familia con árbol; genéricas para el resto) + lore por slug.
 - Timeline vertical, mapa de naciones, páginas de error temáticas.

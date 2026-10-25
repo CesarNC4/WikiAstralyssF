@@ -105,6 +105,17 @@
   50% { opacity: 1; }
 }
 
+/* El reproductor de Suno o Spotify al pasar del panel a flotar sobre la barra
+   y al revés (components/player/MusicPlayer.tsx). Son dos nombres para lo
+   mismo porque el navegador solo repite una animación si cambia de nombre. */
+@keyframes reproductor-panel {
+  from { opacity: 0; transform: translateY(0.5rem); }
+}
+
+@keyframes reproductor-flotante {
+  from { opacity: 0; transform: translateY(0.5rem); }
+}
+
 @keyframes twinkle {
   0%, 100% { opacity: 0.2; }
   50% { opacity: 1; }

@@ -26,6 +26,11 @@
 >   `suno.com/song/<uuid>` (`lib/media/suno.ts`): solo ese se puede incrustar.
 > - Con el panel abierto, la ventanita de YouTube sube a la esquina superior
 >   por encima del fondo del panel, para no dejar de verse.
+> - El reproductor de Suno y Spotify (`Embebido` en `MusicPlayer.tsx`) vive
+>   fuera del panel, así que cerrarlo o navegar no lo corta: con el panel
+>   abierto se encaja al pie del panel y, cerrado, flota encima de la barra
+>   (Suno a 120 px de alto, Spotify en su formato compacto de 80 px). Lo que
+>   flota sobre la barra hace crecer la página por abajo para no tapar su final.
 >
 > Decisiones de la Fase 3:
 > - Panel: se amplió el admin genérico (`hasAudio` en `EntidadConfig`, sección
@@ -388,7 +393,7 @@ siga sonando al navegar dentro de la wiki:
 | `<audio>` | Audio propio | Completo: progreso, salto, volumen. **Media Session API**: controles y portada en la pantalla de bloqueo del móvil |
 | YouTube IFrame API | YouTube | Play, pausa, salto y fin → siguiente |
 | SoundCloud Widget API | SoundCloud | Igual que YouTube |
-| Embed sin control | Suno (`suno.com/embed/<ID>`), Bandcamp y similares | Ninguno: se muestra su reproductor en el panel y la cola se detiene ahí. Si no hay embed, botón "Abrir en…" |
+| Embed sin control | Suno (`suno.com/embed/<ID>`), Bandcamp y similares | Ninguno: se muestra su reproductor (en el panel, o flotando sobre la barra al cerrarlo, sin dejar de sonar) y la cola se detiene ahí. Si no hay embed, botón "Abrir en…" |
 | Embed | Spotify | Solo enlace o embed. Sin sesión de Spotify, el oyente solo oye 30 s |
 
 **Límites que hay que respetar o avisar:**

@@ -6,18 +6,20 @@ import { Icon } from "@/components/Icon";
 import { EntityImage } from "@/components/media/EntityImage";
 import { esControlable, usePlayerStore, type Track } from "@/hooks/usePlayerStore";
 import { embedDe, formatoDuracion, fuenteDe, NOMBRE_FUENTE, type Fuente } from "@/lib/media/fuentes";
-import { MotorAudio, MotorSoundCloud, MotorYouTube } from "./motores";
+import { cn } from "@/lib/utils";
+import { MotorAudio, MotorSoundCloud, MotorYouTube, useHuecoInferior } from "./motores";
 
 /**
  * Reproductor global (docs/fragmentos-y-musica.md §3.6). La cola y el estado
  * viven en `usePlayerStore`; aquí se monta el motor de la fuente que suena, la
- * barra y el panel desplegable con la letra y, para las fuentes sin control
+ * barra, el panel desplegable con la letra y, para las fuentes sin control
  * (Suno, Spotify), su reproductor embebido. Va en el layout público, así que
  * sigue sonando al navegar.
  */
 export function MusicPlayer() {
   const current = usePlayerStore((s) => s.current);
   const fuente = current ? fuenteDe(current.tipoFuente, current.url) : null;
+  const embed = current && !esControlable(current) ? embedDe(fuente, current.url) : null;
 
   useMediaSession(current);
 
@@ -27,9 +29,50 @@ export function MusicPlayer() {
       {fuente === "audio" && current.url && <MotorAudio key={current.id} track={current} />}
       {fuente === "youtube" && <MotorYouTube key={current.id} track={current} />}
       {fuente === "soundcloud" && <MotorSoundCloud key={current.id} track={current} />}
+      {embed && <Embebido key={current.id} track={current} fuente={fuente} src={embed} />}
       <Barra track={current} fuente={fuente} />
       <Panel track={current} fuente={fuente} />
     </>
+  );
+}
+
+/** Alto del reproductor embebido con el panel abierto: el panel le deja este hueco al pie. */
+const ALTO_PANEL = 152;
+/** Alto cuando flota sobre la barra: el menor en que cada uno se ve entero (Spotify tiene formato compacto). */
+const ALTO_FLOTANTE: Partial<Record<Fuente, number>> = { suno: 120, spotify: 80 };
+
+/**
+ * El reproductor propio de Suno o Spotify, que no se controla desde la barra.
+ * Vive aquí y no dentro del panel para que cerrar el panel o navegar no lo
+ * desmonte: con el panel abierto se encaja en el hueco que le deja al pie, y
+ * cerrado flota encima de la barra, como la ventanita de YouTube. Nunca cambia
+ * de padre en el DOM, solo de sitio: mover un iframe lo recarga y corta la
+ * música.
+ */
+function Embebido({ track, fuente, src }: { track: Track; fuente: Fuente | null; src: string }) {
+  const expanded = usePlayerStore((s) => s.expanded);
+  const flotante = (fuente && ALTO_FLOTANTE[fuente]) ?? ALTO_PANEL;
+  useHuecoInferior(flotante);
+
+  return (
+    <div
+      className={cn(
+        "fixed overflow-hidden rounded-xl border",
+        // Aparece cuando el panel ya casi ha subido (su animación dura 0.28 s).
+        expanded
+          ? "bottom-5 left-1/2 z-[75] w-[calc(min(100%,32rem)_-_2.5rem)] -translate-x-1/2 animate-[reproductor-panel_0.2s_ease-out_0.2s_both] border-border-base"
+          : "inset-x-2 bottom-[136px] z-[45] animate-[reproductor-flotante_0.2s_ease-out_both] border-border-glow shadow-[var(--shadow-glow-primary)] md:inset-x-auto md:right-3 md:bottom-24 md:w-[340px]",
+      )}
+    >
+      {/* El alto va en el iframe y no en la caja: Spotify cambia de formato si le falta un solo píxel. */}
+      <iframe
+        src={src}
+        title={`${track.titulo} en ${fuente ? NOMBRE_FUENTE[fuente] : "su web"}`}
+        className="block w-full"
+        style={{ height: expanded ? ALTO_PANEL : flotante }}
+        allow="autoplay; encrypted-media; clipboard-write"
+      />
+    </div>
   );
 }
 
@@ -66,10 +109,11 @@ function Barra({ track, fuente }: { track: Track; fuente: Fuente | null }) {
               <button
                 onClick={controlable ? toggle : () => setExpanded(true)}
                 className="grid h-9 w-9 place-items-center rounded-full bg-primary text-void disabled:opacity-40"
-                aria-label={isPlaying ? "Pausar" : "Reproducir"}
+                // Sin control, la barra no sabe si suena: el botón solo lleva a su reproductor.
+                aria-label={!controlable ? "Abrir su reproductor" : isPlaying ? "Pausar" : "Reproducir"}
                 disabled={Boolean(aviso) && !track.url}
               >
-                <Icon name={isPlaying ? "Pause" : "Play"} size={18} />
+                <Icon name={!controlable ? "Music" : isPlaying ? "Pause" : "Play"} size={18} />
               </button>
               <button onClick={next} disabled={index >= queue.length - 1} className="p-2 text-fg-muted hover:text-fg disabled:opacity-30" aria-label="Siguiente">
                 <Icon name="SkipForward" size={18} />
@@ -148,20 +192,10 @@ function Panel({ track, fuente }: { track: Track; fuente: Fuente | null }) {
               </div>
             </div>
 
-            {/* Fuentes sin control: su propio reproductor. Al cerrar el panel deja de sonar. */}
             {!controlable && embed && (
-              <div className="mt-4 shrink-0 overflow-hidden rounded-xl border border-border-base">
-                <iframe
-                  src={embed}
-                  title={`${track.titulo} en ${fuente ? NOMBRE_FUENTE[fuente] : "su web"}`}
-                  className="h-[152px] w-full"
-                  allow="autoplay; encrypted-media; clipboard-write"
-                />
-              </div>
-            )}
-            {!controlable && embed && (
-              <p className="mt-2 text-xs text-fg-muted">
-                Este reproductor no se controla desde la barra: la cola se detiene aquí y deja de sonar al cerrar el panel.
+              <p className="mt-3 text-xs text-fg-muted">
+                Este reproductor no se controla desde la barra y la cola se detiene aquí. Si cierras el panel, sigue sonando encima de la barra
+                mientras navegas.
                 {fuente === "spotify" && " Sin sesión de Spotify solo se oyen 30 segundos."}
               </p>
             )}
@@ -187,6 +221,9 @@ function Panel({ track, fuente }: { track: Track; fuente: Fuente | null }) {
                 <p className="whitespace-pre-line text-sm leading-relaxed text-fg-secondary">{track.letra}</p>
               </div>
             )}
+
+            {/* Hueco donde se encaja el reproductor de Suno o Spotify, que vive fuera del panel (`Embebido`). */}
+            {!controlable && embed && <div className="mt-4 shrink-0" style={{ height: ALTO_PANEL + 2 /* y su borde */ }} aria-hidden />}
           </motion.div>
         </motion.div>
       )}
