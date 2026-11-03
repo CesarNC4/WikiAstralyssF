@@ -1,10 +1,9 @@
 # Área IA — Claude como asistente de lore
 
-> **Estado (2026-11-02): Fases 1–3 hechas y guía de estilo respondida.** Ya se
-> puede trabajar: `/lore`, `/lore-fichas` y `/lore-entrevista` funcionan, y el
-> autor aplica las propuestas a mano en el panel. Siguiente: la web sin
-> indexar, la limpieza de los datos de prueba y la Fase 4 (visibilidad
-> completa), en ese orden. Este documento sirve para retomar el trabajo desde
+> **Estado (2026-11-03): Fases 1–3 hechas, guía de estilo respondida, web
+> fuera de los buscadores y datos de prueba limpios.** Ya se puede trabajar:
+> `/lore`, `/lore-fichas` y `/lore-entrevista` funcionan, y el autor aplica las
+> propuestas a mano en el panel. Siguiente: Fase 4 (visibilidad completa). Este documento sirve para retomar el trabajo desde
 > cualquier chat sin más contexto.
 
 ## Qué es
@@ -73,8 +72,11 @@ Decidido en la entrevista de la guía de estilo (2026-11-02):
   sus amigos: abierta a quien tenga el enlace, pero fuera de los buscadores
   (`noindex` en todo, sin sitemap, rastreadores de IA bloqueados; detalle en
   docs/arquitectura.md §11.4).
-- **Limpieza de los datos de prueba**, con un script de ensayo y el visto
-  bueno del autor (sin copia previa, por decisión suya). Los personajes se
+- **Limpieza de los datos de prueba** ✔ aplicada (2026-11-03,
+  `scripts/migrations/migrate-limpieza-prueba.ts`), con ensayo y el visto
+  bueno del autor (sin copia previa, por decisión suya). El HTML no estaba
+  solo en las razas: la web enseñaba las etiquetas como texto también en la
+  magia, el gremio y la cronología, y se convirtió todo. Los personajes se
   quedan solo con nombre y estado: fuera sus textos, imágenes, estadísticas,
   habilidades, relaciones, fechas y conexiones. Se borra la canción. El resto
   de secciones, los catálogos y el calendario se quedan. En el mismo script:

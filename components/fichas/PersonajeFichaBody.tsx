@@ -40,6 +40,16 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
     cancionesDe("personajes", p.id).catch((): Track[] => []),
   ]);
   const magiaLinks = Object.fromEntries(magiaLinksMap);
+  const perfilMagico = {
+    tipoMagiaPrincipal: p.tipoMagiaPrincipal,
+    magiaSecundaria: p.magiaSecundaria,
+    nivelDeConsciencia: p.nivelDeConsciencia,
+    circuitoForte: p.circuitoForte,
+    essentia: p.essentia,
+    zenithra: p.zenithra,
+    bendicion: p.bendicion,
+    segundoDespertar: p.segundoDespertar,
+  };
 
   // Habilidades con nombre resuelto (del hechizo enlazado) y enlace a /magia.
   const habilidades = (p.habilidades ?? []).map((h) => ({
@@ -172,27 +182,17 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         {/* Nacimiento, muerte y edad en el momento de lectura (spec §13). */}
         <FechasDeFicha entidad="personajes" id={p.id} edadTexto={p.edad} className="-mb-4" />
 
-        {/* Perfil mágico */}
-        <Section icon="Sparkles" title="Perfil mágico">
-          <PerfilMagico
-            valores={{
-              tipoMagiaPrincipal: p.tipoMagiaPrincipal,
-              magiaSecundaria: p.magiaSecundaria,
-              nivelDeConsciencia: p.nivelDeConsciencia,
-              circuitoForte: p.circuitoForte,
-              essentia: p.essentia,
-              zenithra: p.zenithra,
-              bendicion: p.bendicion,
-              segundoDespertar: p.segundoDespertar,
-            }}
-            magiaLinks={magiaLinks}
-          />
-          {p.debilidades && (
-            <div className="mt-4">
-              <ProseBlock title="Debilidades">{p.debilidades}</ProseBlock>
-            </div>
-          )}
-        </Section>
+        {/* Perfil mágico: sin ningún dato, ni el título (un personaje recién creado no tiene nada). */}
+        {(Object.values(perfilMagico).some(Boolean) || p.debilidades) && (
+          <Section icon="Sparkles" title="Perfil mágico">
+            <PerfilMagico valores={perfilMagico} magiaLinks={magiaLinks} />
+            {p.debilidades && (
+              <div className="mt-4">
+                <ProseBlock title="Debilidades">{p.debilidades}</ProseBlock>
+              </div>
+            )}
+          </Section>
+        )}
 
         {/* Historia y personalidad */}
         {/* La banda sonora vive en esta sección: sin contarla, un personaje con canciones pero sin historia no las enseñaba. */}

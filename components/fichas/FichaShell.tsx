@@ -52,8 +52,9 @@ export async function FichaShell({
         </div>
       </div>
 
-      {/* Cabecera */}
-      <div className="mx-auto max-w-5xl px-4">
+      {/* Cabecera. `relative` la pinta por encima del banner (que también lo es): sin
+          él, al acabar la animación de entrada el banner tapaba la mitad del título. */}
+      <div className="relative mx-auto max-w-5xl px-4">
         <div className="-mt-16 flex flex-col items-start gap-4 md:-mt-20 md:flex-row md:items-end">
           <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border-2 border-border-glow shadow-xl md:h-40 md:w-40">
             <EntityImage src={imagen} alt={titulo} name={nombre ?? titulo} sizes="160px" priority />
