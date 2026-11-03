@@ -188,7 +188,8 @@ async function ficha(entidad: string, arg: string | undefined) {
   const singular = molde?.singular ?? entidad;
   const papelera = fila.eliminadoEn ? " · EN LA PAPELERA" : "";
   console.log(`## ${singular} #${id}: ${fila[nombreCol]}${estado ? ` · ${estado}` : ""}${papelera}`);
-  console.log(`<!-- leído de la wiki el ${new Date().toISOString().slice(0, 10)} -->\n`);
+  // Fecha local ("sv-SE" da AAAA-MM-DD): con toISOString, de noche salía la de mañana (UTC).
+  console.log(`<!-- leído de la wiki el ${new Date().toLocaleDateString("sv-SE")} -->\n`);
 
   const campos = (molde?.campos ?? []).filter((c) => c.name !== nombreCol);
   const vacios: string[] = [];
@@ -362,6 +363,12 @@ async function catalogo(campo: string) {
 }
 
 // ── Entrada ────────────────────────────────────────────────────────────────
+
+// Cortar la salida (`| head`) no es un error: se sale sin la traza de EPIPE.
+process.stdout.on("error", (e: NodeJS.ErrnoException) => {
+  if (e.code === "EPIPE") process.exit(0);
+  throw e;
+});
 
 const [orden, ...args] = process.argv.slice(2);
 try {

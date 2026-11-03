@@ -23,15 +23,18 @@ bloques en `lore/propuestas/<área>.md`, en el formato de
 
 ## Al escribir
 
-- **Solo lo que dice el autor o ya está en la wiki.** Si redactas a partir de
-  sus notas, conserva sus ideas y su voz; no añadas hechos. Lo deducido va en
-  las notas de autor diciendo de dónde sale.
+- **Solo lo que dice el autor o ya está en la wiki.** Redacta sus notas con
+  la voz de la guía de estilo, conservando sus ideas; no añadas hechos. Lo
+  deducido va en las notas de autor diciendo de dónde sale. La excepción: si
+  el autor pide **nutrir** un texto, sigue lo que dice la guía de estilo.
+- Si falta un dato que la ficha necesita, pregúntalo en lugar de dejarlo a
+  medias.
 - Rótulos y opciones exactos del molde. Una opción que no existe se marca
   `(opción nueva)`.
 - En una ficha que existe, escribe solo lo que cambia. Para ampliar un texto
   sin pisarlo, `### <Rótulo> (añadir)`.
-- Marca con 🔒 lo que pueda ser secreto o spoiler (identidades, muertes,
-  parentescos ocultos, giros). Decide el autor.
+- Marca con 🔒 lo que la guía de estilo pone oculto por defecto. Si dudas de
+  si algo es secreto, pregúntalo. Decide el autor.
 - Conecta: si el material dice que A pertenece a B, eso es una conexión, no
   solo una frase en la historia.
 - Añade los bloques **al final** del archivo del área, tras una línea

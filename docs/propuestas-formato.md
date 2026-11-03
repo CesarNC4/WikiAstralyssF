@@ -127,8 +127,10 @@ notas de una ficha o a la basura.
 
 ## Reglas para Claude al escribir
 
-- Nada inventado: lo que no salga del autor o de la wiki, se pregunta o se deja
-  fuera. Si se deduce algo, se dice en las notas de autor ("deducido de…").
+- Nada inventado: lo que no salga del autor o de la wiki, se pregunta. Si se
+  deduce algo, se dice en las notas de autor ("deducido de…"). La excepción es
+  cuando el autor pide nutrir un texto (lo regula la guía de estilo).
 - Antes de proponer una ficha nueva, `buscar` que no exista ya con otro nombre.
 - Respetar `lore/guia-de-estilo.md`.
-- Lo que pueda ser un secreto o un spoiler va con 🔒, y el autor decide.
+- Lo que la guía pone oculto por defecto va con 🔒; en la duda, se pregunta.
+  Decide el autor.

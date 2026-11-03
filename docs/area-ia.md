@@ -1,10 +1,11 @@
 # Área IA — Claude como asistente de lore
 
-> **Estado (2026-11-03): Fases 1–3 hechas.** Ya se puede trabajar: `/lore`,
-> `/lore-fichas` y `/lore-entrevista` funcionan, y el autor aplica las
-> propuestas a mano en el panel. Siguiente: Fase 4 (visibilidad completa).
-> Este documento sirve para retomar el trabajo desde cualquier chat sin más
-> contexto.
+> **Estado (2026-11-02): Fases 1–3 hechas y guía de estilo respondida.** Ya se
+> puede trabajar: `/lore`, `/lore-fichas` y `/lore-entrevista` funcionan, y el
+> autor aplica las propuestas a mano en el panel. Siguiente: la web sin
+> indexar, la limpieza de los datos de prueba y la Fase 4 (visibilidad
+> completa), en ese orden. Este documento sirve para retomar el trabajo desde
+> cualquier chat sin más contexto.
 
 ## Qué es
 
@@ -64,9 +65,39 @@ El formato ([propuestas-formato.md](./propuestas-formato.md)), un archivo por
 y objetos, historia, taller, música). Desde aquí el autor ya puede trabajar,
 pasando los datos al panel a mano.
 
+### Antes de la Fase 4 — web sin indexar y limpieza
+
+Decidido en la entrevista de la guía de estilo (2026-11-02):
+
+- **Web sin indexar.** La wiki la consultan el autor y sus amigos: abierta a
+  quien tenga el enlace, pero fuera de los buscadores (robots.txt que bloquea
+  todo, `noindex` en todas las páginas, sin sitemap).
+- **Limpieza de los datos de prueba**, con un script de ensayo y el visto
+  bueno del autor (sin copia previa, por decisión suya). Los personajes se
+  quedan solo con nombre y estado: fuera sus textos, imágenes, estadísticas,
+  habilidades, relaciones, fechas y conexiones. Se borra la canción. El resto
+  de secciones, los catálogos y el calendario se quedan. En el mismo script:
+  quitar el HTML pegado de Word de los textos de las razas (mismo texto, sin
+  el código) y vaciar los textos de relleno de la nación.
+- **Fuera `personaje_narrativa`**: los secretos van ocultos en la ficha (Fase
+  4), y lo demás en las notas privadas o en las hojas de trama.
+
 ### Fase 4 — Visibilidad completa
 
-Que cualquier dato pueda ocultarse al público por separado:
+Que cualquier dato pueda ocultarse al público por separado. Decisiones del
+autor (2026-11-02):
+
+- **Dos niveles**: un dato lo ve todo el mundo o solo el autor. No hay
+  visibilidad por lector.
+- **Lo oculto deja una marca "???"**: se nota que hay algo, pero no qué
+  ("Nombre real: ???"). Vale para campos, conexiones y fechas.
+- **Edad**: si se oculta el nacimiento, la edad también sale como "???".
+- **Grafos** (Atlas y mini-grafos): una conexión oculta no se dibuja.
+- **Identidad oculta**: campo de nombre real en el personaje, oculto por
+  defecto; la ficha lleva el alias con el que la conocen los lectores. Los
+  personajes que hoy llevan "???" en el nombre los pasa el autor a mano.
+
+Qué hay que hacer:
 
 - **Campos ocultos en todas las fichas.** Hoy (`campo_visibilidad`) solo los
   respetan naciones, razas, bestias, minerales, conceptos, misiones, lords
@@ -104,14 +135,19 @@ pasa a un agente lector.
 
 ## Decisiones
 
-- 2026-11-03: la lectura muestra también lo que el panel no deja editar
+- 2026-11-02: guía de estilo respondida (`lore/guia-de-estilo.md`, fuera de
+  git). Lo que toca al código está arriba: web sin indexar, limpieza, quitar
+  `personaje_narrativa` y las decisiones de la Fase 4. Los textos de las
+  fichas de antes de la guía eran de prueba: no sirven de modelo de estilo.
+- 2026-11-02: la lectura muestra también lo que el panel no deja editar
   (habilidades y estadísticas del personaje) como "solo lectura". La tabla
   `personaje_narrativa` (secretos pendientes, notas de autor del personaje)
-  existe pero ningún formulario la edita: queda fuera de los moldes hasta que
-  tenga editor.
-- Datos raros vistos al probar, para `/lore-revisar`: comillas escapadas
-  (`\"Sabio\"`) en la historia de Alhaitham y textos de relleno en Sylvaterra
-  ("aba", "Mucho conocimiento").
+  existe pero ningún formulario la edita: queda fuera de los moldes, y se
+  quita en la limpieza.
+- Datos raros vistos al probar: comillas escapadas (`\"Sabio\"`) en la
+  historia de Alhaitham (se va con la limpieza de personajes), textos de
+  relleno en Sylvaterra ("aba", "Mucho conocimiento") y HTML de Word en los
+  textos de las razas (los dos últimos, en el script de la limpieza).
 
 - 2026-11-02: el autor aplica las propuestas él mismo (bandeja en el panel), en
   lugar de que Claude escriba en la base. Discord queda fuera: son notas sueltas

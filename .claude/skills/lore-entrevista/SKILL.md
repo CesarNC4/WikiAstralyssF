@@ -31,7 +31,8 @@ repita lo que ya está, y qué está vacío o no cuadra.
   original para volver.
 - Pregunta siempre si algo es **secreto** cuando suene a giro o revelación.
 - No rellenes huecos con ideas tuyas. Si él te pide ideas, ofrécelas como
-  opciones marcadas, nunca como hechos.
+  opciones marcadas, nunca como hechos. Si te pide **nutrir** lo que dictó,
+  sigue lo que dice la guía de estilo.
 
 ## 4. No perder nada
 
