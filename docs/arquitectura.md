@@ -203,8 +203,8 @@ Tres opciones: monolítico (un `schema.ts`), por tabla (un archivo por tabla), p
 /db
   /schema
     narrativa.ts      // capitulos, actos, trama_arcos, trama_hojas, hilo_narrativo, hoja_*
-    personajes.ts     // personajes, estadisticas, habilidades, relaciones, eventos_personaje,
-                      //   personaje_narrativa, personaje_narrativa_hito
+    personajes.ts     // personajes, estadisticas, habilidades, relaciones, eventos_personaje
+                      //   (personaje_narrativa y su _hito se retiraron el 2026-11-02)
     mundo.ts          // naciones, razas, organizaciones, familias, bestias, minerales, gremio
     jerarquias.ts     // *_jerarquia, *_facciones, *_rangos, *_historial, familia_arbol
     relacionesNM.ts   // capitulo_personaje, personaje_nacion, personaje_raza,

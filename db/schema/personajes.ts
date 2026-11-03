@@ -129,19 +129,7 @@ export const relaciones = pgTable("relaciones", {
   afectoReciproco: varchar("afecto_reciproco"),
 });
 
-export const personajeNarrativa = pgTable("personaje_narrativa", {
-  id: serial("id").primaryKey(),
-  personajeId: integer("personaje_id"),
-  estadoNarrativo: varchar("estado_narrativo"),
-  tipoArco: varchar("tipo_arco"),
-  desarrolloArco: text("desarrollo_arco"),
-  destinoFinal: text("destino_final"),
-  actoClaveId: integer("acto_clave_id"),
-  capituloClaveId: integer("capitulo_clave_id"),
-  secretosPendientes: text("secretos_pendientes"),
-  revelacionIdentidad: text("revelacion_identidad"),
-  relacionesOcultas: text("relaciones_ocultas"),
-  notasAutor: text("notas_autor"),
-  porcentajeEscrito: integer("porcentaje_escrito"),
-});
+// `personaje_narrativa` (y su `personaje_narrativa_hito`) se retiró en la
+// limpieza del 2026-11-02: nunca tuvo editor. Los secretos del personaje van
+// ocultos en su ficha, y lo demás en las notas privadas o las hojas de trama.
 

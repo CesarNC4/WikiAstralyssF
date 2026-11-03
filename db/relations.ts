@@ -4,7 +4,6 @@ import {
   estadisticas,
   habilidades,
   relaciones,
-  personajeNarrativa,
 } from "./schema/personajes";
 import {
   naciones,
@@ -48,7 +47,6 @@ export const personajesRelations = relations(personajes, ({ one, many }) => ({
   // Relaciones donde este PJ es el destino (para mostrarlas también en su ficha).
   relacionesInversas: many(relaciones, { relationName: "relacion_destino" }),
   eventos: many(personajeEvento),
-  narrativa: one(personajeNarrativa),
   objetos: many(personajeObjeto),
   naciones: many(personajeNacion),
   razas: many(personajeRaza),
@@ -105,13 +103,6 @@ export const personajeEventoRelations = relations(personajeEvento, ({ one }) => 
   evento: one(timelineEventos, {
     fields: [personajeEvento.timelineEventoId],
     references: [timelineEventos.id],
-  }),
-}));
-
-export const personajeNarrativaRelations = relations(personajeNarrativa, ({ one }) => ({
-  personaje: one(personajes, {
-    fields: [personajeNarrativa.personajeId],
-    references: [personajes.id],
   }),
 }));
 

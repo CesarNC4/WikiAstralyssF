@@ -16,7 +16,6 @@ export async function getPersonajeFicha(id: number) {
       eventos: {
         with: { evento: { columns: { id: true, titulo: true, descripcion: true } } },
       },
-      narrativa: true,
       objetos: {
         with: { objeto: { columns: { id: true, nombre: true, tipo: true, descripcion: true, estadoPublicacion: true } } },
       },
@@ -60,7 +59,6 @@ export async function getPersonajePreview(id: number) {
       eventos: {
         with: { evento: { columns: { id: true, titulo: true, descripcion: true } } },
       },
-      narrativa: true,
       objetos: {
         with: { objeto: { columns: { id: true, nombre: true, tipo: true, descripcion: true, estadoPublicacion: true } } },
       },
