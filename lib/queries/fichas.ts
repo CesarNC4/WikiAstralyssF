@@ -558,7 +558,7 @@ export async function getActoPublico(capituloId: number, actoId: number) {
   return { acto, capitulo: fila.capitulo };
 }
 
-/** Pares capítulo/acto visibles al público, para el sitemap y el prerender. */
+/** Pares capítulo/acto visibles al público, para el prerender. */
 export async function getActosVisibles(): Promise<{ capituloId: number; actoId: number }[]> {
   const filas = await db
     .select({ capituloId: s.actos.capituloId, actoId: s.actos.id })

@@ -37,6 +37,8 @@ export const metadata: Metadata = {
   },
   description: SITE_DESC,
   applicationName: SITE_NAME,
+  // Wiki privada del autor y sus amigos: fuera de los buscadores (app/robots.ts).
+  robots: { index: false, follow: false },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,

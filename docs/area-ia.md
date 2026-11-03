@@ -69,9 +69,10 @@ pasando los datos al panel a mano.
 
 Decidido en la entrevista de la guía de estilo (2026-11-02):
 
-- **Web sin indexar.** La wiki la consultan el autor y sus amigos: abierta a
-  quien tenga el enlace, pero fuera de los buscadores (robots.txt que bloquea
-  todo, `noindex` en todas las páginas, sin sitemap).
+- **Web sin indexar** ✔ hecha (2026-11-02). La wiki la consultan el autor y
+  sus amigos: abierta a quien tenga el enlace, pero fuera de los buscadores
+  (`noindex` en todo, sin sitemap, rastreadores de IA bloqueados; detalle en
+  docs/arquitectura.md §11.4).
 - **Limpieza de los datos de prueba**, con un script de ensayo y el visto
   bueno del autor (sin copia previa, por decisión suya). Los personajes se
   quedan solo con nombre y estado: fuera sus textos, imágenes, estadísticas,

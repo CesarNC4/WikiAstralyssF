@@ -759,10 +759,22 @@ Para entidades **sin imagen propia**, generar una **og:image dinámica con `next
 **Por qué no generar siempre con Vercel OG:** generar una imagen por render gasta CPU/función; si ya tenemos una ilustración HD del personaje, usarla directamente es más bonito y gratis. Híbrido: imagen real si existe, generada si no.
 
 ### 11.3 sitemap.xml dinámico
+> **Retirado el 2026-11-02**: la wiki salió de los buscadores (§11.4) y el
+> sitemap ya no tiene sentido. Lo que sigue es el diseño original.
+
 **`app/sitemap.ts`** genera el sitemap consultando **todas las entidades con `estado_publicacion = 'publicado'`** (una query ligera por dominio que devuelve `{id, updatedAt}`). Incluye índices + todas las fichas + páginas de lore (por slug). Se revalida vía el tag `sitemap` cuando el admin publica/oculta algo (§4). `lastModified` desde `updated_en` para señalar frescura.
 
 ### 11.4 robots.txt
-**`app/robots.ts`**: permite indexar todo lo público, **bloquea `/admin` y `/api`** y `/*/preview`. Apunta al sitemap. (Aun siendo wiki personal, dejarla indexable está bien; si el autor prefiere privacidad, basta cambiar a `disallow: /` — decisión del autor, el default es indexable.)
+> **Desde el 2026-11-02, fuera de los buscadores** (decisión del autor: la
+> wiki es para él y sus amigos, abierta a quien tenga el enlace). Todo lleva
+> `noindex, nofollow`: cabecera `X-Robots-Tag` en `next.config.ts` (cubre
+> también imágenes OG, feed y `/public`) y `robots` en la metadata del layout
+> raíz. `app/robots.ts` deja rastrear a los buscadores **a propósito**, para que
+> lean ese `noindex` (con `disallow: /` no lo verían y una URL ya conocida
+> podría seguir saliendo); solo cierra `/admin` y `/api`, y cierra todo a los
+> rastreadores de IA, que no atienden `noindex`. Sin sitemap (§11.3).
+
+Diseño original: **`app/robots.ts`**: permite indexar todo lo público, **bloquea `/admin` y `/api`** y `/*/preview`. Apunta al sitemap.
 
 ### 11.5 Datos estructurados (opcional, bajo coste)
 JSON-LD `Article`/`CreativeWork` por ficha para enriquecer resultados. Nice-to-have fase 2.

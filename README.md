@@ -87,7 +87,8 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - Índices de las 13 secciones + fichas (personaje con tabs; nación, organización,
   familia con árbol; genéricas para el resto) + lore por slug.
 - Timeline vertical, mapa de naciones, páginas de error temáticas.
-- SEO (metadata dinámica, sitemap, robots), ISR + revalidación.
+- Metadata dinámica e imágenes OG, ISR + revalidación. **Fuera de los
+  buscadores**: `noindex` en todo y sin sitemap (docs/arquitectura.md §11.4).
 - Admin con Supabase Auth (login, proxy de protección, dashboard) y CRUD completo
   por entidad: alta, edición, papelera, preview y validación con Zod.
 - Subida de imágenes a Cloudinary desde el propio panel, **firmada en el servidor**

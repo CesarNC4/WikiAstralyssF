@@ -31,7 +31,6 @@ function revalidarPersonaje(id: number) {
   revalidateTag(`personaje:${id}`, "max");
   revalidateTag("personajes:list", "max");
   revalidateTag("home", "max");
-  revalidateTag("sitemap", "max");
   revalidatePath("/personajes");
   revalidatePath(`/personajes/${id}`);
   revalidatePath("/");
