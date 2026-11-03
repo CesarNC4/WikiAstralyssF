@@ -3,7 +3,7 @@
  *
  * Crea el calendario, las eras y la fecha estructurada (`fecha_lore`), y copia a
  * esta última las fechas que hasta ahora se escribían a mano en texto libre.
- * Ver docs/taller-del-autor.md §13 y §15, y docs/taller-plan.md (Fase 1).
+ * Ver docs/taller-del-autor.md §13 y §15.
  *
  *  1. Tablas `calendario_segmento`, `calendario_dia_semana`, `era`, `fecha_lore`.
  *  2. Calendario inicial (12 meses de 30 días, semana de 7) si no hay ninguno.

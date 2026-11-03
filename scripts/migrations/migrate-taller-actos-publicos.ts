@@ -1,6 +1,6 @@
 /**
  * Taller · Fase 5 — Los actos entran en el buscador.
- * Ver docs/taller-del-autor.md §4 y docs/taller-plan.md (Fase 5).
+ * Ver docs/taller-del-autor.md §4.
  *
  * El trigger genérico `search_index_sync` construye la URL como `/<ruta>/<id>`
  * y toma el estado de la propia fila. Al acto no le vale ninguna de las dos

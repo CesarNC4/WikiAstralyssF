@@ -1,6 +1,6 @@
 /**
  * Taller · Fase 6 — Retirada de las fechas en texto libre.
- * Ver docs/taller-plan.md (Fase 6, punto 4) y docs/taller-del-autor.md §15.
+ * Ver docs/taller-del-autor.md §15.
  *
  * Desde la Fase 1 las fechas viven en `fecha_lore`; desde la Fase 6 nada lee ya
  * las columnas de texto viejas. Este script las retira:

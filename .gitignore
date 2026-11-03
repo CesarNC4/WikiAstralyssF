@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# lore sin publicar y contexto personal (el repositorio es público: docs/area-ia.md)
+/lore/
+CLAUDE.local.md

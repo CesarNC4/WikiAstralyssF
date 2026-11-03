@@ -12,8 +12,7 @@ concreta y ya cumplida.
 
 Sin permisos de administrador: descarga el **ZIP** "Windows Binary" de nodejs.org
 (no el `.msi`), descomprímelo en tu carpeta de usuario y añádelo al PATH con
-`setx PATH "C:uta
-ode;%PATH%"` (no requiere admin; reabre la terminal).
+`setx PATH "C:\ruta\a\node;%PATH%"` (no requiere admin; reabre la terminal).
 
 ## 2. Variables de entorno
 

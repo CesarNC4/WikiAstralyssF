@@ -1,0 +1,122 @@
+# Área IA — Claude como asistente de lore
+
+> **Estado (2026-11-03): Fases 1–3 hechas.** Ya se puede trabajar: `/lore`,
+> `/lore-fichas` y `/lore-entrevista` funcionan, y el autor aplica las
+> propuestas a mano en el panel. Siguiente: Fase 4 (visibilidad completa).
+> Este documento sirve para retomar el trabajo desde cualquier chat sin más
+> contexto.
+
+## Qué es
+
+Claude (en Claude Code, desde este repositorio) ayuda al autor a llenar la
+wiki: le entrevista para sacar lo que tiene en la cabeza, ordena notas sueltas,
+propone fichas nuevas y cambios en las existentes, y revisa la coherencia del
+mundo.
+
+**Reglas que no cambian:**
+
+1. **Claude lee la base, nunca escribe lore en ella.** Lo que propone va a
+   archivos en `lore/propuestas/`, y es **el autor quien lo aplica** desde el
+   panel: decide qué se publica, qué queda en borrador, qué va a sus notas
+   privadas y qué se descarta.
+2. **La base es la única fuente de verdad del lore.** No se copia el lore a
+   documentos aparte (se desactualizarían): cada chat lee la wiki cuando lo
+   necesita. Las propuestas son de usar y tirar: el autor las borra al aplicarlas.
+3. **El repositorio es público.** La carpeta `lore/` está en `.gitignore`: ahí
+   va todo lo que no está publicado (propuestas, entrevistas, guía de estilo).
+   Nada de lore sin publicar entra en un commit.
+
+## Piezas
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Contexto fijo | `CLAUDE.md` | Lo lee cualquier chat al arrancar: reglas y dónde está cada cosa |
+| Contexto personal | `CLAUDE.local.md` (fuera de git) | El equipo del autor: rutas de Node, cómo probar en local |
+| Carpeta de trabajo | `lore/` (fuera de git) | `propuestas/`, `entrevistas/`, `guia-de-estilo.md` |
+| Lectura | `scripts/lore/leer.ts` (`pnpm --silent lore …`) | Lee fichas, conexiones, fechas, catálogos y moldes. Solo lectura |
+| Moldes | `lib/propuestas/moldes.ts` | Los campos de cada ficha con los rótulos del panel. Lo usan la lectura y la bandeja |
+| Formato | [propuestas-formato.md](./propuestas-formato.md) | Cómo se escribe una propuesta |
+| Skills | `.claude/skills/` | `/lore`, `/lore-fichas`, `/lore-entrevista` (y `/lore-revisar` en la Fase 6) |
+| Bandeja | `/admin/propuestas` | El autor sube una propuesta y la aplica dato a dato |
+
+`scripts/lore/registrar.mjs` permite ejecutar con Node el código de `lib/` y
+`db/` (alias `@/…`, imports sin extensión, `server-only`): la lectura usa las
+mismas definiciones que la web, sin dependencias nuevas.
+
+## Plan por fases
+
+### Fase 1 — Contexto ✔ hecha
+
+`CLAUDE.md`, `CLAUDE.local.md`, `lore/` en `.gitignore` con su guía de estilo,
+y este documento.
+
+### Fase 2 — Lectura y `/lore` ✔ hecha
+
+`scripts/lore/leer.ts` con: `resumen`, `buscar`, `lista`, `ficha`, `menciones`,
+`campos` y `catalogo`. La salida de `ficha` usa el mismo formato que las
+propuestas, así una ficha leída sirve de punto de partida para proponer cambios.
+Skill `/lore` para consultar ("¿qué sabemos de…?").
+
+### Fase 3 — Propuestas, `/lore-fichas` y `/lore-entrevista` ✔ hecha
+
+El formato ([propuestas-formato.md](./propuestas-formato.md)), un archivo por
+área (personajes, naciones y lugares, organizaciones, razas y criaturas, magia
+y objetos, historia, taller, música). Desde aquí el autor ya puede trabajar,
+pasando los datos al panel a mano.
+
+### Fase 4 — Visibilidad completa
+
+Que cualquier dato pueda ocultarse al público por separado:
+
+- **Campos ocultos en todas las fichas.** Hoy (`campo_visibilidad`) solo los
+  respetan naciones, razas, bestias, minerales, conceptos, misiones, lords
+  demonio, artefactos, lore, capítulos, arcos, organizaciones y familias, y el
+  panel solo ofrece el control en las fichas del admin genérico. Faltan:
+  personajes (lo primero), regiones, locaciones, gremio, canciones, el control
+  del panel en organizaciones y familias, y revisar eventos y actos.
+- **Conexiones ocultas.** Una conexión que existe pero no se ve (que alguien es
+  espía de una organización). Según el medio: columna `oculto` en `vinculo` y en
+  las tablas de `TABLAS_REL`; en las de medio "referencia", la columna es un
+  campo de la ficha y se oculta como campo. Filtrar en los bloques públicos, el
+  Atlas, los mini-grafos y las consultas a mano.
+- **Fechas ocultas.** Columna `oculto` en `fecha_lore`. Filtrar en fichas,
+  cronología y calendario. Si se oculta el nacimiento, también la edad (la
+  delataría).
+- Candado en el panel para cada campo, conexión y fecha.
+- Un verificador que recorra lo público y compruebe que nada oculto se escapa.
+
+Migración con ensayo; ningún `--aplicar` sin el visto bueno del autor.
+
+### Fase 5 — Bandeja de propuestas
+
+`/admin/propuestas`: el autor sube un archivo de `lore/propuestas/`, ve cada
+ficha (nueva, o actual frente a propuesta) y elige por dato: **publicar**,
+**aplicar oculto**, **pasar a notas** o **descartar**, pudiendo editar el texto
+antes. Aplica con las acciones de siempre del panel (validación, conexiones,
+fechas, revalidación). Los nombres de otras fichas se resuelven a su id; si no
+existe o es ambiguo, el autor elige o crea un borrador al vuelo.
+
+### Fase 6 — `/lore-revisar`
+
+Auditoría de coherencia: edades frente a fechas, fichas a medias, conexiones
+que faltan o se contradicen, referencias rotas. Si llena demasiado el chat, se
+pasa a un agente lector.
+
+## Decisiones
+
+- 2026-11-03: la lectura muestra también lo que el panel no deja editar
+  (habilidades y estadísticas del personaje) como "solo lectura". La tabla
+  `personaje_narrativa` (secretos pendientes, notas de autor del personaje)
+  existe pero ningún formulario la edita: queda fuera de los moldes hasta que
+  tenga editor.
+- Datos raros vistos al probar, para `/lore-revisar`: comillas escapadas
+  (`\"Sabio\"`) en la historia de Alhaitham y textos de relleno en Sylvaterra
+  ("aba", "Mucho conocimiento").
+
+- 2026-11-02: el autor aplica las propuestas él mismo (bandeja en el panel), en
+  lugar de que Claude escriba en la base. Discord queda fuera: son notas sueltas
+  de apoyo. Lo importante es lo que el autor tiene en la cabeza, que es sobre
+  todo material del taller.
+- Gemini: la clave gratuita (`GEMINI_API_KEY` en `.env.local`) funciona con
+  `gemini-3.5-flash` y el razonamiento en "low" (1–2 s). Queda como opción para
+  procesar mucho volumen, no como pieza del flujo.

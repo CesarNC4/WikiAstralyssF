@@ -121,8 +121,7 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
   quedan en el panel porque guardan giros y notas de autor.
 - **Taller del autor** (`/admin/taller`), a pantalla completa y solo para
   escritorio, es el único sitio donde se editan capítulos, actos, arcos, hojas e
-  hilos. Ver [docs/taller-del-autor.md](./docs/taller-del-autor.md) y
-  [docs/taller-plan.md](./docs/taller-plan.md).
+  hilos. Ver [docs/taller-del-autor.md](./docs/taller-del-autor.md).
   - *Escribe*: los actos, con POV, personajes, lugares, arcos, canciones, fecha,
     hojas, hilos y eventos.
   - *Capítulos*: el árbol libro > capítulo > acto, con arrastre.

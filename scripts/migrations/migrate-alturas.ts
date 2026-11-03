@@ -1,6 +1,6 @@
 /**
  * Taller · Fase 10 — Medidas para el comparador de alturas.
- * Ver docs/taller-del-autor.md §12 y docs/taller-plan.md (Fase 10).
+ * Ver docs/taller-del-autor.md §12.
  *
  * Añade a `bestias` y `lord_demonio`:
  *  - `altura` y `longitud`, en metros (con decimales);

@@ -1,6 +1,6 @@
 /**
  * Taller · Fase 2 — Modelo narrativo.
- * Ver docs/taller-del-autor.md §3, §4 y §7, y docs/taller-plan.md (Fase 2).
+ * Ver docs/taller-del-autor.md §3, §4 y §7.
  *
  *  1. `catalogos.meta` (jsonb) y `{ numerado: false }` en Prólogo, Interludio y
  *     Epílogo del catálogo `capitulo_tipo`.

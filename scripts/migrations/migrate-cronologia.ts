@@ -1,6 +1,6 @@
 /**
  * Taller · Fases 6 y 7 — Preparación aditiva de la cronología derivada.
- * Ver docs/taller-del-autor.md §13 y §14, y docs/taller-plan.md (Fases 6 y 7).
+ * Ver docs/taller-del-autor.md §13 y §14.
  *
  *  1. `timeline_eventos.fecha_lore` deja de ser obligatoria: el código nuevo crea
  *     eventos sin ese texto (su fecha va en la tabla `fecha_lore`). El código

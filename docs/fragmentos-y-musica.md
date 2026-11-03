@@ -1,151 +1,14 @@
-# Fragmentos del acto y sección Música — especificación y plan
+# Fragmentos del acto y sección Música — especificación
 
-> **Estado (2026-10-24): plan terminado, Fases 1–6 implementadas y desplegadas.**
-> Las tres migraciones (`migrate-fragmentos.ts`, `migrate-canciones.ts` y
-> `migrate-canciones-retirada.ts`) están aplicadas; lo borrado en la Fase 6
-> está en `respaldo_canciones`. Preguntas abiertas de §6: para la 1 y la 2 se
-> tomó la propuesta (enlace opcional y borrado directo con confirmación); la 3
-> es sí (catálogo `cancion_fuente` retirado en la Fase 6); la 4 está hecha (el
-> embed de Suno funciona con una canción real del autor).
->
-> Decisiones de la Fase 5:
-> - Las canciones de los fragmentos cuentan como del acto (y por tanto del
->   capítulo) en su banda sonora.
-> - Nación, organización, región y locación pintan su banda sonora con
->   `BandaSonora` (y sus bloques `*_cancion:a` están en `BLOQUES_A_MANO`). Los
->   eventos no tienen ficha: salen en la de la canción.
-> - El filtro por personaje del índice usa el vínculo directo personaje ↔
->   canción.
->
-> Decisiones de la Fase 4:
-> - Motores en `components/player/motores.tsx`, barra y panel en
->   `MusicPlayer.tsx`. Las fuentes sin control se resuelven en el estado
->   (`alCambiar` en `usePlayerStore`): al llegar a una, la cola se para y se
->   abre el panel con su embed, o se avisa si no lo hay.
-> - Los enlaces cortos de Suno (`suno.com/s/…`) se convierten al guardar en
->   `suno.com/song/<uuid>` (`lib/media/suno.ts`): solo ese se puede incrustar.
-> - Con el panel abierto, la ventanita de YouTube sube a la esquina superior
->   por encima del fondo del panel, para no dejar de verse.
-> - El reproductor de Suno y Spotify (`Embebido` en `MusicPlayer.tsx`) vive
->   fuera del panel, así que cerrarlo o navegar no lo corta: con el panel
->   abierto se encaja al pie del panel y, cerrado, flota encima de la barra
->   (Suno a 120 px de alto, Spotify en su formato compacto de 80 px). Lo que
->   flota sobre la barra hace crecer la página por abajo para no tapar su final.
->
-> Decisiones de la Fase 3:
-> - Panel: se amplió el admin genérico (`hasAudio` en `EntidadConfig`, sección
->   "Audio" con `AudioField`) en lugar de un editor propio.
-> - Con audio propio, `canciones.url` guarda la URL de Cloudinary y
->   `tipo_fuente = 'audio'`: el reproductor lee siempre `url` + `tipo_fuente`.
-> - `tipo_fuente` queda como dato derivado (`lib/media/fuentes.ts`). El catálogo
->   `cancion_fuente` se desenlazó de la columna y se retiró en la Fase 6.
-> - `ENTIDAD_INFO.canciones.ruta` se deja para la Fase 5: hasta que exista
->   `/canciones`, el enlace daría 404.
->
-> En el equipo personal sí se prueba en local (`pnpm dev` + navegador); la
-> regla de "no probar en el navegador local" de §0 es solo del equipo con
-> FortiEDR.
->
-> Este documento está pensado para retomar el trabajo en otra conversación: se
-> puede seguir sin más contexto.
->
-> Tres encargos:
-> 1. **Arreglo:** los bloques de relaciones del editor del acto se quedan en
->    "Cargando…" para siempre.
-> 2. **Fragmentos:** varios enlaces por POV dentro de un acto, cada uno con su
->    fecha.
-> 3. **Música:** reestructurar las canciones y darles una sección pública propia.
+> Implementado y desplegado el 2026-10-24. Describe cómo funcionan los
+> fragmentos de un acto y la música (datos, panel, reproductor y sección
+> pública), y por qué. El código remite a sus secciones (§2, §3.x).
 
 ## Índice
 
-0. [Cómo trabajar en este proyecto](#0-cómo-trabajar-en-este-proyecto)
-1. [Arreglo: bloques en "Cargando…"](#1-arreglo-bloques-en-cargando)
 2. [Fragmentos del acto](#2-fragmentos-del-acto)
 3. [Canciones → sección Música](#3-canciones--sección-música)
-4. [Plan por fases](#4-plan-por-fases)
-5. [Decisiones tomadas por defecto](#5-decisiones-tomadas-por-defecto)
-6. [Preguntas abiertas](#6-preguntas-abiertas)
-
----
-
-## 0. Cómo trabajar en este proyecto
-
-Antes de empezar, lee `README.md`, `docs/relaciones.md` y `AGENTS.md`. AGENTS.md
-pide leer la guía de `node_modules/next/dist/docs/` antes de escribir código de
-Next 16. Las dependencias ya están instaladas.
-
-**Entorno del autor (Windows, con FortiEDR):**
-
-- Node 24 portable en `C:\Users\clnegretec\node`, **fuera del PATH**. En cada
-  terminal: `$env:PATH = "C:\Users\clnegretec\node;$env:PATH"`.
-- En el equipo personal (`C:\Users\cesar`), Node 24 está en `C:\Users\cesar\node`
-  **dentro del PATH** de usuario y `corepack enable` ya está hecho: `pnpm …`
-  funciona directamente.
-- pnpm **solo a través de corepack**: `corepack pnpm typecheck`, `corepack pnpm lint`,
-  `corepack pnpm build`. No se instala nada global ni se añaden dependencias sin
-  permiso del autor.
-- En PowerShell 5.1, pnpm aparece como "NativeCommandError" porque escribe por
-  el canal de errores. Es inofensivo: lo que cuenta es `$LASTEXITCODE`.
-- **No se prueba en el navegador local** (decisión del autor). El flujo es:
-  1. cambios;
-  2. `typecheck` + `lint` (+ `build`) aquí;
-  3. commit y push **solo cuando el autor lo pida**, preguntando antes si va a
-     `master` (producción) o a una rama (despliegue de prueba);
-  4. el autor prueba en Vercel.
-
-**Base de datos:**
-
-- Solo hay una base: **producción** (Supabase).
-- Las migraciones viven en `scripts/migrations/` y siguen el patrón de
-  `migrate-alturas.ts`:
-  - ensayo por defecto, dentro de una transacción que se revierte;
-  - `--aplicar` para escribir;
-  - idempotentes.
-- Se ejecutan con `node --env-file=.env.local scripts/migrations/<script>.ts`.
-- **Ningún `--aplicar` sin el visto bueno del autor.** El entorno de Claude
-  bloquea incluso las lecturas de producción: o el autor lanza el comando, o da
-  permiso expreso para ese paso.
-- Las migraciones que añaden van antes del despliegue. Las que borran van en una
-  fase posterior, cuando el código desplegado ya no lea lo que se retira.
-
-**Cada fase va en su propio commit.**
-
----
-
-## 1. Arreglo: bloques en "Cargando…"
-
-**Síntoma.** En Taller › Escribe, los bloques del acto (POV, Personajes que
-aparecen, Naciones, Regiones, Locaciones, Arcos de trama, Canciones) muestran
-"Cargando…" para siempre, aunque añadas fichas. Lo mismo pasa con "Canciones"
-en la pantalla del capítulo.
-
-**Causa.** `components/admin/vinculos/BloqueVinculos.tsx`:
-
-- Solo llama a `cargar()` dentro de `alternar()`, es decir, al desplegar el bloque
-  con un clic.
-- `ActoEditor.tsx` y `CancionesManuales.tsx` lo montan con `abiertoInicial`: el
-  bloque nace abierto, así que nunca se carga.
-- `vincular` y `quitar` pasan por `conError`, que actualiza `filas` pero no marca
-  `cargado`. Por eso lo añadido **sí se guarda** en la base (la lista de actos de
-  la izquierda lo muestra, por ejemplo "POV: Lloyd, Aqua"), pero el bloque nunca
-  lo pinta.
-- Plegar y desplegar a mano lo arregla temporalmente.
-
-**Arreglo.** Solo en `BloqueVinculos.tsx`:
-
-- Si el bloque nace abierto, carga al montarse. Hazlo con un efecto que dependa
-  solo de `relId`, `lado` y `ownerId`, para no reintroducir el bucle de peticiones
-  que se arregló en `ed7dbe1` (allí la causa era depender de un array nuevo en
-  cada render).
-- Cualquier escritura que termine bien deja `cargado = true`.
-
-**Otros usos de `abiertoInicial`.** `PanelConexiones.tsx` calcula
-`abiertoInicial` a partir de `conteo`, que llega después del primer render. Hoy
-esos bloques nacen cerrados y funcionan. Con el arreglo, en ese panel no debe
-cambiar nada.
-
-**Comprobación.** Al abrir un acto, los 7 bloques muestran sus vínculos. Al
-vincular o quitar, la lista se actualiza al momento.
+4. [Decisiones](#4-decisiones)
 
 ---
 
@@ -259,41 +122,6 @@ acto_fragmento
 
 ## 3. Canciones → sección Música
 
-### 3.1 Estado actual (diagnóstico)
-
-**Datos dispersos:**
-
-| Dónde | Cómo |
-|---|---|
-| Personaje ↔ canción | Tabla `personaje_cancion` (`contexto`). Registro: `personaje_cancion`, medio `tabla`. La ficha la lee con `db.query` (`canciones: { with: { cancion: true } }` en `getPersonajeFicha` / `getPersonajePreview`, `lib/queries/fichas.ts`; relación en `db/relations.ts`) y la pinta a mano (`BLOQUES_A_MANO` en `lib/relaciones/omisiones.ts`) |
-| Capítulo ↔ canción | Tabla `capitulo_cancion`. Registro: `capitulo_cancion`, medio `tabla`. Se lee en `cancionesDelCapitulo()` (`lib/queries/narrativa.ts`) |
-| Acto ↔ canción | Tabla genérica `vinculo`, `relacion = 'acto_cancion'`. Se lee en `cancionesDe()` y `getCancionesDeActo()` |
-| `acto_cancion`, `hoja_cancion` | Tablas viejas que **ya no usa ningún código** |
-
-**Reproductor** (`components/player/MusicPlayerBar.tsx`, `hooks/usePlayerStore.ts`):
-
-- Solo reproduce de verdad las fuentes "Local" (un `<audio>` con la URL).
-- Con YouTube, Spotify o SoundCloud, play, pausa y siguiente no controlan nada.
-  El iframe solo existe con el panel desplegado: al plegarlo se desmonta y la
-  música se corta. Siguiente y anterior no arrancan el embed.
-- Bandcamp, Suno y "Enlace externo" no suenan de ninguna forma.
-- Si `tipoFuente` está vacío, la canción se trata como "Local" aunque el enlace
-  sea de YouTube, y falla sin avisar.
-- No existe forma de subir audio: el panel solo tiene un campo de texto para el
-  enlace.
-
-**Público:**
-
-- Solo aparecen como "Banda sonora" (`components/fichas/SongList.tsx`) dentro de
-  personaje, capítulo y acto.
-- No tienen índice, ni ficha, ni entrada en `lib/entities.ts`, ni `ruta` en
-  `ENTIDAD_INFO`.
-- En el panel, `lib/admin/fields.ts` las tiene con `route: "/capitulos"` y
-  `hasFicha: false`.
-
-**Datos actuales:** 3 canciones de prueba (Poema, Prueba, Prueba 2). El autor
-confirma que **se pueden borrar**: no hace falta migrar datos.
-
 ### 3.2 Decisiones del autor
 
 | Pregunta | Decisión |
@@ -382,7 +210,7 @@ unos 3–8 MB.
 - El vínculo con un fragmento ("momento exacto") se elige **desde el fragmento**,
   en su fila del editor del acto, con un `BloqueVinculos` de `fragmento_cancion`.
 
-### 3.6 Reproductor (rehacer)
+### 3.6 Reproductor
 
 **Arquitectura.** La cola y el estado viven en `usePlayerStore`. Hay un **motor
 por fuente**, montado **una sola vez** en `app/(public)/layout.tsx`, para que
@@ -457,30 +285,51 @@ y cada canción enlaza a su ficha.
 
 ---
 
-## 4. Plan por fases
+## 4. Decisiones
 
-Cada fase: un commit, `typecheck` + `lint` + `build`, y despliegue cuando el
-autor lo diga.
+Tomadas durante la implementación, por fase del plan original:
 
-| Fase | Contenido | Migración |
-|---|---|---|
-| **1** | Arreglo del "Cargando…" (sección 1). Independiente y pequeña: se puede desplegar ya | Ninguna |
-| **2** | Fragmentos (sección 2): tabla, `ENTIDAD_INFO`, acciones, editor del taller, fecha derivada y ficha pública | `migrate-fragmentos.ts`: crea `acto_fragmento` (solo añade) |
-| **3** | Canciones, datos y panel (3.3–3.5): columnas nuevas, vínculos al registro (incluidos `fragmento_cancion` y los nuevos), subida de audio con carpeta, purga y borrado adaptados, editor | `migrate-canciones.ts`: `letra`, `duracion`, `audio_asset_id` (solo añade) |
-| **4** | Reproductor nuevo (3.6) | Ninguna |
-| **5** | Sección Música (3.7): entidad, menús, índice, ficha y sitemap | Ninguna |
-| **6** | Limpieza, después de desplegar 3–5: borrar las 3 canciones de prueba y sus vínculos; retirar `acto_cancion`, `hoja_cancion`, `personaje_cancion` y `capitulo_cancion` (y el catálogo `cancion_fuente` si se decide) | `migrate-canciones-retirada.ts`: **destructiva**. Ensayo + visto bueno |
+**Sección Música (Fase 5).**
 
-Tras las fases 2 y 3, actualizar `README.md` (Estado actual),
-`docs/relaciones.md` (relaciones nuevas) y `scripts/migrations/README.md`.
-Correr `scripts/verificar-relaciones.mjs` y `scripts/verificar-catalogos.mjs`, que
-necesitan `.env.local`, así que los lanza el autor.
+- Las canciones de los fragmentos cuentan como del acto (y por tanto del
+  capítulo) en su banda sonora.
+- Nación, organización, región y locación pintan su banda sonora con
+  `BandaSonora` (y sus bloques `*_cancion:a` están en `BLOQUES_A_MANO`). Los
+  eventos no tienen ficha: salen en la de la canción.
+- El filtro por personaje del índice usa el vínculo directo personaje ↔
+  canción.
 
----
+**Reproductor (Fase 4).**
 
-## 5. Decisiones tomadas por defecto
+- Motores en `components/player/motores.tsx`, barra y panel en
+  `MusicPlayer.tsx`. Las fuentes sin control se resuelven en el estado
+  (`alCambiar` en `usePlayerStore`): al llegar a una, la cola se para y se
+  abre el panel con su embed, o se avisa si no lo hay.
+- Los enlaces cortos de Suno (`suno.com/s/…`) se convierten al guardar en
+  `suno.com/song/<uuid>` (`lib/media/suno.ts`): solo ese se puede incrustar.
+- Con el panel abierto, la ventanita de YouTube sube a la esquina superior
+  por encima del fondo del panel, para no dejar de verse.
+- El reproductor de Suno y Spotify (`Embebido` en `MusicPlayer.tsx`) vive
+  fuera del panel, así que cerrarlo o navegar no lo corta: con el panel
+  abierto se encaja al pie del panel y, cerrado, flota encima de la barra
+  (Suno a 120 px de alto, Spotify en su formato compacto de 80 px). Lo que
+  flota sobre la barra hace crecer la página por abajo para no tapar su final.
 
-Propuestas por Claude y no discutidas en detalle. El autor puede corregirlas:
+**Datos y panel de canciones (Fase 3).**
+
+- Panel: se amplió el admin genérico (`hasAudio` en `EntidadConfig`, sección
+  "Audio" con `AudioField`) en lugar de un editor propio.
+- Con audio propio, `canciones.url` guarda la URL de Cloudinary y
+  `tipo_fuente = 'audio'`: el reproductor lee siempre `url` + `tipo_fuente`.
+- `tipo_fuente` queda como dato derivado (`lib/media/fuentes.ts`). El catálogo
+  `cancion_fuente` se desenlazó de la columna y se retiró en la Fase 6.
+
+Respuestas del autor a las preguntas abiertas: el enlace del fragmento es
+**opcional**; los fragmentos se borran **directamente, con confirmación**
+(el acto ya tiene papelera); el catálogo `cancion_fuente` **se retiró**; el
+embed de Suno **funciona** con el id largo de la canción.
+
+Propuestas por Claude y aceptadas sin discusión:
 
 - Los fragmentos **no** salen en la cronología: ya sale el acto entero y la
   saturarían.
@@ -489,14 +338,3 @@ Propuestas por Claude y no discutidas en detalle. El autor puede corregirlas:
 - Borrar un fragmento no quita su POV del acto.
 - Spotify se queda solo como enlace o embed externo.
 - La ruta es `/canciones` y en el menú se llama "Música".
-
-## 6. Preguntas abiertas
-
-- ¿El enlace del fragmento es obligatorio, o se puede crear un fragmento sin
-  enlace para planificar antes de publicar? Propuesta: **opcional**.
-- ¿Papelera para fragmentos o borrado directo? Propuesta: **borrado directo con
-  confirmación**, porque el acto ya tiene papelera.
-- ¿Se retira el catálogo `cancion_fuente` cuando la fuente pase a deducirse sola?
-  **Sí** (2026-10-24): retirado en la Fase 6.
-- ¿Probar el embed de Suno con una canción real del autor antes de la fase 4?
-  **Hecho** (2026-10-24): funciona con el id largo de la canción.

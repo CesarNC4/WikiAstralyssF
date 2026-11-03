@@ -1,7 +1,8 @@
 # Taller del autor — especificación
 
 > Documento de trabajo, cerrado con el autor el 2026-10-11 tras varias rondas de
-> preguntas. Fija **qué** se quiere. Todavía no hay plan de implementación.
+> preguntas. Fija **qué** se quiere. Implementado en octubre de 2026 (el plan,
+> ya cumplido, está en el historial de git).
 > Las capturas de StoryCamp son **solo referencia de diseño**: no se importa
 > ningún dato de StoryCamp.
 
