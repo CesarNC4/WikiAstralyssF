@@ -1,3 +1,4 @@
+import { campoOculto } from "@/lib/visibilidad";
 /**
  * Definiciones de stats 0-100 por entidad (client-safe). Una sola fuente para
  * los sliders del admin, las barras de la ficha pública y las columnas del
@@ -110,5 +111,5 @@ export function clampStat(v: unknown): number | null {
 
 /** ¿La fila tiene al menos un stat con valor? */
 export function tieneStats(entidad: string, row: Record<string, unknown>): boolean {
-  return statKeys(entidad).some((k) => clampStat(row[k]) != null);
+  return statKeys(entidad).some((k) => clampStat(row[k]) != null || campoOculto(row, k));
 }

@@ -5,6 +5,7 @@ import { Badge } from "@/components/entity/Badge";
 import { getLordDemonio, getVisibleIds } from "@/lib/queries/fichas";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
+import { conMarca } from "@/lib/visibilidad";
 
 export const revalidate = 3600;
 
@@ -48,8 +49,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           { label: "Dominio", value: x.dominio },
           { label: "Estado", value: x.estado },
           { label: "Derrotado por", value: x.derrotadoPor },
-          { label: "Altura", value: x.altura ? `${x.altura.toLocaleString("es-ES")} m` : null },
-          { label: "Longitud", value: x.longitud ? `${x.longitud.toLocaleString("es-ES")} m` : null },
+          { label: "Altura", value: conMarca(x, "altura", x.altura ? `${x.altura.toLocaleString("es-ES")} m` : null) },
+          { label: "Longitud", value: conMarca(x, "longitud", x.longitud ? `${x.longitud.toLocaleString("es-ES")} m` : null) },
         ]}
       />
       <FechasDeFicha entidad="demonios" id={x.id} />

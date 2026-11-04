@@ -6,6 +6,7 @@ import { Badge } from "@/components/entity/Badge";
 import { getMision, getVisibleIds } from "@/lib/queries/fichas";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
+import { MARCA_OCULTO, campoOculto } from "@/lib/visibilidad";
 
 export const revalidate = 3600;
 
@@ -42,10 +43,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <FieldGrid fields={[{ label: "Tipo", value: x.tipo }, { label: "Nivel de riesgo", value: x.nivelRiesgo }, { label: "Estado", value: x.estado }, { label: "Rango mínimo", value: x.rangoMinimo }, { label: "Grupo recomendado", value: x.tamanoGrupo }, { label: "Ubicación", value: x.ubicacion }]} />
       <FechasDeFicha entidad="misiones" id={x.id} />
 
-      {(x.encargante || x.encarganteNombre) && (
+      {(x.encargante || x.encarganteNombre || campoOculto(x, "personajeId")) && (
         <section className="mb-6">
           <h2 className="mb-2 font-display text-xl text-accent">Encargada por</h2>
-          {x.encargante ? (
+          {campoOculto(x, "personajeId") ? (
+            <p className="text-sm text-fg">{MARCA_OCULTO}</p>
+          ) : x.encargante ? (
             <Link href={`/personajes/${x.encargante.id}`} className="inline-flex items-center gap-2 rounded-xl border border-border-base bg-surface/40 px-3 py-2 text-sm text-fg hover:border-border-glow">
               <span className="text-accent">◆</span> {x.encargante.nombre}
             </Link>

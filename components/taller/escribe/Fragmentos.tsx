@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/admin/Toast";
 import { FechaInput } from "@/components/admin/FechaInput";
+import { CandadoCampo, CandadoFecha, CandadosFicha } from "@/components/admin/candados";
 import { BloqueVinculos } from "@/components/admin/vinculos/BloqueVinculos";
 import { bloqueDe } from "@/lib/relaciones/registro";
 import {
@@ -264,6 +265,9 @@ function FilaFragmento({
             ))}
           </optgroup>
         </select>
+        <CandadosFicha entidad="fragmentos" id={f.id}>
+          <CandadoCampo campo="personajeId" />
+        </CandadosFicha>
         <input
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
@@ -291,6 +295,7 @@ function FilaFragmento({
           }}
         >
           <FechaInput cal={cal} value={fecha} onChange={setFecha} />
+          <CandadoFecha entidad="fragmentos" id={f.id} rol="principal" inicial={f.fechaOculta} hayFecha={!!f.fecha} />
           {fechaSinGuardar && <p className="mt-1 text-xs text-warning">La fecha se guarda al salir del campo.</p>}
         </div>
       )}

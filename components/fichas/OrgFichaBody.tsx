@@ -4,7 +4,7 @@ import { Badge } from "@/components/entity/Badge";
 import { Galeria } from "@/components/fichas/Galeria";
 import { JerarquiaSecciones } from "@/components/fichas/JerarquiaSecciones";
 import { OrgChart, type OrgMiembro } from "@/components/fichas/OrgChart";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 interface OrgRow {
@@ -43,7 +43,7 @@ export async function OrgFichaBody({
   facciones: Faccion[];
   historial: Historial[];
 }) {
-  const galeria = await getGaleria("organizaciones", org.id).catch(() => []);
+  const galeria = await getGaleriaPublica("organizaciones", org.id).catch(() => []);
 
   const miembros: OrgMiembro[] = jerarquia
     .filter((j) => j.nombre)

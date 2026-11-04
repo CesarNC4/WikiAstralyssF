@@ -1,6 +1,7 @@
 import { rolesDe, textosFecha } from "@/lib/fechas";
 import { getCalendario, leerFechasDe } from "@/lib/queries/fechas";
 import { ConmutadorFechas, EdadLectura, FechaTexto } from "./Lectura";
+import { MARCA_OCULTO } from "@/lib/visibilidad";
 
 /**
  * Bloque "Fechas" de una ficha pública (spec §13): las fechas de sus roles en la
@@ -30,12 +31,17 @@ export async function FechasDeFicha({
   const filas: { label: string; valor: React.ReactNode }[] = [];
   for (const r of roles) {
     const f = fechas[r.rol];
-    if (f) filas.push({ label: r.etiqueta, valor: <FechaTexto t={textosFecha(cal, f.fecha)} /> });
+    if (f) filas.push({ label: r.etiqueta, valor: f.oculto ? MARCA_OCULTO : <FechaTexto t={textosFecha(cal, f.fecha)} /> });
   }
   if (entidad === "personajes") {
     const nac = fechas.nacimiento;
-    if (nac) {
-      filas.push({ label: "Edad", valor: <EdadLectura cal={cal} nacimiento={nac.claveIni} muerte={fechas.muerte?.claveIni ?? null} /> });
+    // Con el nacimiento oculto, la edad lo delataría. Con la muerte oculta, la edad sigue
+    // corriendo: pararla en ese año diría cuándo murió.
+    if (nac?.oculto) {
+      filas.push({ label: "Edad", valor: MARCA_OCULTO });
+    } else if (nac) {
+      const muerte = fechas.muerte && !fechas.muerte.oculto ? fechas.muerte.claveIni : null;
+      filas.push({ label: "Edad", valor: <EdadLectura cal={cal} nacimiento={nac.claveIni} muerte={muerte} /> });
     } else if (edadTexto?.trim()) {
       filas.push({ label: "Edad", valor: edadTexto });
     }
@@ -43,7 +49,7 @@ export async function FechasDeFicha({
   if (filas.length === 0) return null;
 
   // Solo hace falta el conmutador si alguna fecha cambia según la lectura.
-  const conFechas = filas.some((f) => f.label !== "Edad") || !!fechas.nacimiento;
+  const conFechas = roles.some((r) => fechas[r.rol] && !fechas[r.rol].oculto);
 
   return (
     <section className={className ?? "mb-8"}>

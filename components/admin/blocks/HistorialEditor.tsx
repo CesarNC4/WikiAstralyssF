@@ -2,6 +2,7 @@
 
 import { newKey, type HistorialRow } from "@/lib/admin/complejas";
 import { useDragList, DragHandle, IconButton, MiembroPicker, subInp, type Opcion } from "./shared";
+import { BotonOculto } from "@/components/admin/candados";
 
 /** Miembros históricos / pasados. Ordenable por arrastre. */
 export function HistorialEditor({
@@ -29,6 +30,7 @@ export function HistorialEditor({
         destacado: false,
         motivoDestacado: "",
         notas: "",
+        oculto: false,
       },
     ]);
 
@@ -59,6 +61,7 @@ export function HistorialEditor({
                 <input type="checkbox" checked={r.destacado} onChange={(e) => patch(i, { destacado: e.target.checked })} />
                 ★
               </label>
+              <BotonOculto oculto={r.oculto} texto="ocultar" onClick={() => patch(i, { oculto: !r.oculto })} />
               <IconButton onClick={() => remove(i)} title="Quitar" danger>
                 ✕
               </IconButton>

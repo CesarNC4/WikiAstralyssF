@@ -6,8 +6,9 @@ import { Badge } from "@/components/entity/Badge";
 import { StatBars } from "@/components/viz/StatBars";
 import { ElementoBadge, ElementoGroup } from "@/components/viz/ElementoBadges";
 import { elementoMeta } from "@/lib/elementos";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { getRazaRelaciones } from "@/lib/queries/mundoRelaciones";
+import { MARCA_OCULTO, campoOculto } from "@/lib/visibilidad";
 
 interface RazaRow {
   id: number;
@@ -38,7 +39,7 @@ interface RazaRow {
 
 export async function RazaFichaBody({ raza }: { raza: RazaRow }) {
   const [galeria, rel] = await Promise.all([
-    getGaleria("razas", raza.id).catch(() => []),
+    getGaleriaPublica("razas", raza.id).catch(() => []),
     getRazaRelaciones(raza.id, raza.razaPadreId).catch(() => null),
   ]);
   // La afinidad vive en `entidad_elemento` y puede ser más de una; el color
@@ -77,7 +78,7 @@ export async function RazaFichaBody({ raza }: { raza: RazaRow }) {
             { label: "Estado", value: raza.estado },
             { label: "Longevidad", value: raza.longevidad },
             { label: "Frecuencia", value: raza.rareza },
-            ...(rel?.padre ? [{ label: "Deriva de", value: rel.padre.nombre }] : []),
+            ...(campoOculto(raza, "razaPadreId") ? [{ label: "Deriva de", value: MARCA_OCULTO }] : rel?.padre ? [{ label: "Deriva de", value: rel.padre.nombre }] : []),
           ]}
         />
 

@@ -7,7 +7,7 @@ import { Badge } from "@/components/entity/Badge";
 import { StatBars } from "@/components/viz/StatBars";
 import { ElementoBadge } from "@/components/viz/ElementoBadges";
 import { elementoMeta } from "@/lib/elementos";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { getMineralRelaciones } from "@/lib/queries/mundoRelaciones";
 
 interface MineralRow {
@@ -29,7 +29,7 @@ interface MineralRow {
 
 export async function MineralFichaBody({ mineral }: { mineral: MineralRow }) {
   const [galeria, rel] = await Promise.all([
-    getGaleria("minerales", mineral.id).catch(() => []),
+    getGaleriaPublica("minerales", mineral.id).catch(() => []),
     getMineralRelaciones(mineral.id).catch(() => null),
   ]);
   // La afinidad vive en `entidad_elemento` y puede ser más de una.

@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "lore": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --import ./scripts/lore/registrar.mjs --env-file=.env.local scripts/lore/leer.ts"
+    "lore": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --import ./scripts/lore/registrar.mjs --env-file=.env.local scripts/lore/leer.ts",
+    "verificar-ocultos": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --import ./scripts/lore/registrar.mjs --env-file=.env.local scripts/lore/verificar-ocultos.ts"
   },
   "dependencies": {
     "@geoman-io/leaflet-geoman-free": "^2.19.3",

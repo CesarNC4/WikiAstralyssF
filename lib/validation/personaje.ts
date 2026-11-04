@@ -100,6 +100,7 @@ export const estadisticasSchema = z.object({
  * copian del hechizo elegido para el render rápido de la ficha.
  */
 export const habilidadSchema = z.object({
+  oculto: z.boolean().default(false),
   magiaFundamentoId: idField,
   nuevaMagia: z
     .object({
@@ -188,6 +189,7 @@ export const personajeOrganizacionSchema = z.object({
 export const personajeSchema = z.object({
   // identidad
   nombre: z.string().trim().min(1, "El nombre es obligatorio"),
+  nombreReal: str,
   surname: str,
   titulo: str,
   edad: str,

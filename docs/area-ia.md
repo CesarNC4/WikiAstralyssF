@@ -1,9 +1,10 @@
 # Área IA — Claude como asistente de lore
 
-> **Estado (2026-11-03): Fases 1–3 hechas, guía de estilo respondida, web
+> **Estado (2026-11-03): Fases 1–4 hechas, guía de estilo respondida, web
 > fuera de los buscadores y datos de prueba limpios.** Ya se puede trabajar:
 > `/lore`, `/lore-fichas` y `/lore-entrevista` funcionan, y el autor aplica las
-> propuestas a mano en el panel. Siguiente: Fase 4 (visibilidad completa). Este documento sirve para retomar el trabajo desde
+> propuestas a mano en el panel, con sus candados. Siguiente: Fase 5 (bandeja de
+> propuestas). Este documento sirve para retomar el trabajo desde
 > cualquier chat sin más contexto.
 
 ## Qué es
@@ -36,6 +37,7 @@ mundo.
 | Lectura | `scripts/lore/leer.ts` (`pnpm --silent lore …`) | Lee fichas, conexiones, fechas, catálogos y moldes. Solo lectura |
 | Moldes | `lib/propuestas/moldes.ts` | Los campos de cada ficha con los rótulos del panel. Lo usan la lectura y la bandeja |
 | Formato | [propuestas-formato.md](./propuestas-formato.md) | Cómo se escribe una propuesta |
+| Verificador | `scripts/lore/verificar-ocultos.ts` (`pnpm --silent verificar-ocultos`) | Comprueba que nada oculto llega a un lector |
 | Skills | `.claude/skills/` | `/lore`, `/lore-fichas`, `/lore-entrevista` (y `/lore-revisar` en la Fase 6) |
 | Bandeja | `/admin/propuestas` | El autor sube una propuesta y la aplica dato a dato |
 
@@ -85,10 +87,10 @@ Decidido en la entrevista de la guía de estilo (2026-11-02):
 - **Fuera `personaje_narrativa`**: los secretos van ocultos en la ficha (Fase
   4), y lo demás en las notas privadas o en las hojas de trama.
 
-### Fase 4 — Visibilidad completa
+### Fase 4 — Visibilidad completa ✔ hecha (2026-11-03)
 
 Que cualquier dato pueda ocultarse al público por separado. Decisiones del
-autor (2026-11-02):
+autor (2026-11-02 y 2026-11-03):
 
 - **Dos niveles**: un dato lo ve todo el mundo o solo el autor. No hay
   visibilidad por lector.
@@ -99,8 +101,35 @@ autor (2026-11-02):
 - **Identidad oculta**: campo de nombre real en el personaje, oculto por
   defecto; la ficha lleva el alias con el que la conocen los lectores. Los
   personajes que hoy llevan "???" en el nombre los pasa el autor a mano.
+- **Conexión oculta**: la marca sale en las dos fichas. En el árbol genealógico y
+  el organigrama, la casilla sale como "???", sin enlace, y conserva sus líneas.
+- **Campo marcado y vacío**: sale "???" igualmente. El nombre real es la
+  excepción: vacío no sale, o saldría en todas las fichas.
+- **Estadísticas en bloque, habilidades una a una.**
+- **Trozos ocultos**: dentro de un texto largo, `[[oculto]]…[[/oculto]]` sale como
+  "???". Lo que aún no ha salido en la historia suele ser solo una parte de un texto.
 
-Qué hay que hacer:
+Cómo está hecho:
+
+- `lib/visibilidad.ts` (client-safe) tiene las reglas; `lib/queries/visibilidad.ts`
+  lee las marcas y enmascara. Todo se quita en el servidor: lo oculto no llega al
+  navegador. Cada consulta pública pasa por ahí, incluidas las de datos de la ficha
+  de al lado (el apellido de quien sale en una relación).
+- El buscador lo respeta en la propia base: `search_index_sync` y
+  `search_index_acto` dejan fuera los campos marcados y los trozos
+  (`censurar_oculto`), y al marcar un campo se reindexa la ficha.
+- Las listas agregadas (el reparto de un capítulo, los personajes de un evento en
+  la cronología, las canciones de una ficha) no dejan marca: lo oculto no sale.
+- Los formularios que borran y reinsertan filas conservan el candado: habilidades,
+  historial y árbol lo llevan en la fila; el resto lo recuerdan por el otro extremo.
+- `pnpm --silent verificar-ocultos [url]` pide las páginas como un lector sin
+  sesión y comprueba el HTML en bruto. **Pásalo si tocas una consulta pública.**
+
+Limitación conocida: la fecha de un acto se calcula de sus fragmentos, también de
+los ocultos. Si un fragmento lleva una fecha secreta, conviene ocultar también la
+del acto.
+
+Lo que se pedía:
 
 - **Campos ocultos en todas las fichas.** Hoy (`campo_visibilidad`) solo los
   respetan naciones, razas, bestias, minerales, conceptos, misiones, lords

@@ -13,6 +13,7 @@ import { AudioField, type AudioValue } from "@/components/admin/AudioField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { RelacionesEditor } from "@/components/admin/blocks/RelacionEditor";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
+import { CandadosFicha } from "@/components/admin/candados";
 import { Field, TextInput, NumberInput, Select, MultiSelect, MarkdownField, ReferenceField, SliderInput, type MapaCatalogos, type OpcionCatalogo } from "@/components/admin/fields";
 import { crearOpcion } from "@/lib/actions/catalogos";
 import { MAGIA_FAMILIA_ELEMENTAL } from "@/lib/catalogos";
@@ -215,6 +216,7 @@ export function EntidadForm({
   return (
     // Dos columnas en pantallas anchas: la ficha a la izquierda y el panel de
     // conexiones fijo a la derecha, visible mientras editas el resto.
+    <CandadosFicha entidad={config.key} id={id}>
     <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
       <div className="space-y-4">
       {config.nota && (
@@ -316,6 +318,7 @@ export function EntidadForm({
         </div>
       </div>
     </div>
+    </CandadosFicha>
   );
 }
 
@@ -352,28 +355,28 @@ function FieldRender({
 
   if (fd.type === "textarea") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <MarkdownField value={value} onChange={onChange} rows={fd.rows ?? 5} />
       </Field>
     );
   }
   if (fd.type === "number") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <NumberInput value={value} onChange={onChange} />
       </Field>
     );
   }
   if (fd.type === "decimal") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <NumberInput value={value} onChange={onChange} step="0.01" />
       </Field>
     );
   }
   if (fd.type === "opciones") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -391,14 +394,14 @@ function FieldRender({
   }
   if (fd.type === "slider") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <SliderInput value={value} onChange={onChange} />
       </Field>
     );
   }
   if (fd.type === "checkbox") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <label className="flex cursor-pointer items-center gap-2 py-2 text-sm text-fg-secondary">
           <input
             type="checkbox"
@@ -413,7 +416,7 @@ function FieldRender({
   }
   if (fd.type === "multi") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <MultiSelect
           values={multi}
           onChange={onMulti}
@@ -425,14 +428,14 @@ function FieldRender({
   }
   if (fd.type === "elemento") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <Select value={value} onChange={onChange} options={elementos} grupoActivo={grupoActivo} />
       </Field>
     );
   }
   if (fd.type === "combobox") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <Select
           value={value}
           onChange={onChange}
@@ -445,13 +448,13 @@ function FieldRender({
   }
   if (fd.type === "reference") {
     return (
-      <Field label={label} hint={fd.hint} error={error}>
+      <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
         <ReferenceField value={value} onChange={onChange} options={referencias[fd.refTarget!] ?? []} />
       </Field>
     );
   }
   return (
-    <Field label={label} hint={fd.hint} error={error}>
+    <Field campo={fd.name} label={label} hint={fd.hint} error={error}>
       <TextInput value={value} onChange={onChange} />
     </Field>
   );

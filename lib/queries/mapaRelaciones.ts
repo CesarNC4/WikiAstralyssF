@@ -61,7 +61,8 @@ interface Bruta {
   matiz: string | null;
 }
 
-function consulta() {
+/** `publico`: una conexión oculta no se dibuja (docs/area-ia.md, Fase 4). */
+function consulta(publico: boolean) {
   const ramas = [];
   for (const rel of RELACIONES) {
     if (rel.fueraDelAtlas || rel.medio === "vinculo") continue;
@@ -71,10 +72,15 @@ function consulta() {
       const tabla = sql.identifier(getTableName(info.tabla));
       const col = sql.identifier(columna(info.tabla, rel.columna));
       const papelera = info.papelera ? sql` and eliminado_en is null` : sql``;
+      const oculta = publico
+        ? sql` and not exists (select 1 from campo_visibilidad cv
+             where cv.entidad_tipo = ${rel.a.entidad} and cv.entidad_id = ${tabla}.id
+               and cv.campo = ${rel.columna} and cv.visible = false)`
+        : sql``;
       ramas.push(sql`
         select ${rel.a.entidad}::text as at, id::int as a, ${rel.b.entidad}::text as bt, ${col}::int as b,
                ${rel.id}::text as rel, id::int as fila, null::text as matiz
-          from ${tabla} where ${col} is not null${papelera}`);
+          from ${tabla} where ${col} is not null${papelera}${oculta}`);
       continue;
     }
     if (rel.a.entidad === CUALQUIERA || rel.b.entidad === CUALQUIERA) continue;
@@ -91,12 +97,12 @@ function consulta() {
       select ${rel.a.entidad}::text as at, ${colA}::int as a, ${rel.b.entidad}::text as bt, ${colB}::int as b,
              ${rel.id}::text as rel, ${pk}::int as fila, ${matiz} as matiz
         from ${tabla}
-       where ${colA} is not null and ${colB} is not null${filtro}`);
+       where ${colA} is not null and ${colB} is not null${filtro}${publico ? sql` and not oculto` : sql``}`);
   }
   ramas.push(sql`
     select origen_tipo as at, origen_id as a, destino_tipo as bt, destino_id as b,
            'v:' || relacion as rel, id as fila, tipo as matiz
-      from vinculo`);
+      from vinculo${publico ? sql` where not oculto` : sql``}`);
   return sql.join(ramas, sql` union all `);
 }
 
@@ -116,7 +122,7 @@ export async function getMapaRelaciones({ publico = false }: { publico?: boolean
   categoriaDeTipo: Record<string, number>;
 }> {
   const [brutas, fichas, cats] = await Promise.all([
-    db.execute(consulta()) as unknown as Promise<Bruta[]>,
+    db.execute(consulta(publico)) as unknown as Promise<Bruta[]>,
     // El índice de búsqueda ya tiene nombre, imagen y estado de todas las fichas
     // fuera de la papelera, publicadas o no.
     db

@@ -3,7 +3,7 @@ import { Icon } from "@/components/Icon";
 import { EntityImage } from "@/components/media/EntityImage";
 import { ProseBlock } from "@/components/fichas/FichaShell";
 import { Galeria } from "@/components/fichas/Galeria";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { NATURALEZA_LABEL, magiaVisual } from "@/lib/magia";
 import type { MagiaFicha } from "@/lib/queries/magia";
 
@@ -11,7 +11,7 @@ import type { MagiaFicha } from "@/lib/queries/magia";
 export async function MagiaFichaBody({ data }: { data: MagiaFicha }) {
   const { magia, personajes, relacionadas, padre, hijos } = data;
   const vis = magiaVisual(magia);
-  const galeria = await getGaleria("magia", magia.id).catch(() => []);
+  const galeria = await getGaleriaPublica("magia", magia.id).catch(() => []);
 
   return (
     <div>

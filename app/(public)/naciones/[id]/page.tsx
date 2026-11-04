@@ -12,7 +12,7 @@ import { Icon } from "@/components/Icon";
 import { getNacion, getPersonajesDeNacion, getPersonajesNacidosEnNacion, getNacionFacciones, getVisibleIds } from "@/lib/queries/fichas";
 import { getNacionRelacionesExtra } from "@/lib/queries/mundoRelaciones";
 import { getNacionTerritorio } from "@/lib/queries/mapa";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { STATS_POR_ENTIDAD, tieneStats } from "@/lib/stats";
 import { estiloLocacion } from "@/lib/mapa";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
@@ -51,7 +51,7 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
     getPersonajesNacidosEnNacion(n.id).catch(() => []),
     getNacionTerritorio(n.id).catch(() => ({ regiones: [], locaciones: [] })),
     getNacionFacciones(n.id).catch(() => ({ organizaciones: [], razas: [] })),
-    getGaleria("naciones", n.id).catch(() => []),
+    getGaleriaPublica("naciones", n.id).catch(() => []),
     getNacionRelacionesExtra(n.id).catch(() => ({ bestias: [], diplomacia: [] })),
   ]);
 
@@ -170,11 +170,17 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
           <section>
             <SectionHead icon="MapPinned" title="Regiones" accent={color} />
             <div className="flex flex-wrap gap-3">
-              {territorio.regiones.map((r) => (
-                <Link key={r.id} href={`/regiones/${r.id}`} className="rounded-xl border border-border-base bg-surface/40 px-4 py-2 text-sm text-fg hover:border-border-glow">
-                  {r.nombre}
-                </Link>
-              ))}
+              {territorio.regiones.map((r, i) =>
+                r.id ? (
+                  <Link key={r.id} href={`/regiones/${r.id}`} className="rounded-xl border border-border-base bg-surface/40 px-4 py-2 text-sm text-fg hover:border-border-glow">
+                    {r.nombre}
+                  </Link>
+                ) : (
+                  <span key={`oculta-${i}`} className="rounded-xl border border-border-base bg-surface/40 px-4 py-2 text-sm text-fg">
+                    {r.nombre}
+                  </span>
+                ),
+              )}
             </div>
           </section>
         )}
@@ -224,8 +230,15 @@ export default async function NacionPage({ params }: { params: Promise<{ id: str
           <section>
             <SectionHead icon="Landmark" title="Diplomacia" accent={color} />
             <div className="flex flex-wrap gap-3">
-              {extra.diplomacia.map((d) => {
+              {extra.diplomacia.map((d, i) => {
                 const dc = (d.tipo && DIPLO_COLOR[d.tipo]) || "#9aa3b2";
+                if (!d.id) {
+                  return (
+                    <div key={`oculta-${i}`} className="rounded-xl border border-border-base bg-surface/40 p-3 pr-4 text-sm text-fg">
+                      {d.nombre}
+                    </div>
+                  );
+                }
                 return (
                   <Link key={d.id} href={`/naciones/${d.id}`} className="flex items-center gap-3 rounded-xl border bg-surface/40 p-3 pr-4 hover:border-border-glow" style={{ borderColor: `${dc}55` }}>
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: dc }} />

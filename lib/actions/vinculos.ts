@@ -14,6 +14,7 @@ import {
   actualizarVinculo as actualizar,
   borrarVinculo as borrar,
   reordenarVinculos as reordenar,
+  marcarVinculoOculto as marcarOculto,
   type Campos,
   contarBloques,
   type DestinoNuevo,
@@ -182,6 +183,21 @@ export async function borrarVinculo(
   await assertAdmin();
   await borrar(relId, filaId);
   await revalidarLados(relId, lado, ownerId);
+  return leerFilas(relId, lado, ownerId);
+}
+
+/** Oculta o muestra una conexión al público; en las fichas sale como "???". */
+export async function marcarVinculoOculto(
+  relId: string,
+  lado: "a" | "b",
+  ownerId: number,
+  filaId: number,
+  objetivoId: number,
+  oculto: boolean,
+): Promise<FilaVinculo[]> {
+  await assertAdmin();
+  await marcarOculto(relId, filaId, oculto);
+  await revalidarLados(relId, lado, ownerId, objetivoId);
   return leerFilas(relId, lado, ownerId);
 }
 

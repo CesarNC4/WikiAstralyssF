@@ -15,6 +15,7 @@ export const familiaArbol = pgTable("familia_arbol", {
   destacado: boolean("destacado"),
   motivoDestacado: varchar("motivo_destacado"),
   notas: text("notas"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const familiaJerarquia = pgTable("familia_jerarquia", {
@@ -27,6 +28,7 @@ export const familiaJerarquia = pgTable("familia_jerarquia", {
   tituloFamilia: varchar("titulo_familia"),
   faccionId: integer("faccion_id"),
   orden: integer("orden"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const familiaFacciones = pgTable("familia_facciones", {
@@ -75,6 +77,7 @@ export const orgJerarquia = pgTable("org_jerarquia", {
   rol: varchar("rol"),
   tipo: varchar("tipo"),
   descripcion: varchar("descripcion"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const orgHistorial = pgTable("org_historial", {
@@ -89,6 +92,7 @@ export const orgHistorial = pgTable("org_historial", {
   motivoDestacado: varchar("motivo_destacado"),
   notas: text("notas"),
   orden: integer("orden"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 // ── Gremio ───────────────────────────────────────────────
@@ -115,6 +119,7 @@ export const gremioJerarquia = pgTable("gremio_jerarquia", {
   tituloApodo: varchar("titulo_apodo"),
   faccionId: integer("faccion_id"),
   orden: integer("orden"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const gremioHistorial = pgTable("gremio_historial", {
@@ -129,4 +134,5 @@ export const gremioHistorial = pgTable("gremio_historial", {
   motivoDestacado: varchar("motivo_destacado"),
   notas: text("notas"),
   orden: integer("orden"),
+  oculto: boolean("oculto").notNull().default(false),
 });

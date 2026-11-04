@@ -19,6 +19,8 @@ import { estadoPublicacion } from "./enums";
 export const personajes = pgTable("personajes", {
   id: serial("id").primaryKey(),
   nombre: varchar("nombre").notNull(),
+  /** Identidad oculta: `nombre` es el alias que conocen los lectores; este, el real. Oculto salvo que se revele. */
+  nombreReal: varchar("nombre_real"),
   surname: varchar("surname"),
   titulo: varchar("titulo"),
   edad: varchar("edad"),
@@ -108,6 +110,7 @@ export const habilidades = pgTable("habilidades", {
   descripcion: text("descripcion"),
   tipo: varchar("tipo"),
   magiaFundamentoId: integer("magia_fundamento_id"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const relaciones = pgTable("relaciones", {
@@ -127,6 +130,7 @@ export const relaciones = pgTable("relaciones", {
    */
   afecto: varchar("afecto"),
   afectoReciproco: varchar("afecto_reciproco"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 // `personaje_narrativa` (y su `personaje_narrativa_hito`) se retiró en la

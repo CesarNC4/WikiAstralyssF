@@ -2,6 +2,8 @@ import "server-only";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { camposOcultosDe, ocultarEnLista } from "@/lib/queries/visibilidad";
+import { MARCA_OCULTO, censurarTexto } from "@/lib/visibilidad";
 import { saltoTemporal, textosFecha, type Extremo, type Fecha, type TextosFecha } from "@/lib/fechas";
 import { etiquetaActo, numerarCapitulos } from "@/lib/narrativa/numeracion";
 import { escribirFecha, fechasDeEntidades, getCalendario } from "@/lib/queries/fechas";
@@ -113,7 +115,7 @@ const LUGARES = { acto_nacion: "naciones", acto_region: "regiones", acto_locacio
  * (el taller), entra todo lo que no está en la papelera.
  */
 export async function getCapituloDerivado(capituloId: number, { publico }: { publico: boolean }): Promise<CapituloDerivado> {
-  const filasActos = await db
+  const filasBrutas = await db
     .select({
       id: s.actos.id,
       nombre: s.actos.nombre,
@@ -124,6 +126,7 @@ export async function getCapituloDerivado(capituloId: number, { publico }: { pub
     .from(s.actos)
     .where(and(eq(s.actos.capituloId, capituloId), isNull(s.actos.eliminadoEn)))
     .orderBy(asc(s.actos.numeroOrden), asc(s.actos.id));
+  const filasActos = publico ? await ocultarEnLista("actos", filasBrutas, { alias: { resumen: "descripcion" } }) : filasBrutas;
 
   // La posición (y con ella "Acto II") es la del capítulo completo: un acto en
   // borrador no hace que el siguiente cambie de número en la web.
@@ -138,13 +141,13 @@ export async function getCapituloDerivado(capituloId: number, { publico }: { pub
   const vinculos = await db
     .select({ origenId: s.vinculo.origenId, relacion: s.vinculo.relacion, destinoId: s.vinculo.destinoId })
     .from(s.vinculo)
-    .where(and(eq(s.vinculo.origenTipo, "actos"), inArray(s.vinculo.origenId, ids)));
+    .where(and(eq(s.vinculo.origenTipo, "actos"), inArray(s.vinculo.origenId, ids), publico ? eq(s.vinculo.oculto, false) : undefined));
 
   const [personajes, lugares, canciones, fecha] = await Promise.all([
     personajesDe(vinculos, publico),
     lugaresDe(vinculos, publico),
     cancionesDeActos(vinculos, cancionesManual, publico),
-    fechaDe(actos),
+    fechaDe(actos, publico),
   ]);
   return { actos, personajes, lugares, canciones, fecha };
 }
@@ -159,7 +162,7 @@ async function personajesDe(vinculos: FilaVinculo[], publico: boolean): Promise<
     .select({ id: s.personajes.id, nombre: s.personajes.nombre, imagenUrl: s.personajes.imagenUrl, estado: s.personajes.estadoPublicacion })
     .from(s.personajes)
     .where(and(inArray(s.personajes.id, ids), isNull(s.personajes.eliminadoEn)));
-  return filas
+  return (publico ? await ocultarEnLista("personajes", filas) : filas)
     .filter((p) => !publico || p.estado === "publicado")
     .map((p) => ({ id: p.id, nombre: p.nombre, imagenUrl: p.imagenUrl, pov: pov.has(p.id) }))
     // Los POV primero: son quienes cuentan el capítulo.
@@ -208,7 +211,7 @@ async function cancionesDeActos(vinculos: FilaVinculo[], manual: CancionDelCapit
   // Las de los fragmentos cuentan como del acto: es el momento exacto en que suenan.
   const actos = [...new Set(vinculos.map((v) => v.origenId))];
   const ids = [
-    ...new Set([...vinculos.filter((v) => v.relacion === "acto_cancion").map((v) => v.destinoId), ...(await cancionesDeFragmentos(actos))]),
+    ...new Set([...vinculos.filter((v) => v.relacion === "acto_cancion").map((v) => v.destinoId), ...(await cancionesDeFragmentos(actos, publico))]),
   ];
   if (ids.length) {
     const filas = await db
@@ -230,11 +233,18 @@ async function cancionesDeActos(vinculos: FilaVinculo[], manual: CancionDelCapit
  * del último (§3). Si los actos no van en orden cronológico (un flashback al
  * final) y eso diera un rango al revés, se usa el tramo que los cubre a todos.
  */
-async function fechaDe(actos: ActoDelCapitulo[]): Promise<Fecha | null> {
+async function fechaDe(actos: ActoDelCapitulo[], publico: boolean): Promise<Fecha | null> {
   const filas = await db
     .select()
     .from(s.fechaLore)
-    .where(and(eq(s.fechaLore.entidadTipo, "actos"), eq(s.fechaLore.rol, "principal"), inArray(s.fechaLore.entidadId, actos.map((a) => a.id))));
+    .where(
+      and(
+        eq(s.fechaLore.entidadTipo, "actos"),
+        eq(s.fechaLore.rol, "principal"),
+        inArray(s.fechaLore.entidadId, actos.map((a) => a.id)),
+        publico ? eq(s.fechaLore.oculto, false) : undefined,
+      ),
+    );
   if (filas.length === 0) return null;
 
   const pos = new Map(actos.map((a) => [a.id, a.posicion]));
@@ -345,16 +355,26 @@ export async function getFragmentosPublicos(actoId: number): Promise<FragmentoPu
     .orderBy(asc(s.actoFragmento.orden), asc(s.actoFragmento.id));
   if (filas.length === 0) return [];
 
-  const [cal, fechas] = await Promise.all([getCalendario(), fechasDeEntidades("fragmentos", filas.map((f) => f.id))]);
+  const [cal, fechas, ocultos, imagenes] = await Promise.all([
+    getCalendario(),
+    fechasDeEntidades("fragmentos", filas.map((f) => f.id), "principal", { publico: true }),
+    camposOcultosDe("fragmentos", filas.map((f) => f.id)),
+    ocultarEnLista("personajes", filas, { idDe: "personajeId" }),
+  ]);
 
   const out: FragmentoPublico[] = filas.map((f, i) => {
     const g = fechas.get(f.id);
     const povVisible = f.personajeId != null && f.nombre != null && f.estado === "publicado" && !f.eliminado;
+    const povOculto = ocultos.get(f.id)?.has("personajeId") ?? false;
     return {
       id: f.id,
       numero: i + 1,
-      pov: povVisible ? { id: f.personajeId!, nombre: f.nombre!, imagenUrl: f.imagenUrl } : null,
-      titulo: f.titulo,
+      pov: povOculto
+        ? { id: 0, nombre: MARCA_OCULTO, imagenUrl: null }
+        : povVisible
+          ? { id: f.personajeId!, nombre: f.nombre!, imagenUrl: imagenes[i].imagenUrl }
+          : null,
+      titulo: ocultos.get(f.id)?.has("titulo") ? MARCA_OCULTO : f.titulo && censurarTexto(f.titulo),
       enlace: f.enlace,
       // Formato completo: entre fragmentos lo que cuenta es el día, no el año.
       fecha: g ? textosFecha(cal, g.fecha) : null,
@@ -389,7 +409,7 @@ function ordenPorFecha<T extends { clave: number | null; numero: number }>(lista
  */
 export async function getCancionesDeActo(actoId: number): Promise<CancionDelCapitulo[]> {
   const delActo = await cancionesDe("actos", actoId);
-  const deFragmentos = await cancionesDeFragmentos([actoId]);
+  const deFragmentos = await cancionesDeFragmentos([actoId], true);
   const faltan = deFragmentos.filter((id) => !delActo.some((c) => c.id === id));
   const extra = faltan.length
     ? await db
@@ -401,7 +421,7 @@ export async function getCancionesDeActo(actoId: number): Promise<CancionDelCapi
 }
 
 /** Ids de las canciones vinculadas a algún fragmento de estos actos. */
-async function cancionesDeFragmentos(actoIds: number[]): Promise<number[]> {
+async function cancionesDeFragmentos(actoIds: number[], publico: boolean): Promise<number[]> {
   if (actoIds.length === 0) return [];
   const filas = await db
     .select({ id: s.vinculo.destinoId })
@@ -412,6 +432,7 @@ async function cancionesDeFragmentos(actoIds: number[]): Promise<number[]> {
         eq(s.vinculo.origenTipo, "fragmentos"),
         eq(s.vinculo.relacion, "fragmento_cancion"),
         inArray(s.actoFragmento.actoId, actoIds),
+        publico ? eq(s.vinculo.oculto, false) : undefined,
       ),
     );
   return [...new Set(filas.map((f) => f.id))];

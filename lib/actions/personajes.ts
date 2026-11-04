@@ -60,6 +60,7 @@ function scalars(data: PersonajeInput) {
     ocupacionDetalle: data.ocupacionDetalle,
     estadoVital: data.estadoVital,
     rangoAventurero: data.rangoAventurero,
+    nombreReal: data.nombreReal,
     lugarNacimiento: data.lugarNacimiento,
     lugarNacimientoNacionId: data.lugarNacimientoNacionId,
     lugarNacimientoRegionId: data.lugarNacimientoRegionId,
@@ -140,8 +141,34 @@ async function guardarHijos(
       nombre,
       tipo,
       descripcion: h.descripcion,
+      oculto: h.oculto,
     });
   }
+
+  // Los bloques de abajo borran y reinsertan, y su candado está en el panel de
+  // conexiones, no en este formulario: se conserva por el otro extremo de la fila.
+  const claves = async <K,>(filas: Promise<{ k: K }[]>) => new Set((await filas).map((f) => f.k));
+  const evOcultos = await claves(
+    tx.select({ k: s.personajeEvento.timelineEventoId }).from(s.personajeEvento).where(and(eq(s.personajeEvento.personajeId, personajeId), eq(s.personajeEvento.oculto, true))),
+  );
+  const obOcultos = await claves(
+    tx.select({ k: s.personajeObjeto.armaArtefactoId }).from(s.personajeObjeto).where(and(eq(s.personajeObjeto.personajeId, personajeId), eq(s.personajeObjeto.oculto, true))),
+  );
+  const nacOcultas = await claves(
+    tx.select({ k: s.personajeNacion.nacionId }).from(s.personajeNacion).where(and(eq(s.personajeNacion.personajeId, personajeId), eq(s.personajeNacion.oculto, true))),
+  );
+  const razOcultas = await claves(
+    tx.select({ k: s.personajeRaza.razaId }).from(s.personajeRaza).where(and(eq(s.personajeRaza.personajeId, personajeId), eq(s.personajeRaza.oculto, true))),
+  );
+  const claveRel = (id: number | null | undefined, externo: string | null | undefined) => (id != null ? `p:${id}` : `n:${(externo ?? "").trim()}`);
+  const relOcultas = new Set(
+    (
+      await tx
+        .select({ id: s.relaciones.personajeRelacionadoId, externo: s.relaciones.nombreExterno })
+        .from(s.relaciones)
+        .where(and(eq(s.relaciones.personajeId, personajeId), eq(s.relaciones.oculto, true)))
+    ).map((r) => claveRel(r.id, r.externo)),
+  );
 
   // Eventos clave: vínculo a la cronología global (o creación de un evento nuevo).
   await tx.delete(s.personajeEvento).where(eq(s.personajeEvento.personajeId, personajeId));
@@ -172,6 +199,7 @@ async function guardarHijos(
       timelineEventoId: eventoId,
       nota: e.nota,
       orden: ordenEv++,
+      oculto: evOcultos.has(eventoId),
     });
   }
 
@@ -200,6 +228,7 @@ async function guardarHijos(
       armaArtefactoId: artId,
       nota: o.nota,
       orden: ordenOb++,
+      oculto: obOcultos.has(artId),
     });
     // Un artefacto sin dueño lo adopta quien lo porta. Antes esto sólo pasaba al
     // crear el objeto aquí mismo, así que vincular uno ya existente lo dejaba con
@@ -222,6 +251,7 @@ async function guardarHijos(
         afecto: r.afecto,
         afectoReciproco: r.afectoReciproco,
         descripcion: r.descripcion,
+        oculto: relOcultas.has(claveRel(r.personajeRelacionadoId, r.nombreExterno)),
       })),
     );
   }
@@ -229,14 +259,14 @@ async function guardarHijos(
   await tx.delete(s.personajeNacion).where(eq(s.personajeNacion.personajeId, personajeId));
   if (data.naciones.length) {
     await tx.insert(s.personajeNacion).values(
-      data.naciones.map((n) => ({ personajeId, nacionId: n.nacionId, tipo: n.tipo, descripcion: n.descripcion })),
+      data.naciones.map((n) => ({ personajeId, nacionId: n.nacionId, tipo: n.tipo, descripcion: n.descripcion, oculto: nacOcultas.has(n.nacionId) })),
     );
   }
 
   await tx.delete(s.personajeRaza).where(eq(s.personajeRaza.personajeId, personajeId));
   if (data.razas.length) {
     await tx.insert(s.personajeRaza).values(
-      data.razas.map((r) => ({ personajeId, razaId: r.razaId, esMixta: r.esMixta ?? false, nota: r.nota })),
+      data.razas.map((r) => ({ personajeId, razaId: r.razaId, esMixta: r.esMixta ?? false, nota: r.nota, oculto: razOcultas.has(r.razaId) })),
     );
   }
 

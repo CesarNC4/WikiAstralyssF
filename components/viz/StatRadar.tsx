@@ -1,5 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { clampStat, type StatGroup } from "@/lib/stats";
+import { MARCA_OCULTO, campoOculto } from "@/lib/visibilidad";
 
 /**
  * Radar (gráfico de telaraña) SVG para un grupo de stats 0-100. Server-safe.
@@ -15,7 +16,7 @@ export function StatRadar({
   row: Record<string, unknown>;
   size?: number;
 }) {
-  const stats = group.stats.map((s) => ({ ...s, value: clampStat(row[s.key]) ?? 0 }));
+  const stats = group.stats.map((s) => ({ ...s, value: clampStat(row[s.key]) ?? 0, oculto: campoOculto(row, s.key) }));
   if (stats.length < 3) return null;
 
   const cx = size / 2;
@@ -65,7 +66,7 @@ export function StatRadar({
               dominantBaseline="middle"
               className="fill-fg-muted text-[10px]"
             >
-              {s.label} {s.value}
+              {s.label} {s.oculto ? MARCA_OCULTO : s.value}
             </text>
           );
         })}

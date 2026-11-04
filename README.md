@@ -111,6 +111,7 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - **Mapa por capas.** Cuatro niveles (base, naciones, regiones, locaciones) con
   solo uno interactivo a la vez, así los polígonos dejan de pisarse. La región de
   una locación y la nación de una región se deducen de la geometría al guardar.
+- Visibilidad completa: cualquier campo, conexión, fecha o trozo de texto se oculta con un candado y el público ve "???" (docs/area-ia.md, Fase 4).
 - Notas privadas del autor y visibilidad por campo: ocultar un dato al público
   sin borrarlo.
 - Mapa con Leaflet + Geoman, grafo global en `/atlas` y mini-grafo por ficha,

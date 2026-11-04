@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, eq, isNull, ne, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { camposOcultos, ocultarCampos, ocultarEnLista, ocultarPorReferencia } from "@/lib/queries/visibilidad";
 
 /** Entrada de magia para la vista índice (§ puntos 11-12). */
 export interface MagiaIndexItem {
@@ -34,12 +35,12 @@ export async function listMagiaIndex(): Promise<MagiaIndexItem[]> {
       ),
     )
     .orderBy(asc(s.magiaFundamentos.orden), asc(s.magiaFundamentos.nombre));
-  return rows;
+  return ocultarEnLista("magia", rows);
 }
 
 /** Ficha de magia: la entrada + personajes que la usan + relacionadas + jerarquía. */
 export async function getMagiaFicha(id: number) {
-  const [magia] = await db
+  const [fila] = await db
     .select()
     .from(s.magiaFundamentos)
     .where(
@@ -50,9 +51,10 @@ export async function getMagiaFicha(id: number) {
       ),
     )
     .limit(1);
-  if (!magia) return null;
+  if (!fila) return null;
+  const magia = ocultarCampos("magia", fila, await camposOcultos("magia", id));
 
-  // Personajes cuyas habilidades referencian este fundamento.
+  // Personajes cuyas habilidades referencian este fundamento. Una técnica oculta no los delata.
   const personajes = await db
     .selectDistinct({
       id: s.personajes.id,
@@ -66,6 +68,7 @@ export async function getMagiaFicha(id: number) {
     .where(
       and(
         eq(s.habilidades.magiaFundamentoId, id),
+        eq(s.habilidades.oculto, false),
         eq(s.personajes.estadoPublicacion, "publicado"),
         isNull(s.personajes.eliminadoEn),
       ),
@@ -131,7 +134,13 @@ export async function getMagiaFicha(id: number) {
     )
     .orderBy(asc(s.magiaFundamentos.nombre));
 
-  return { magia, personajes, relacionadas, padre, hijos };
+  return {
+    magia,
+    personajes: await ocultarEnLista("personajes", personajes),
+    relacionadas: await ocultarEnLista("magia", relacionadas),
+    padre,
+    hijos: await ocultarEnLista("magia", await ocultarPorReferencia("magia", hijos, ["fundamentoPadreId"])),
+  };
 }
 
 export type MagiaFicha = NonNullable<Awaited<ReturnType<typeof getMagiaFicha>>>;

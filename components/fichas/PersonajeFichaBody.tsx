@@ -11,7 +11,7 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { StatRadar } from "@/components/fichas/personaje/StatRadar";
 import { RelacionesGraph, type RelNode } from "@/components/fichas/personaje/RelacionesGraph";
 import { PerfilMagico } from "@/components/fichas/personaje/PerfilMagico";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { resolveMagiaLinks } from "@/lib/queries/magia";
 import { getFamiliasDePersonaje, getMisionesDePersonaje, getCapitulosDePersonaje, type PersonajeFicha } from "@/lib/queries/fichas";
 import { calcularPoderDeCombate, PRIMARY_MAX, COMBAT_MAX } from "@/lib/poderCombate";
@@ -22,6 +22,7 @@ import { FechaTexto } from "@/components/fechas/Lectura";
 import { textosDeFechas } from "@/lib/queries/fechas";
 import { cancionesDe } from "@/lib/queries/canciones";
 import type { TextosFecha } from "@/lib/fechas";
+import { MARCA_OCULTO, campoOculto, conMarca } from "@/lib/visibilidad";
 
 /** Cuerpo de la ficha de personaje: hero cinematográfico + secciones (§ punto 2). */
 export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
@@ -29,12 +30,12 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   const stats = p.estadisticas?.[0];
 
   const [galeria, magiaLinksMap, familias, misiones, capitulos, fechasEventos, canciones] = await Promise.all([
-    getGaleria("personajes", p.id).catch(() => []),
+    getGaleriaPublica("personajes", p.id).catch(() => []),
     resolveMagiaLinks([p.tipoMagiaPrincipal, p.magiaSecundaria]).catch(() => new Map<string, number>()),
     getFamiliasDePersonaje(p.id).catch(() => []),
     getMisionesDePersonaje(p.id).catch(() => []),
     getCapitulosDePersonaje(p.id).catch(() => []),
-    textosDeFechas("timeline", (p.eventos ?? []).map((e) => e.timelineEventoId).filter((x): x is number => x != null)).catch(
+    textosDeFechas("timeline", (p.eventos ?? []).map((e) => e.timelineEventoId).filter((x): x is number => x != null), { publico: true }).catch(
       () => new Map<number, TextosFecha>(),
     ),
     cancionesDe("personajes", p.id).catch((): Track[] => []),
@@ -99,6 +100,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   const relacionesView = [
     ...(p.relaciones ?? []).map((r) => ({
       key: `dir-${r.idRr}`,
+      oculto: r.oculto,
       otro: r.relacionado,
       nombreExterno: r.nombreExterno,
       tipo: r.tipoRelacion ?? r.subtipoRelacion,
@@ -106,14 +108,16 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
     })),
     ...(p.relacionesInversas ?? []).map((r) => ({
       key: `inv-${r.idRr}`,
+      oculto: r.oculto,
       otro: r.personaje,
-      nombreExterno: null as string | null,
+      nombreExterno: r.oculto ? MARCA_OCULTO : (null as string | null),
       tipo: etiquetaInversa(r.tipoRelacion) ?? r.subtipoRelacion,
       descripcion: r.descripcion,
     })),
   ];
 
-  const vinculos: RelNode[] = relacionesView.map((r) => ({
+  // Una relación oculta sale en la lista como marca, pero no se dibuja en el grafo.
+  const vinculos: RelNode[] = relacionesView.filter((r) => !r.oculto).map((r) => ({
     key: r.key,
     nombre: r.otro
       ? [r.otro.nombre, r.otro.surname].filter(Boolean).join(" ")
@@ -123,8 +127,12 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   }));
 
   const keyFacts = [
-    { label: "Altura", value: p.altura ? `${p.altura} m` : null },
-    { label: "Origen", value: p.lugarNacimiento },
+    { label: "Nombre real", value: p.nombreReal },
+    { label: "Altura", value: conMarca(p, "altura", p.altura ? `${p.altura} m` : null) },
+    {
+      label: "Origen",
+      value: ["lugarNacimientoNacionId", "lugarNacimientoRegionId", "lugarNacimientoLocacionId"].some((c) => campoOculto(p, c)) ? MARCA_OCULTO : p.lugarNacimiento,
+    },
     { label: "Ocupación", value: p.ocupacion },
     { label: familias.length > 1 ? "Familias" : "Familia", value: familias.map((fa) => fa.nombre).join(", ") || null },
   ].filter((f) => f.value);
@@ -147,7 +155,8 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
           </div>
         </div>
 
-        <div className="mx-auto max-w-5xl px-4">
+        {/* `relative`: por encima del banner, o tapa el título que va sobre el nombre. */}
+        <div className="relative mx-auto max-w-5xl px-4">
           <div className="-mt-20 flex flex-col items-start gap-5 md:-mt-24 md:flex-row md:items-end">
             <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-3xl border-2 border-border-glow shadow-[var(--shadow-glow-primary)] md:h-44 md:w-44">
               <EntityImage src={p.imagenUrl} alt={nombre} name={p.nombre} sizes="176px" priority />
@@ -180,7 +189,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
 
       <div className="mx-auto max-w-5xl space-y-12 px-4 py-10">
         {/* Nacimiento, muerte y edad en el momento de lectura (spec §13). */}
-        <FechasDeFicha entidad="personajes" id={p.id} edadTexto={p.edad} className="-mb-4" />
+        <FechasDeFicha entidad="personajes" id={p.id} edadTexto={p.edad} className="" />
 
         {/* Perfil mágico: sin ningún dato, ni el título (un personaje recién creado no tiene nada). */}
         {(Object.values(perfilMagico).some(Boolean) || p.debilidades) && (
@@ -221,9 +230,13 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
                             <FechaTexto t={fechasEventos.get(e.evento!.id)!} />
                           </p>
                         )}
-                        <Link href="/timeline" className="font-medium text-fg hover:text-primary-glow">
-                          {e.evento!.titulo}
-                        </Link>
+                        {e.evento!.id ? (
+                          <Link href="/timeline" className="font-medium text-fg hover:text-primary-glow">
+                            {e.evento!.titulo}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-fg">{e.evento!.titulo}</span>
+                        )}
                         {e.nota ? (
                           <p className="text-sm text-fg-secondary">{e.nota}</p>
                         ) : (
@@ -239,6 +252,11 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         )}
 
         {/* Atributos y combate */}
+        {campoOculto(p, "estadisticas") && (
+          <Section icon="Activity" title="Atributos y combate">
+            <p className="text-fg-secondary">{MARCA_OCULTO}</p>
+          </Section>
+        )}
         {stats && (
           <Section icon="Activity" title="Atributos y combate">
             {poder && <PoderDeCombate poder={poder} />}
@@ -270,15 +288,15 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         )}
 
         {/* Relaciones */}
-        {(vinculos.length > 0 ||
+        {(relacionesView.length > 0 ||
           (p.naciones?.length ?? 0) > 0 ||
           (p.razas?.length ?? 0) > 0 ||
           (p.organizaciones?.length ?? 0) > 0 ||
           (p.objetos?.length ?? 0) > 0) && (
           <Section icon="Network" title="Relaciones y vínculos">
-            {vinculos.length > 0 && (
+            {relacionesView.length > 0 && (
               <>
-                <RelacionesGraph centro={nombre} vinculos={vinculos} />
+                {vinculos.length > 0 && <RelacionesGraph centro={nombre} vinculos={vinculos} />}
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {relacionesView.map((r) => (
                     <div key={r.key} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3">
@@ -311,7 +329,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
                 nombre: n.nacion?.nombre,
                 img: n.nacion?.imagenUrl,
                 nota: n.tipo,
-                href: n.nacion ? `/naciones/${n.nacion.id}` : undefined,
+                href: n.nacion?.id ? `/naciones/${n.nacion.id}` : undefined,
               }))}
             />
             <Memberships
@@ -321,7 +339,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
                 nombre: r.raza?.nombre,
                 img: r.raza?.imagenUrl,
                 nota: r.esMixta ? "Mixta" : null,
-                href: r.raza ? `/razas/${r.raza.id}` : undefined,
+                href: r.raza?.id ? `/razas/${r.raza.id}` : undefined,
               }))}
             />
             <Memberships
@@ -331,7 +349,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
                 nombre: o.organizacion?.nombre,
                 img: o.organizacion?.imagenUrl,
                 nota: o.rol,
-                href: o.organizacion ? `/organizaciones/${o.organizacion.id}` : undefined,
+                href: o.organizacion?.id ? `/organizaciones/${o.organizacion.id}` : undefined,
               }))}
             />
 
@@ -378,17 +396,29 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         {misiones.length > 0 && (
           <Section icon="Swords" title="Misiones">
             <div className="grid gap-3 sm:grid-cols-2">
-              {misiones.map((m) => (
-                <Link key={m.id} href={`/misiones/${m.id}`} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3 hover:border-border-glow">
-                  <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-                    <EntityImage src={m.imagenUrl} alt={m.nombre} name={m.nombre} sizes="48px" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm text-fg">{m.nombre}</p>
-                    <p className="text-xs text-fg-muted">{[m.tipo, m.estado].filter(Boolean).join(" · ")}</p>
+              {misiones.map((m, n) => {
+                const dentro = (
+                  <>
+                    <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                      <EntityImage src={m.imagenUrl} alt={m.nombre} name={m.nombre} sizes="48px" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-fg">{m.nombre}</p>
+                      <p className="text-xs text-fg-muted">{[m.tipo, m.estado].filter(Boolean).join(" · ")}</p>
+                    </div>
+                  </>
+                );
+                const clase = "flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3";
+                return m.id ? (
+                  <Link key={m.id} href={`/misiones/${m.id}`} className={clase + " hover:border-border-glow"}>
+                    {dentro}
+                  </Link>
+                ) : (
+                  <div key={`oculta-${n}`} className={clase}>
+                    {dentro}
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </Section>
         )}
@@ -399,7 +429,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
             <div className="flex flex-wrap gap-2">
               {capitulos.map((c) => (
                 <span key={c.id} className="rounded-full border border-border-base bg-surface/40 px-3 py-1 text-sm text-fg-secondary">
-                  {c.numero} — {c.titulo}
+                  {c.id ? `${c.numero} — ${c.titulo}` : c.numero}
                   {c.rol && <span className="text-fg-muted"> · {c.rol}</span>}
                 </span>
               ))}

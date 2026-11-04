@@ -75,6 +75,13 @@ singular del panel (Personaje, Nación, Hoja de trama…).
 `###`) propone **aplicarlo oculto al público**: queda en la ficha, pero solo lo
 ve el autor.
 
+**Trozos ocultos.** Dentro de un texto largo, `[[oculto]]…[[/oculto]]` oculta solo
+esa parte: el público lee "???" en su lugar. Sirve para lo que aún no ha salido
+en la historia de un texto que ya se conoce en parte.
+
+**Identidad oculta.** En un personaje, `Nombre` es el alias que conocen los
+lectores y `Nombre real` el verdadero, que va oculto hasta que el autor lo revela.
+
 **Conexiones.** `- <Título del bloque>: <Nombre de la otra ficha> (<Campo>: <valor>; …)`.
 El título es el del bloque en el panel desde ESTA ficha (los lista
 `pnpm --silent lore campos <tipo>`). La otra ficha puede existir o ser nueva en la

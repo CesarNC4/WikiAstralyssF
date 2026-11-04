@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
@@ -26,6 +26,13 @@ const nivel = (v: unknown): number | null => {
   const n = parseInt(s, 10);
   return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
 };
+
+/**
+ * Con qué se reconoce a un miembro entre el borrado y la reinserción: su candado
+ * está en el panel de conexiones, no en este formulario, y tiene que sobrevivir.
+ */
+const claveMiembro = (m: { personajeId: number | null; nombre: string | null }) =>
+  m.personajeId != null ? `p:${m.personajeId}` : `n:${(m.nombre ?? "").trim()}`;
 
 function parsePayload<T>(formData: FormData): T | null {
   try {
@@ -109,6 +116,14 @@ export async function guardarOrganizacion(
       }
 
       // Jerarquía (referencia rango/facción por key).
+      const ocultos = new Set(
+        (
+          await tx
+            .select({ personajeId: s.orgJerarquia.personajeId, nombre: s.orgJerarquia.nombre })
+            .from(s.orgJerarquia)
+            .where(and(eq(s.orgJerarquia.organizacionId, oid), eq(s.orgJerarquia.oculto, true)))
+        ).map(claveMiembro),
+      );
       await tx.delete(s.orgJerarquia).where(eq(s.orgJerarquia.organizacionId, oid));
       const jer = data.jerarquia.filter((j) => j.personajeId != null || j.nombre.trim());
       if (jer.length) {
@@ -121,6 +136,7 @@ export async function guardarOrganizacion(
             faccionId: j.faccionKey ? faccionMap.get(j.faccionKey) ?? null : null,
             tituloApodo: nz(j.tituloApodo),
             orden: i,
+            oculto: ocultos.has(claveMiembro(j)),
           })),
         );
       }
@@ -141,6 +157,7 @@ export async function guardarOrganizacion(
             motivoDestacado: nz(h.motivoDestacado),
             notas: nz(h.notas),
             orden: i,
+            oculto: h.oculto ?? false,
           })),
         );
       }
@@ -248,6 +265,14 @@ export async function guardarFamilia(
       }
 
       // Jerarquía (rango + títulos nobiliario/familia).
+      const ocultos = new Set(
+        (
+          await tx
+            .select({ personajeId: s.familiaJerarquia.personajeId, nombre: s.familiaJerarquia.nombre })
+            .from(s.familiaJerarquia)
+            .where(and(eq(s.familiaJerarquia.familiaId, fid), eq(s.familiaJerarquia.oculto, true)))
+        ).map(claveMiembro),
+      );
       await tx.delete(s.familiaJerarquia).where(eq(s.familiaJerarquia.familiaId, fid));
       const jer = data.jerarquia.filter((j) => j.personajeId != null || j.nombre.trim());
       if (jer.length) {
@@ -261,6 +286,7 @@ export async function guardarFamilia(
             tituloFamilia: nz(j.tituloFamilia),
             faccionId: j.faccionKey ? faccionMap.get(j.faccionKey) ?? null : null,
             orden: i,
+            oculto: ocultos.has(claveMiembro(j)),
           })),
         );
       }
@@ -281,6 +307,7 @@ export async function guardarFamilia(
             destacado: n.destacado,
             motivoDestacado: nz(n.motivoDestacado),
             notas: nz(n.notas),
+            oculto: n.oculto ?? false,
           })
           .returning({ id: s.familiaArbol.id });
         arbolMap.set(n.key, ins.id);
@@ -376,6 +403,14 @@ export async function guardarGremio(
         faccionMap.set(f.key, ins.id);
       }
 
+      const ocultos = new Set(
+        (
+          await tx
+            .select({ personajeId: s.gremioJerarquia.personajeId, nombre: s.gremioJerarquia.nombre })
+            .from(s.gremioJerarquia)
+            .where(and(eq(s.gremioJerarquia.gremioId, gid), eq(s.gremioJerarquia.oculto, true)))
+        ).map(claveMiembro),
+      );
       await tx.delete(s.gremioJerarquia).where(eq(s.gremioJerarquia.gremioId, gid));
       const jer = data.jerarquia.filter((j) => j.personajeId != null || j.nombre.trim());
       if (jer.length) {
@@ -388,6 +423,7 @@ export async function guardarGremio(
             faccionId: j.faccionKey ? faccionMap.get(j.faccionKey) ?? null : null,
             tituloApodo: nz(j.tituloApodo),
             orden: i,
+            oculto: ocultos.has(claveMiembro(j)),
           })),
         );
       }
@@ -407,6 +443,7 @@ export async function guardarGremio(
             motivoDestacado: nz(h.motivoDestacado),
             notas: nz(h.notas),
             orden: i,
+            oculto: h.oculto ?? false,
           })),
         );
       }

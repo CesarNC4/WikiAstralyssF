@@ -9,6 +9,7 @@ import { AccordionSection } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { Field, TextInput, MarkdownField } from "@/components/admin/fields";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
+import { CandadosFicha } from "@/components/admin/candados";
 
 type Tipo = "texto" | "cita" | "tabla" | "lista" | "aviso" | "cronologia" | "separador";
 interface Seccion {
@@ -125,6 +126,7 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
   return (
     // Dos columnas en pantallas anchas: la ficha y, a la derecha, el panel de
     // conexiones fijo mientras editas.
+    <CandadosFicha entidad="lore" id={id}>
     <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
       <div className="space-y-4">
       <AccordionSection title="Cabecera" defaultOpen>
@@ -133,8 +135,8 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
           <Field label="Slug (URL) *" hint="se autogenera del título; editable" error={fe.slug}>
             <TextInput value={slug} onChange={(v) => { setSlug(slugify(v)); setSlugTouched(true); mark(); }} placeholder="el-despertar-cosmico" />
           </Field>
-          <div className="sm:col-span-2"><Field label="Subtítulo"><TextInput value={subtitulo} onChange={(v) => { setSubtitulo(v); mark(); }} /></Field></div>
-          <div className="sm:col-span-2"><Field label="Introducción" hint="markdown"><MarkdownField value={introduccion} onChange={(v) => { setIntroduccion(v); mark(); }} rows={4} /></Field></div>
+          <div className="sm:col-span-2"><Field campo="subtitulo" label="Subtítulo"><TextInput value={subtitulo} onChange={(v) => { setSubtitulo(v); mark(); }} /></Field></div>
+          <div className="sm:col-span-2"><Field campo="introduccion" label="Introducción" hint="markdown"><MarkdownField value={introduccion} onChange={(v) => { setIntroduccion(v); mark(); }} rows={4} /></Field></div>
         </div>
       </AccordionSection>
 
@@ -209,6 +211,7 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
         </div>
       </div>
     </div>
+    </CandadosFicha>
   );
 }
 

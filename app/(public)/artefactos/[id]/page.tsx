@@ -7,6 +7,7 @@ import { EntityImage } from "@/components/media/EntityImage";
 import { getArtefacto, getVisibleIds } from "@/lib/queries/fichas";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
+import { MARCA_OCULTO, campoOculto } from "@/lib/visibilidad";
 
 export const revalidate = 3600;
 
@@ -43,6 +44,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <FieldGrid fields={[{ label: "Tipo", value: x.tipo }, { label: "Variante", value: x.variante }, { label: "Rareza", value: x.rareza }]} />
       <FechasDeFicha entidad="artefactos" id={x.id} />
 
+      {campoOculto(x, "propietarioId") && (
+        <section className="mb-8">
+          <h2 className="mb-3 font-display text-xl text-accent">Propietario</h2>
+          <p className="text-sm text-fg">{MARCA_OCULTO}</p>
+        </section>
+      )}
       {x.propietario && (
         <section className="mb-8">
           <h2 className="mb-3 font-display text-xl text-accent">Propietario</h2>

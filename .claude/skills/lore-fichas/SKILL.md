@@ -33,8 +33,9 @@ bloques en `lore/propuestas/<área>.md`, en el formato de
   `(opción nueva)`.
 - En una ficha que existe, escribe solo lo que cambia. Para ampliar un texto
   sin pisarlo, `### <Rótulo> (añadir)`.
-- Marca con 🔒 lo que la guía de estilo pone oculto por defecto. Si dudas de
-  si algo es secreto, pregúntalo. Decide el autor.
+- Marca con 🔒 lo que la guía de estilo pone oculto por defecto; si es solo una
+  parte de un texto, envuélvela en `[[oculto]]…[[/oculto]]`. Si dudas de si algo
+  es secreto, pregúntalo. Decide el autor.
 - Conecta: si el material dice que A pertenece a B, eso es una conexión, no
   solo una frase en la historia.
 - Añade los bloques **al final** del archivo del área, tras una línea

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, text, boolean, timestamp, unique } from "drizzle-orm/pg-core";
 import { estadoPublicacion } from "./enums";
 import { auditColumns } from "./_audit";
 
@@ -40,6 +40,7 @@ export const entidadElemento = pgTable(
     elementoId: integer("elemento_id").notNull(),
     /** afinidad | debilidad | resistencia */
     relacion: varchar("relacion").notNull(),
+    oculto: boolean("oculto").notNull().default(false),
     orden: integer("orden").notNull().default(0),
   },
   (t) => [unique("entidad_elemento_unico").on(t.entidadTipo, t.entidadId, t.elementoId, t.relacion)],

@@ -42,6 +42,7 @@ export function BloquesRelacion({
 }
 
 function aItem(fila: FilaVinculo, objetivo: string): LinkGridItem | null {
+  if (fila.oculto && !fila.objetivoId) return { id: 0, nombre: fila.label, img: null, href: "" };
   const meta = entityByKey(fila.objetivoTipo ?? objetivo);
   if (!meta || !fila.objetivoId) return null;
   // El primer campo con contenido describe el vínculo ("Capitán", "Depredador",

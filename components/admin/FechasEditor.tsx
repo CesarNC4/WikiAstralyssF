@@ -8,10 +8,12 @@ import { validarFecha, type Calendario, type Fecha, type RolFecha } from "@/lib/
 import { AccordionSection } from "@/components/admin/ui";
 import { FechaInput } from "@/components/admin/FechaInput";
 import { useToast } from "@/components/admin/Toast";
+import { CandadoFecha } from "@/components/admin/candados";
 
 export interface FechaInicial {
   fecha: Fecha;
   importante: boolean;
+  oculto: boolean;
 }
 
 /**
@@ -106,6 +108,7 @@ function UnaFecha({
           />
           Importante
         </label>
+        <CandadoFecha entidad={entidad} id={id} rol={rol.rol} inicial={inicial?.oculto ?? false} hayFecha={!!inicial} />
         <div className="ml-auto flex gap-2">
           {inicial && (
             <button

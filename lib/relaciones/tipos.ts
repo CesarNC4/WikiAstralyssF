@@ -127,5 +127,7 @@ export interface FilaVinculo {
   estado?: string | null;
   /** Ruta pública de la ficha del otro extremo, si la tiene. */
   ruta?: string | null;
+  /** La conexión existe pero el público solo ve la marca "???". */
+  oculto?: boolean;
   campos: Record<string, string>;
 }

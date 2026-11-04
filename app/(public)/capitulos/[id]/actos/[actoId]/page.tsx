@@ -12,6 +12,7 @@ import { getCalendario, leerFecha } from "@/lib/queries/fechas";
 import { getActoPublico, getActosVisibles } from "@/lib/queries/fichas";
 import { getCancionesDeActo, getCapituloDerivado, getFragmentosPublicos } from "@/lib/queries/narrativa";
 import { FragmentosActo } from "@/components/fichas/FragmentosActo";
+import { MARCA_OCULTO } from "@/lib/visibilidad";
 
 export const revalidate = 3600;
 
@@ -56,7 +57,8 @@ export default async function ActoPage({ params }: { params: Params }) {
   const yo = hermanos[i];
   const anterior = i > 0 ? hermanos[i - 1] : null;
   const siguiente = i >= 0 && i < hermanos.length - 1 ? hermanos[i + 1] : null;
-  const cuando = fecha && cal ? textosFecha(cal, fecha.fecha) : null;
+  const fechaVisible = fecha && !fecha.oculto ? fecha : null;
+  const cuando = fechaVisible && cal ? textosFecha(cal, fechaVisible.fecha) : null;
 
   return (
     <FichaShell
@@ -77,12 +79,12 @@ export default async function ActoPage({ params }: { params: Params }) {
       <FieldGrid
         fields={[
           { label: "Capítulo", value: `${capitulo.numero} — ${capitulo.titulo}` },
-          { label: "Cuándo", value: cuando ? <FechaTexto t={cuando} /> : null },
+          { label: "Cuándo", value: fecha?.oculto ? MARCA_OCULTO : cuando ? <FechaTexto t={cuando} /> : null },
         ]}
       />
 
       {/* Las edades de los personajes se leen desde el inicio del acto (§13). */}
-      {fecha && <FijarMomento clave={fecha.claveIni} origen={`al inicio de «${acto.nombre}»`} />}
+      {fechaVisible && <FijarMomento clave={fechaVisible.claveIni} origen={`al inicio de «${acto.nombre}»`} />}
 
       <ProseFields fields={[{ label: "Resumen", value: acto.descripcion }]} />
 

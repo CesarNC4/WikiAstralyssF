@@ -93,6 +93,8 @@ export interface FechaGuardada {
   rol: string;
   fecha: Fecha;
   importante: boolean;
+  /** La ficha enseña "???" y la fecha no entra en la cronología. */
+  oculto: boolean;
   claveIni: number;
   claveFin: number;
 }
@@ -107,6 +109,7 @@ export function aFechaGuardada(f: typeof s.fechaLore.$inferSelect): FechaGuardad
       aproximada: f.aproximada,
     },
     importante: f.importante,
+    oculto: f.oculto,
     claveIni: f.claveIni,
     claveFin: f.claveFin,
   };
@@ -144,12 +147,20 @@ export async function fechasDeEntidades(
   entidadTipo: string,
   ids: number[],
   rol = "principal",
+  { publico = false }: { publico?: boolean } = {},
 ): Promise<Map<number, FechaGuardada>> {
   if (ids.length === 0) return new Map();
   const filas = await db
     .select()
     .from(s.fechaLore)
-    .where(and(eq(s.fechaLore.entidadTipo, entidadTipo), eq(s.fechaLore.rol, rol), inArray(s.fechaLore.entidadId, [...new Set(ids)])));
+    .where(
+      and(
+        eq(s.fechaLore.entidadTipo, entidadTipo),
+        eq(s.fechaLore.rol, rol),
+        inArray(s.fechaLore.entidadId, [...new Set(ids)]),
+        publico ? eq(s.fechaLore.oculto, false) : undefined,
+      ),
+    );
   return new Map(filas.map((f) => [f.entidadId, aFechaGuardada(f)]));
 }
 
@@ -160,9 +171,9 @@ export async function fechasDeEntidades(
 export async function textosDeFechas(
   entidadTipo: string,
   ids: number[],
-  { rol = "principal", corto = false }: { rol?: string; corto?: boolean } = {},
+  { rol = "principal", corto = false, publico = false }: { rol?: string; corto?: boolean; publico?: boolean } = {},
 ): Promise<Map<number, TextosFecha>> {
   if (ids.length === 0) return new Map();
-  const [cal, fechas] = await Promise.all([getCalendario(), fechasDeEntidades(entidadTipo, ids, rol)]);
+  const [cal, fechas] = await Promise.all([getCalendario(), fechasDeEntidades(entidadTipo, ids, rol, { publico })]);
   return new Map([...fechas].map(([id, f]) => [id, textosFecha(cal, f.fecha, corto)]));
 }

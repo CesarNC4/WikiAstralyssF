@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { ocultarEnLista } from "@/lib/queries/visibilidad";
 
 /**
  * Candidatos del comparador de alturas (spec §12): personajes, bestias y lords
@@ -73,7 +74,7 @@ export async function getComparador() {
 
   const conMedida = <T extends { altura: number | null; longitud?: number | null }>(xs: T[]) =>
     xs.filter((x) => (x.altura ?? 0) > 0 || (x.longitud ?? 0) > 0);
-  const p = pjs.filter((x) => (x.altura ?? 0) > 0);
+  const p = await ocultarEnLista("personajes", pjs.filter((x) => (x.altura ?? 0) > 0));
   const b = conMedida(bestias);
   const d = conMedida(demonios);
 
@@ -81,10 +82,10 @@ export async function getComparador() {
     ocultos("personajes", p.map((x) => x.id)),
     ocultos("bestias", b.map((x) => x.id)),
     ocultos("demonios", d.map((x) => x.id)),
-    p.length ? db.select({ a: s.personajeRaza.personajeId, x: s.personajeRaza.razaId }).from(s.personajeRaza).where(inArray(s.personajeRaza.personajeId, p.map((x) => x.id))) : [],
-    p.length ? db.select({ a: s.personajeNacion.personajeId, x: s.personajeNacion.nacionId }).from(s.personajeNacion).where(inArray(s.personajeNacion.personajeId, p.map((x) => x.id))) : [],
-    p.length ? db.select({ a: s.orgJerarquia.personajeId, x: s.orgJerarquia.organizacionId }).from(s.orgJerarquia).where(inArray(s.orgJerarquia.personajeId, p.map((x) => x.id))) : [],
-    b.length ? db.select({ a: s.bestiaNacion.bestiaId, x: s.bestiaNacion.nacionId }).from(s.bestiaNacion).where(inArray(s.bestiaNacion.bestiaId, b.map((x) => x.id))) : [],
+    p.length ? db.select({ a: s.personajeRaza.personajeId, x: s.personajeRaza.razaId }).from(s.personajeRaza).where(and(inArray(s.personajeRaza.personajeId, p.map((x) => x.id)), eq(s.personajeRaza.oculto, false))) : [],
+    p.length ? db.select({ a: s.personajeNacion.personajeId, x: s.personajeNacion.nacionId }).from(s.personajeNacion).where(and(inArray(s.personajeNacion.personajeId, p.map((x) => x.id)), eq(s.personajeNacion.oculto, false))) : [],
+    p.length ? db.select({ a: s.orgJerarquia.personajeId, x: s.orgJerarquia.organizacionId }).from(s.orgJerarquia).where(and(inArray(s.orgJerarquia.personajeId, p.map((x) => x.id)), eq(s.orgJerarquia.oculto, false))) : [],
+    b.length ? db.select({ a: s.bestiaNacion.bestiaId, x: s.bestiaNacion.nacionId }).from(s.bestiaNacion).where(and(inArray(s.bestiaNacion.bestiaId, b.map((x) => x.id)), eq(s.bestiaNacion.oculto, false))) : [],
   ]);
   const agrupar = (filas: { a: number | null; x: number }[]) => {
     const m = new Map<number, number[]>();

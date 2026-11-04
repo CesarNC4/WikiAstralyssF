@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { ocultarEnLista } from "@/lib/queries/visibilidad";
 
 export interface CompendioRow {
   id: number;
@@ -13,11 +14,18 @@ export interface CompendioRow {
 }
 
 export async function getCompendio() {
-  const [bestias, minerales, razas, naciones] = await Promise.all([
+  const [bestiasBrutas, mineralesBrutos, razasBrutas, nacionesBrutas] = await Promise.all([
     db.select().from(s.bestias).where(and(eq(s.bestias.estadoPublicacion, "publicado"), isNull(s.bestias.eliminadoEn))).orderBy(asc(s.bestias.nombre)),
     db.select().from(s.minerales).where(and(eq(s.minerales.estadoPublicacion, "publicado"), isNull(s.minerales.eliminadoEn))).orderBy(asc(s.minerales.nombre)),
     db.select().from(s.razas).where(and(eq(s.razas.estadoPublicacion, "publicado"), isNull(s.razas.eliminadoEn))).orderBy(asc(s.razas.nombre)),
     db.select().from(s.naciones).where(and(eq(s.naciones.estadoPublicacion, "publicado"), isNull(s.naciones.eliminadoEn))).orderBy(asc(s.naciones.nombre)),
+  ]);
+
+  const [bestias, minerales, razas, naciones] = await Promise.all([
+    ocultarEnLista("bestias", bestiasBrutas),
+    ocultarEnLista("minerales", mineralesBrutos),
+    ocultarEnLista("razas", razasBrutas),
+    ocultarEnLista("naciones", nacionesBrutas),
   ]);
 
   const num = (v: unknown): number | null => (typeof v === "number" ? v : null);

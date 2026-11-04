@@ -48,6 +48,8 @@ export interface HistorialRow {
   destacado: boolean;
   motivoDestacado: string;
   notas: string;
+  /** El público ve "???" en lugar de esta fila. */
+  oculto: boolean;
 }
 
 export interface ArbolRow {
@@ -62,6 +64,8 @@ export interface ArbolRow {
   destacado: boolean;
   motivoDestacado: string;
   notas: string;
+  /** El público ve la casilla como "???", con sus líneas. */
+  oculto: boolean;
 }
 
 /** Payload de organización que viaja del form a la server action. */

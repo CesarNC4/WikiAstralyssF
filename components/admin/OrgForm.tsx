@@ -15,6 +15,7 @@ import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
 import { HistorialEditor } from "@/components/admin/blocks/HistorialEditor";
 import type { Opcion } from "@/components/admin/blocks/shared";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
+import { CandadosFicha } from "@/components/admin/candados";
 
 const v = (x: unknown) => (x == null ? "" : String(x));
 
@@ -108,23 +109,24 @@ export function OrgForm({
   return (
     // Dos columnas en pantallas anchas: la ficha y, a la derecha, el panel de
     // conexiones fijo mientras editas.
+    <CandadosFicha entidad="organizaciones" id={id}>
     <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
       <div className="space-y-4">
       <AccordionSection title="Identidad" defaultOpen>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre *" error={fe.nombre}><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Orden del Alba" /></Field>
-          <Field label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
-          <Field label="Tipo"><Select value={campos.tipo} onChange={(x) => set("tipo", x)} options={catalogos.org_tipo ?? []} placeholder="Orden, gremio, secta…" onCrear={(v, g) => crearOpcion("org_tipo", v, g)} /></Field>
-          <Field label="Estado" hint="vitalidad"><Select value={campos.estado} onChange={(x) => set("estado", x)} options={catalogos.org_estado ?? []} placeholder="Activa, en declive, disuelta…" /></Field>
-          <Field label="Legalidad" hint="una organización activa puede ser clandestina"><Select value={campos.legalidad} onChange={(x) => set("legalidad", x)} options={catalogos.org_legalidad ?? []} placeholder="Oficial, tolerada, clandestina…" /></Field>
-          <Field label="Sede"><TextInput value={campos.sede} onChange={(x) => set("sede", x)} /></Field>
+          <Field campo="subtitulo" label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
+          <Field campo="tipo" label="Tipo"><Select value={campos.tipo} onChange={(x) => set("tipo", x)} options={catalogos.org_tipo ?? []} placeholder="Orden, gremio, secta…" onCrear={(v, g) => crearOpcion("org_tipo", v, g)} /></Field>
+          <Field campo="estado" label="Estado" hint="vitalidad"><Select value={campos.estado} onChange={(x) => set("estado", x)} options={catalogos.org_estado ?? []} placeholder="Activa, en declive, disuelta…" /></Field>
+          <Field campo="legalidad" label="Legalidad" hint="una organización activa puede ser clandestina"><Select value={campos.legalidad} onChange={(x) => set("legalidad", x)} options={catalogos.org_legalidad ?? []} placeholder="Oficial, tolerada, clandestina…" /></Field>
+          <Field campo="sede" label="Sede"><TextInput value={campos.sede} onChange={(x) => set("sede", x)} /></Field>
         </div>
       </AccordionSection>
 
       <AccordionSection title="Contenido" subtitle="markdown">
         <div className="space-y-3">
           {LARGOS.map((f) => (
-            <Field key={f.k} label={f.label}>
+            <Field key={f.k} campo={f.k} label={f.label}>
               <MarkdownField value={campos[f.k]} onChange={(x) => set(f.k, x)} rows={f.k === "historia" ? 8 : 5} />
             </Field>
           ))}
@@ -174,5 +176,6 @@ export function OrgForm({
         </div>
       </div>
     </div>
+    </CandadosFicha>
   );
 }

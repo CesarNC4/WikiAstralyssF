@@ -9,6 +9,7 @@ export const personajeEvento = pgTable("personaje_evento", {
   timelineEventoId: integer("timeline_evento_id").notNull(),
   nota: text("nota"),
   orden: integer("orden").notNull().default(0),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 /** Objetos/armas/artefactos del personaje: vínculo al catálogo global con nota propia del PJ. */
@@ -18,6 +19,7 @@ export const personajeObjeto = pgTable("personaje_objeto", {
   armaArtefactoId: integer("arma_artefacto_id").notNull(),
   nota: text("nota"),
   orden: integer("orden").notNull().default(0),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const personajeNacion = pgTable("personaje_nacion", {
@@ -26,6 +28,7 @@ export const personajeNacion = pgTable("personaje_nacion", {
   nacionId: integer("nacion_id").notNull(),
   tipo: varchar("tipo"),
   descripcion: varchar("descripcion"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const personajeRaza = pgTable("personaje_raza", {
@@ -34,6 +37,7 @@ export const personajeRaza = pgTable("personaje_raza", {
   razaId: integer("raza_id").notNull(),
   esMixta: boolean("es_mixta"),
   nota: varchar("nota"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 /**
@@ -51,6 +55,7 @@ export const nacionOrganizacion = pgTable("nacion_organizacion", {
   organizacionId: integer("organizacion_id").notNull(),
   tipo: varchar("tipo"),
   descripcion: varchar("descripcion"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const nacionRaza = pgTable("nacion_raza", {
@@ -58,6 +63,7 @@ export const nacionRaza = pgTable("nacion_raza", {
   nacionId: integer("nacion_id").notNull(),
   razaId: integer("raza_id").notNull(),
   tipo: varchar("tipo"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 // ── Overhaul mundo: hábitat, drops, diplomacia y forja ──────────────────────
@@ -68,6 +74,7 @@ export const bestiaNacion = pgTable("bestia_nacion", {
   bestiaId: integer("bestia_id").notNull(),
   nacionId: integer("nacion_id").notNull(),
   nota: varchar("nota"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 /** Hábitat de una bestia en una región del mapa (para pins). */
@@ -76,6 +83,7 @@ export const bestiaRegion = pgTable("bestia_region", {
   bestiaId: integer("bestia_id").notNull(),
   regionId: integer("region_id").notNull(),
   nota: varchar("nota"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 /** Drop de una bestia: un mineral del catálogo con su rareza/nota. */
@@ -86,6 +94,7 @@ export const bestiaDrop = pgTable("bestia_drop", {
   rareza: varchar("rareza"),
   nota: varchar("nota"),
   orden: integer("orden").notNull().default(0),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 /** Relación bestia ↔ bestia: depredador/presa, subespecie, evolución. */
@@ -95,6 +104,7 @@ export const bestiaRelacion = pgTable("bestia_relacion", {
   relacionadaId: integer("relacionada_id").notNull(),
   tipo: varchar("tipo"),
   nota: varchar("nota"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 /** Mineral forjado en un arma/artefacto. */
@@ -103,6 +113,7 @@ export const mineralArtefacto = pgTable("mineral_artefacto", {
   mineralId: integer("mineral_id").notNull(),
   artefactoId: integer("artefacto_id").notNull(),
   nota: varchar("nota"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 /** Uso/aplicación estructurada de un mineral. */
@@ -121,6 +132,7 @@ export const nacionDiplomacia = pgTable("nacion_diplomacia", {
   otraNacionId: integer("otra_nacion_id").notNull(),
   tipo: varchar("tipo"),
   nota: varchar("nota"),
+  oculto: boolean("oculto").notNull().default(false),
 });
 
 export const hojaPersonaje = pgTable("hoja_personaje", {

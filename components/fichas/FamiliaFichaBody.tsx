@@ -6,7 +6,7 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { JerarquiaSecciones } from "@/components/fichas/JerarquiaSecciones";
 import { StatRadar } from "@/components/fichas/personaje/StatRadar";
 import { FamiliaArbol, type ArbolNodo } from "@/components/fichas/FamiliaArbol";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 interface FamiliaRow {
@@ -50,7 +50,7 @@ export async function FamiliaFichaBody({
   jerarquia: FichaJerarquia[];
   facciones: Faccion[];
 }) {
-  const galeria = await getGaleria("familias", familia.id).catch(() => []);
+  const galeria = await getGaleriaPublica("familias", familia.id).catch(() => []);
 
   const poderes = [
     { ...PODERES[0], texto: familia.poderEconomico, nivel: familia.poderEconomicoNivel },

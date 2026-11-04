@@ -115,6 +115,7 @@ export async function getOrgParaEditar(id: number) {
     destacado: r.destacado ?? false,
     motivoDestacado: r.motivoDestacado ?? "",
     notas: r.notas ?? "",
+    oculto: r.oculto,
   }));
 
   return { org, rangos, facciones, jerarquia, historial };
@@ -165,6 +166,7 @@ export async function getFamiliaParaEditar(id: number) {
     destacado: r.destacado ?? false,
     motivoDestacado: r.motivoDestacado ?? "",
     notas: r.notas ?? "",
+    oculto: r.oculto,
   }));
 
   return { familia, rangos, facciones, jerarquia, arbol };
@@ -304,6 +306,7 @@ export async function getGremioParaEditar() {
     destacado: r.destacado ?? false,
     motivoDestacado: r.motivoDestacado ?? "",
     notas: r.notas ?? "",
+    oculto: r.oculto,
   }));
 
   return { gremio, rangos, facciones, jerarquia, historial };

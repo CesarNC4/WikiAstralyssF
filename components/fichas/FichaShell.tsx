@@ -4,7 +4,7 @@ import { Icon } from "@/components/Icon";
 import { FadeIn } from "@/components/motion/Motion";
 import { Markdown } from "@/components/markdown/Markdown";
 import { Galeria } from "@/components/fichas/Galeria";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import type { FichaField } from "@/lib/types";
 
 /** Cabecera común de ficha (§5.2): banner + avatar + título + badges. */
@@ -35,7 +35,7 @@ export async function FichaShell({
   children: React.ReactNode;
 }) {
   const galeria =
-    galeriaTipo && galeriaId ? await getGaleria(galeriaTipo, galeriaId).catch(() => []) : [];
+    galeriaTipo && galeriaId ? await getGaleriaPublica(galeriaTipo, galeriaId).catch(() => []) : [];
   return (
     <div>
       {/* Banner */}

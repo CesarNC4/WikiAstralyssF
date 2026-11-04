@@ -77,6 +77,10 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
+  Lock,
+  LockOpen,
+  EyeOff,
+  CircleHelp,
   type LucideIcon,
 } from "lucide-react";
 
@@ -159,6 +163,10 @@ const REGISTRY: Record<string, LucideIcon> = {
   GripVertical,
   ChevronUp,
   ChevronDown,
+  Lock,
+  LockOpen,
+  EyeOff,
+  HelpCircle: CircleHelp,
 };
 
 /** Nombres que entiende `Icon`, para elegir uno desde el panel. */

@@ -26,7 +26,8 @@ Cómo trabajar:
    desde su lado. Para lo que no es una conexión, usa `menciones`.
 3. Responde en español y cita las fichas (`Alhaitham, personaje #33`).
 4. Distingue lo publicado de lo que no: la salida marca `[borrador]` u
-   `[oculto]`, el 🔒 señala un campo oculto al público y las notas de autor son
+   `[oculto]`, el 🔒 señala un campo, una conexión o una fecha ocultos al público,
+   `[[oculto]]…[[/oculto]]` es un trozo oculto de un texto y las notas de autor son
    privadas. Todo eso es material del autor: puedes usarlo con él, pero
    dilo cuando un dato no sea público.
 5. Si falta información o algo no cuadra (una edad que no casa con la fecha,

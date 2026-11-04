@@ -18,6 +18,7 @@ import {
 } from "@/lib/fechas";
 import { infoDe } from "@/lib/relaciones/tablas";
 import { aFechaGuardada, getCalendario, type FechaGuardada } from "./fechas";
+import { camposOcultosDe, ocultarEnLista } from "./visibilidad";
 
 /**
  * La cronología derivada (spec §14): los eventos creados a mano y todo lo que
@@ -64,10 +65,14 @@ async function cargarFichas(tipo: string, ids: number[], publico: boolean): Prom
   if (info.papelera) filtros.push(isNull(c.eliminadoEn));
   if (publico && info.estado) filtros.push(info.estadoSql ? sql`${info.estadoSql} = 'publicado'` : eq(c.estadoPublicacion, "publicado"));
 
-  const filas = (await db
+  const brutas = (await db
     .select(sel as Record<string, PgColumn>)
     .from(info.tabla)
-    .where(and(...filtros))) as unknown as Record<string, unknown>[];
+    .where(and(...filtros))) as unknown as (Record<string, unknown> & { id: number })[];
+  // En público, sin lo oculto de cada ficha (una descripción, un capítulo, una imagen).
+  const filas = publico
+    ? await ocultarEnLista(tipo, brutas, { alias: { nombre: info.label, detalle: info.detalle ?? "detalle", imagen: info.imagen ?? "imagen" } })
+    : brutas;
 
   for (const f of filas) {
     const id = f.id as number;
@@ -102,7 +107,8 @@ function base(cal: Calendario, fecha: Fecha, claveIni: number, claveFin: number)
 
 export async function getSucesos({ publico }: { publico: boolean }): Promise<{ sucesos: Suceso[]; cal: Calendario }> {
   const [cal, filas] = await Promise.all([getCalendario(), db.select().from(s.fechaLore)]);
-  const fechas = filas.map((f) => ({ tipo: f.entidadTipo, ...aFechaGuardada(f) }));
+  // Una fecha oculta no entra: su sitio en la línea temporal la delataría.
+  const fechas = filas.filter((f) => !publico || !f.oculto).map((f) => ({ tipo: f.entidadTipo, ...aFechaGuardada(f) }));
 
   // Ids por tipo de ficha, más los capítulos de los actos y de los eventos.
   const ids = new Map<string, number[]>();
@@ -132,16 +138,18 @@ export async function getSucesos({ publico }: { publico: boolean }): Promise<{ s
     ? await db
         .select({ eventoId: s.personajeEvento.timelineEventoId, personajeId: s.personajeEvento.personajeId })
         .from(s.personajeEvento)
-        .where(inArray(s.personajeEvento.timelineEventoId, evIds))
+        .where(and(inArray(s.personajeEvento.timelineEventoId, evIds), publico ? eq(s.personajeEvento.oculto, false) : undefined))
         .orderBy(asc(s.personajeEvento.orden))
     : [];
   const personajes = await cargarFichas("personajes", [...new Set(pjs.map((p) => p.personajeId).filter((x): x is number => x != null))], publico);
-  const locs = evIds.length
+  const locsBrutas = evIds.length
     ? await db
         .select({ id: s.locaciones.id, eventoId: s.locaciones.eventoId })
         .from(s.locaciones)
         .where(inArray(s.locaciones.eventoId, evIds))
     : [];
+  const ocultosLoc = publico ? await camposOcultosDe("locaciones", locsBrutas.map((l) => l.id)) : null;
+  const locs = locsBrutas.filter((l) => !ocultosLoc?.get(l.id)?.has("eventoId"));
   const locaciones = await cargarFichas("locaciones", locs.map((l) => l.id), publico);
 
   const pjsDe = new Map<number, RefSuceso[]>();

@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { ocultarEnLista } from "@/lib/queries/visibilidad";
 import type { Track } from "@/hooks/usePlayerStore";
 import { RELACIONES } from "@/lib/relaciones/registro";
 
@@ -67,10 +68,13 @@ export async function cancionesDeFichas(
         eq(s.vinculo.relacion, relacion),
         eq(s.vinculo.destinoTipo, "canciones"),
         isNull(s.canciones.eliminadoEn),
+        // Un tema que delataría a quién pertenece, directamente no sale.
+        publico ? eq(s.vinculo.oculto, false) : undefined,
       ),
     )
     .orderBy(asc(s.vinculo.orden), asc(s.vinculo.id));
-  for (const { ownerId, nota, estado, ...c } of filas) {
+  const visibles = publico ? await ocultarEnLista("canciones", filas) : filas;
+  for (const { ownerId, nota, estado, ...c } of visibles) {
     if (publico && estado !== "publicado") continue;
     if (!out.has(ownerId)) out.set(ownerId, []);
     out.get(ownerId)!.push({ ...c, contexto: nota });
@@ -153,6 +157,7 @@ export async function getIndiceMusica(): Promise<IndiceMusica> {
     .where(
       and(
         eq(s.vinculo.destinoTipo, "canciones"),
+        eq(s.vinculo.oculto, false),
         inArray(s.vinculo.destinoId, ids),
         inArray(s.vinculo.relacion, ["capitulo_cancion", "acto_cancion", "fragmento_cancion", "personaje_cancion"]),
       ),
@@ -234,12 +239,13 @@ export async function getCancionPublica(id: number): Promise<CancionFicha | null
     .from(s.canciones)
     .where(and(eq(s.canciones.id, id), publicada));
   if (!c) return null;
-  const cancion = { ...aTrack(c), uso: c.uso };
+  const [visible] = await ocultarEnLista("canciones", [c]);
+  const cancion = { ...aTrack(visible), uso: visible.uso };
 
   const vinculos = await db
     .select({ fragmentoId: s.vinculo.origenId, nota: s.vinculo.nota })
     .from(s.vinculo)
-    .where(and(eq(s.vinculo.destinoTipo, "canciones"), eq(s.vinculo.destinoId, id), eq(s.vinculo.relacion, "fragmento_cancion")))
+    .where(and(eq(s.vinculo.destinoTipo, "canciones"), eq(s.vinculo.destinoId, id), eq(s.vinculo.relacion, "fragmento_cancion"), eq(s.vinculo.oculto, false)))
     .orderBy(asc(s.vinculo.orden), asc(s.vinculo.id));
   if (vinculos.length === 0) return { ...cancion, momentos: [] };
 

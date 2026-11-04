@@ -217,7 +217,7 @@ async function ficha(entidad: string, arg: string | undefined) {
         .map(([k, v]) => `${b.campos.find((c) => c.name === k)?.label ?? k}: ${v === "true" ? "sí" : v}`);
       const tipo = f.objetivoTipo && f.objetivoTipo !== b.objetivo ? `${f.objetivoTipo} ` : "";
       const est = f.estado && f.estado !== "publicado" ? ` [${f.estado}]` : "";
-      conexiones.push(`- ${b.titulo}: ${tipo}${f.label}${extra.length ? ` (${extra.join("; ")})` : ""}${est}`);
+      conexiones.push(`- ${b.titulo}: ${tipo}${f.label}${extra.length ? ` (${extra.join("; ")})` : ""}${est}${f.oculto ? " 🔒" : ""}`);
     }
   }
   if (conexiones.length) console.log(`\n### Conexiones\n${conexiones.join("\n")}`);
@@ -230,7 +230,7 @@ async function ficha(entidad: string, arg: string | undefined) {
       const f = fechas[r.rol];
       if (!f) return [];
       const t = textosFecha(cal, f.fecha);
-      return [`- ${r.etiqueta}: ${t.eras} (absoluto: ${t.absoluto})${f.importante ? " ★ importante" : ""}`];
+      return [`- ${r.etiqueta}: ${t.eras} (absoluto: ${t.absoluto})${f.importante ? " ★ importante" : ""}${f.oculto ? " 🔒" : ""}`];
     });
     if (lineas.length) console.log(`\n### Fechas\n${lineas.join("\n")}`);
     const sin = roles.filter((r) => !fechas[r.rol]).map((r) => r.etiqueta);
@@ -254,7 +254,7 @@ async function extrasPersonaje(id: number) {
   const habs = await db.select().from(s.habilidades).where(eq(s.habilidades.personajeId, id));
   if (habs.length) {
     console.log("\n### Habilidades (solo lectura)");
-    for (const h of habs) console.log(`- ${h.nombre ?? "(sin nombre)"} · ${h.categoria}${h.tipo ? ` · ${h.tipo}` : ""}${h.descripcion ? `: ${h.descripcion.trim()}` : ""}`);
+    for (const h of habs) console.log(`- ${h.nombre ?? "(sin nombre)"} · ${h.categoria}${h.tipo ? ` · ${h.tipo}` : ""}${h.descripcion ? `: ${h.descripcion.trim()}` : ""}${h.oculto ? " 🔒" : ""}`);
   }
   const [st] = await db.select().from(s.estadisticas).where(eq(s.estadisticas.personajeId, id));
   if (st) {

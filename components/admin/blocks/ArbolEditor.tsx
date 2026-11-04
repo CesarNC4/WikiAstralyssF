@@ -6,6 +6,7 @@ import "@xyflow/react/dist/style.css";
 import { newKey, type ArbolRow } from "@/lib/admin/complejas";
 import { MiembroPicker, subInp, type Opcion } from "./shared";
 import { Select, type Opciones } from "@/components/admin/fields";
+import { BotonOculto } from "@/components/admin/candados";
 
 /**
  * Árbol genealógico visual (React Flow). Los nodos se colocan solos por
@@ -58,6 +59,7 @@ export function ArbolEditor({
         destacado: false,
         motivoDestacado: "",
         notas: "",
+        oculto: false,
       },
     ]);
     setSelected(key);
@@ -85,7 +87,7 @@ export function ArbolEditor({
         out.push({
           id: r.key,
           position: { x: ci * 200, y: gi * 130 },
-          data: { label: `${r.destacado ? "★ " : ""}${labelOf(r)}${r.personajeId != null ? " ◆" : ""}` },
+          data: { label: `${r.oculto ? "🔒 " : ""}${r.destacado ? "★ " : ""}${labelOf(r)}${r.personajeId != null ? " ◆" : ""}` },
           selected: selected === r.key,
           style: {
             width: 170,
@@ -154,6 +156,7 @@ export function ArbolEditor({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-display text-sm text-fg">Editar persona</span>
+                <BotonOculto oculto={sel.oculto} texto="ocultar" onClick={() => patch(sel.key, { oculto: !sel.oculto })} />
                 <button type="button" onClick={() => remove(sel.key)} className="rounded border border-error/40 px-2 py-0.5 text-xs text-error hover:bg-error/10">
                   Eliminar
                 </button>

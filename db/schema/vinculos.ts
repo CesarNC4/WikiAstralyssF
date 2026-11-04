@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, boolean, timestamp, index } from "drizzle-orm/pg-core";
 
 /**
  * Arista genérica ficha↔ficha.
@@ -28,6 +28,8 @@ export const vinculo = pgTable(
     tipo: varchar("tipo"),
     nota: varchar("nota"),
     orden: integer("orden").notNull().default(0),
+    /** Existe pero el público no sabe con qué: sale como "???" (docs/area-ia.md, Fase 4). */
+    oculto: boolean("oculto").notNull().default(false),
     creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

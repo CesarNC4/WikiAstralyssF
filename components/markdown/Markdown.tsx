@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { censurarTexto } from "@/lib/visibilidad";
 
 /**
  * Renderizador de markdown minimalista (sin dependencias) para la prosa de
@@ -9,7 +10,9 @@ import { useState, type ReactNode } from "react";
  */
 export function Markdown({ source, className }: { source: string | null | undefined; className?: string }) {
   if (!source || !source.trim()) return null;
-  return <div className={className}>{renderBlocks(source)}</div>;
+  // Las consultas públicas ya quitan los trozos ocultos; esto es para la vista previa del
+  // panel, y por si algo se les escapa: nunca se enseña el texto marcado.
+  return <div className={className}>{renderBlocks(censurarTexto(source))}</div>;
 }
 
 function renderBlocks(src: string): ReactNode[] {

@@ -61,7 +61,9 @@ export function FragmentosActo({ fragmentos }: { fragmentos: FragmentoPublico[] 
             <li key={f.id} className="flex flex-wrap items-center gap-3 bg-surface/40 px-4 py-3 sm:flex-nowrap">
               <span className="w-6 shrink-0 text-center font-mono text-xs text-fg-muted">{f.numero}</span>
 
-              {f.pov ? (
+              {f.pov && !f.pov.id ? (
+                <span className="truncate text-sm text-fg sm:w-40">{f.pov.nombre}</span>
+              ) : f.pov ? (
                 <Link href={`/personajes/${f.pov.id}`} className="flex min-w-0 shrink-0 items-center gap-2 hover:text-accent sm:w-40">
                   <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-border-base">
                     <EntityImage src={f.pov.imagenUrl} alt={f.pov.nombre} name={f.pov.nombre} sizes="32px" />

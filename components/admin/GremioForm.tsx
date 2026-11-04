@@ -13,6 +13,7 @@ import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
 import { HistorialEditor } from "@/components/admin/blocks/HistorialEditor";
 import type { Opcion } from "@/components/admin/blocks/shared";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
+import { CandadosFicha } from "@/components/admin/candados";
 
 const v = (x: unknown) => (x == null ? "" : String(x));
 
@@ -94,13 +95,14 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
   return (
     // Dos columnas en pantallas anchas: la ficha y, a la derecha, el panel de
     // conexiones fijo mientras editas.
+    <CandadosFicha entidad="gremio" id={id}>
     <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
       <div className="space-y-4">
       <AccordionSection title="Identidad" defaultOpen>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre"><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Gremio de Aventureros" /></Field>
           {CORTOS.map((x) => (
-            <Field key={x.k} label={x.label}><TextInput value={campos[x.k]} onChange={(val) => set(x.k, val)} /></Field>
+            <Field key={x.k} campo={x.k} label={x.label}><TextInput value={campos[x.k]} onChange={(val) => set(x.k, val)} /></Field>
           ))}
         </div>
       </AccordionSection>
@@ -108,7 +110,7 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
       <AccordionSection title="Contenido" subtitle="markdown">
         <div className="space-y-3">
           {LARGOS.map((x) => (
-            <Field key={x.k} label={x.label}>
+            <Field key={x.k} campo={x.k} label={x.label}>
               <MarkdownField value={campos[x.k]} onChange={(val) => set(x.k, val)} rows={x.k === "historia" ? 8 : 5} />
             </Field>
           ))}
@@ -152,5 +154,6 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
         </div>
       </div>
     </div>
+    </CandadosFicha>
   );
 }

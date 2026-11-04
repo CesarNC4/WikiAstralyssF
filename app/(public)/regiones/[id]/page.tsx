@@ -8,7 +8,7 @@ import { EntityImage } from "@/components/media/EntityImage";
 import { Galeria } from "@/components/fichas/Galeria";
 import { Icon } from "@/components/Icon";
 import { getRegionFicha, getVisibleRegionIds } from "@/lib/queries/mapa";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { estiloLocacion } from "@/lib/mapa";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
@@ -33,7 +33,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const data = await getRegionFicha(Number(id)).catch(() => null);
   if (!data) notFound();
   const { region, nacion, locaciones } = data;
-  const galeria = await getGaleria("regiones", region.id).catch(() => []);
+  const galeria = await getGaleriaPublica("regiones", region.id).catch(() => []);
 
   const color = region.color ?? "#2dd4bf";
   const pins: MiniPin[] = locaciones

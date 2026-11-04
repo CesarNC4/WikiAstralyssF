@@ -6,6 +6,8 @@ import * as s from "@/db/schema";
 import { getRelacion, bloquesDe, CUALQUIERA, terminoInverso } from "./registro";
 import type { RelacionDef, FilaVinculo } from "./tipos";
 import { infoDe, tablaDe } from "./tablas";
+import { camposOcultosDe, escribirCampoOculto } from "@/lib/queries/visibilidad";
+import { MARCA_OCULTO, censurarTexto } from "@/lib/visibilidad";
 
 /**
  * Lectura genérica de relaciones. Una sola implementación sirve a las dos
@@ -33,7 +35,7 @@ export interface Etiqueta {
  * Resuelve nombre, imagen y estado de varias fichas de golpe: una consulta por
  * entidad en lugar de una por fila.
  */
-export async function etiquetas(entidad: string, ids: number[]): Promise<Map<number, Etiqueta>> {
+export async function etiquetas(entidad: string, ids: number[], { publico = false }: { publico?: boolean } = {}): Promise<Map<number, Etiqueta>> {
   const out = new Map<number, Etiqueta>();
   const info = infoDe(entidad);
   if (!info || ids.length === 0) return out;
@@ -45,13 +47,17 @@ export async function etiquetas(entidad: string, ids: number[]): Promise<Map<num
   if (info.rutaAnidada) sel.anidada = c[info.rutaAnidada.col];
 
   const filas = await db.select(sel).from(info.tabla).where(inArray(c.id, [...new Set(ids)]));
+  // El título o la imagen de la ficha de al lado pueden estar ocultos.
+  const ocultos = publico ? await camposOcultosDe(entidad, filas.map((f) => (f as { id: number }).id)) : null;
 
   for (const f of filas as unknown as Record<string, unknown>[]) {
     const id = f.id as number;
+    const suyos = ocultos?.get(id);
+    const detalle = (f.detalle as string) ?? null;
     out.set(id, {
       label: (f.label as string) ?? `#${id}`,
-      detalle: (f.detalle as string) ?? null,
-      imagenUrl: (f.imagen as string) ?? null,
+      detalle: suyos?.has(info.detalle ?? "") || !detalle ? null : publico ? censurarTexto(detalle) : detalle,
+      imagenUrl: suyos?.has(info.imagen ?? "") ? null : ((f.imagen as string) ?? null),
       estado: (f.estado as string) ?? null,
       ruta: info.rutaAnidada
         ? info.rutaAnidada.hacer(id, f.anidada)
@@ -70,6 +76,11 @@ function objetivoDe(rel: RelacionDef, lado: "a" | "b"): string {
 
 function visible(e: Etiqueta): boolean {
   return e.estado === null || e.estado === "publicado";
+}
+
+/** Lo que ve el público de una conexión oculta: la marca, sin nada que la identifique. */
+function filaMarcada(id: number): FilaVinculo {
+  return { id, objetivoId: 0, label: MARCA_OCULTO, imagenUrl: null, detalle: null, estado: null, ruta: null, oculto: true, campos: {} };
 }
 
 export interface OpcionesLectura {
@@ -116,7 +127,7 @@ async function leerDeTabla(
 
   const objetivo = objetivoDe(rel, lado);
   const ids = brutas.map((f) => f[colOtra]).filter((x): x is number => typeof x === "number");
-  const etiq = await etiquetas(objetivo, ids);
+  const etiq = await etiquetas(objetivo, ids, { publico: opts.publico });
 
   const out: FilaVinculo[] = [];
   for (const f of brutas) {
@@ -125,16 +136,22 @@ async function leerDeTabla(
     // Fila que sólo guarda un nombre suelto: miembro de una jerarquía sin ficha.
     const libre = def.colLibre ? ((f[def.colLibre] as string) ?? null) : null;
     if (objetivoId != null && !e) continue;
+    // Va antes que la visibilidad de la otra ficha: si lleva candado, sale la marca.
+    if (opts.publico && f.oculto) {
+      out.push(filaMarcada(f[def.pk] as number));
+      continue;
+    }
     if (opts.publico && e && !visible(e)) continue;
     if (objetivoId == null && !libre) continue;
 
     const campos: Record<string, string> = {};
     for (const campo of rel.campos) {
       const v = f[campo.name];
-      campos[campo.name] = v == null ? "" : String(v);
+      campos[campo.name] = v == null ? "" : opts.publico ? censurarTexto(String(v)) : String(v);
     }
     out.push({
       id: f[def.pk] as number,
+      oculto: Boolean(f.oculto),
       objetivoId: objetivoId ?? 0,
       label: e?.label ?? libre ?? "\u2014",
       imagenUrl: e?.imagenUrl ?? null,
@@ -167,7 +184,7 @@ async function leerDeVinculo(
   if (miEntidad !== CUALQUIERA) filtros.push(eq(propioTipo, miEntidad));
 
   const brutas = await db
-    .select({ id: v.id, otroTipo, otroId, tipo: v.tipo, nota: v.nota })
+    .select({ id: v.id, otroTipo, otroId, tipo: v.tipo, nota: v.nota, oculto: v.oculto })
     .from(v)
     .where(and(...filtros))
     .orderBy(asc(v.orden), asc(v.id));
@@ -180,22 +197,29 @@ async function leerDeVinculo(
     porTipo.get(t)!.push(f.otroId);
   }
   const etiqPorTipo = new Map<string, Map<number, Etiqueta>>();
-  await Promise.all([...porTipo].map(async ([t, ids]) => etiqPorTipo.set(t, await etiquetas(t, ids))));
+  await Promise.all([...porTipo].map(async ([t, ids]) => etiqPorTipo.set(t, await etiquetas(t, ids, { publico: opts.publico }))));
 
   const out: FilaVinculo[] = [];
   for (const f of brutas) {
     const e = etiqPorTipo.get(f.otroTipo)?.get(f.otroId);
     if (!e) continue;
+    if (opts.publico && f.oculto) {
+      out.push(filaMarcada(f.id));
+      continue;
+    }
     if (opts.publico && !visible(e)) continue;
     out.push({
       id: f.id,
+      oculto: f.oculto,
       objetivoId: f.otroId,
       label: e.label,
       imagenUrl: e.imagenUrl,
       detalle: e.detalle,
       estado: e.estado,
       ruta: e.ruta,
-      campos: { tipo: f.tipo ?? "", nota: f.nota ?? "" },
+      campos: opts.publico
+        ? { tipo: censurarTexto(f.tipo ?? ""), nota: censurarTexto(f.nota ?? "") }
+        : { tipo: f.tipo ?? "", nota: f.nota ?? "" },
       objetivoTipo: f.otroTipo,
     });
   }
@@ -462,6 +486,33 @@ export async function borrarVinculo(relId: string, filaId: number): Promise<void
   }
 }
 
+/**
+ * Oculta o muestra una conexión al público, y su reflejo si es recíproca (las dos
+ * fichas enseñan la misma relación). En las referencias, `filaId` es la ficha que
+ * posee la columna, y la columna se oculta como un campo más de esa ficha.
+ */
+export async function marcarVinculoOculto(relId: string, filaId: number, oculto: boolean): Promise<void> {
+  const rel = getRelacion(relId);
+  if (!rel || !filaId) return;
+  if (rel.medio === "referencia") {
+    if (rel.columna) await escribirCampoOculto(rel.a.entidad, filaId, rel.columna, !oculto);
+    return;
+  }
+  const antes = rel.reciproca ? await extremosDe(rel, filaId) : null;
+  const reflejoId = antes ? await idDelReflejo(rel, antes.ownerId, antes.destinoId, terminoInverso(rel, antes.termino)) : null;
+  for (const id of [filaId, reflejoId]) {
+    if (!id) continue;
+    if (rel.medio === "tabla") {
+      const def = tablaDe(rel.id);
+      if (!def) return;
+      const c = cols(def.tabla);
+      await db.update(def.tabla).set({ oculto } as never).where(eq(c[def.pk], id));
+    } else {
+      await db.update(s.vinculo).set({ oculto }).where(eq(s.vinculo.id, id));
+    }
+  }
+}
+
 /** Reordena un bloque ordenable en una sola sentencia. */
 export async function reordenarVinculos(relId: string, filaIds: number[]): Promise<void> {
   const rel = getRelacion(relId);
@@ -606,6 +657,7 @@ export async function clonarVinculos(entidad: string, origenId: number, destinoI
         tipo: f.tipo,
         nota: f.nota,
         orden: f.orden,
+        oculto: f.oculto,
       })),
     );
     copiados += filas.length;
@@ -702,9 +754,11 @@ async function leerDeReferencia(
       .limit(1)) as unknown as { destino: number | null }[];
     const destino = fila?.destino ?? null;
     if (destino == null) return [];
-    const e = (await etiquetas(rel.b.entidad, [destino])).get(destino);
+    const e = (await etiquetas(rel.b.entidad, [destino], { publico: opts.publico })).get(destino);
+    const oculta = (await camposOcultosDe(rel.a.entidad, [ownerId])).get(ownerId)?.has(ref.columna) ?? false;
+    if (opts.publico && oculta) return [filaMarcada(ownerId)];
     if (!e || (opts.publico && !visible(e))) return [];
-    return [{ id: ownerId, objetivoId: destino, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, ruta: e.ruta, campos: {} }];
+    return [{ id: ownerId, objetivoId: destino, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, ruta: e.ruta, oculto: oculta, campos: {} }];
   }
 
   const filtros: SQL[] = [eq(ref.c[ref.columna], ownerId)];
@@ -719,12 +773,18 @@ async function leerDeReferencia(
     .limit(opts.limite ?? 100)) as unknown as { id: number }[];
   if (filas.length === 0) return [];
 
-  const etiq = await etiquetas(rel.a.entidad, filas.map((f) => f.id));
+  const etiq = await etiquetas(rel.a.entidad, filas.map((f) => f.id), { publico: opts.publico });
+  const ocultos = await camposOcultosDe(rel.a.entidad, filas.map((f) => f.id));
   const out: FilaVinculo[] = [];
   for (const f of filas) {
     const e = etiq.get(f.id);
     if (!e) continue;
-    out.push({ id: f.id, objetivoId: f.id, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, ruta: e.ruta, campos: {} });
+    const oculta = ocultos.get(f.id)?.has(ref.columna) ?? false;
+    if (opts.publico && oculta) {
+      out.push(filaMarcada(f.id));
+      continue;
+    }
+    out.push({ id: f.id, objetivoId: f.id, label: e.label, imagenUrl: e.imagenUrl, detalle: e.detalle, estado: e.estado, ruta: e.ruta, oculto: oculta, campos: {} });
   }
   return out;
 }

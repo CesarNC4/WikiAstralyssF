@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/db/client";
+import { ocultarEnLista } from "@/lib/queries/visibilidad";
 
 /**
  * Consultas mínimas para las imágenes Open Graph (§11): solo nombre, subtítulo
@@ -109,12 +110,13 @@ export async function getOgFicha(key: string, id: number): Promise<OgFichaData |
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const q = (db.query as any)[cfg.accessor];
   if (!q) return null;
-  const row = await q.findFirst({
-    columns: cfg.cols,
+  const fila = await q.findFirst({
+    columns: { ...cfg.cols, id: true },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: (t: any, h: any) => h.and(h.eq(t.id, id), h.eq(t.estadoPublicacion, "publicado"), h.isNull(t.eliminadoEn)),
   });
-  if (!row) return null;
+  if (!fila) return null;
+  const [row] = await ocultarEnLista(key, [fila as Record<string, unknown>]);
   return { tipo: cfg.tipo, titulo: cfg.name(row), subtitulo: cfg.sub(row), imagenUrl: str(row.imagenUrl), acento: cfg.acento };
 }
 

@@ -8,7 +8,7 @@ import { MiniMapa, type MiniPoly } from "@/components/viz/MiniMapa";
 import { Galeria } from "@/components/fichas/Galeria";
 import { Icon } from "@/components/Icon";
 import { getLocacionFicha, getVisibleLocacionIds } from "@/lib/queries/mapa";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { estiloLocacion } from "@/lib/mapa";
 import { FechasDeFicha } from "@/components/fechas/FechasDeFicha";
 import { Conexiones } from "@/components/fichas/Conexiones";
@@ -33,7 +33,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const data = await getLocacionFicha(Number(id)).catch(() => null);
   if (!data) notFound();
   const { locacion, region, nacion, evento } = data;
-  const galeria = await getGaleria("locaciones", locacion.id).catch(() => []);
+  const galeria = await getGaleriaPublica("locaciones", locacion.id).catch(() => []);
 
   const meta = estiloLocacion(locacion.tipo);
   const color = meta?.color ?? "#2dd4bf";

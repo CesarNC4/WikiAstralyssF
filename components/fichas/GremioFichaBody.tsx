@@ -6,7 +6,7 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { Tabs, type TabDef } from "@/components/fichas/Tabs";
 import { JerarquiaSecciones } from "@/components/fichas/JerarquiaSecciones";
 import { Markdown } from "@/components/markdown/Markdown";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 interface GremioRow {
@@ -50,7 +50,7 @@ export async function GremioFichaBody({
   jerarquia: FichaJerarquia[];
   historial: Historial[];
 }) {
-  const galeria = await getGaleria("gremio", gremio.id).catch(() => []);
+  const galeria = await getGaleriaPublica("gremio", gremio.id).catch(() => []);
 
   const tabs: TabDef[] = [];
 

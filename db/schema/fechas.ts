@@ -61,6 +61,8 @@ export const fechaLore = pgTable(
     aproximada: boolean("aproximada").notNull().default(false),
     /** Sale en la cronología destacada (§14). */
     importante: boolean("importante").notNull().default(false),
+    /** La ficha enseña "???" y la fecha no entra en la cronología (docs/area-ia.md, Fase 4). */
+    oculto: boolean("oculto").notNull().default(false),
     claveIni: bigint("clave_ini", { mode: "number" }).notNull(),
     claveFin: bigint("clave_fin", { mode: "number" }).notNull(),
   },

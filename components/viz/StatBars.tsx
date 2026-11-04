@@ -1,8 +1,9 @@
 import { Icon } from "@/components/Icon";
 import { STATS_POR_ENTIDAD, clampStat, type StatGroup } from "@/lib/stats";
+import { MARCA_OCULTO, campoOculto } from "@/lib/visibilidad";
 
 /** Una barra horizontal 0-100 con icono, etiqueta y valor. */
-function Bar({ icon, label, value, color }: { icon: string; label: string; value: number; color: string }) {
+function Bar({ icon, label, value, color }: { icon: string; label: string; value: number | null; color: string }) {
   return (
     <div className="flex items-center gap-3">
       <Icon name={icon} size={15} className="shrink-0" style={{ color }} />
@@ -10,10 +11,10 @@ function Bar({ icon, label, value, color }: { icon: string; label: string; value
       <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface">
         <div
           className="h-full rounded-full transition-[width] duration-700"
-          style={{ width: `${value}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }}
+          style={{ width: `${value ?? 0}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }}
         />
       </div>
-      <span className="w-8 shrink-0 text-right font-mono text-xs text-fg">{value}</span>
+      <span className="w-8 shrink-0 text-right font-mono text-xs text-fg">{value ?? MARCA_OCULTO}</span>
     </div>
   );
 }
@@ -22,7 +23,7 @@ function Bar({ icon, label, value, color }: { icon: string; label: string; value
 export function StatBarGroup({ group, row }: { group: StatGroup; row: Record<string, unknown> }) {
   const filas = group.stats
     .map((s) => ({ ...s, value: clampStat(row[s.key]) }))
-    .filter((s): s is typeof s & { value: number } => s.value != null);
+    .filter((s) => s.value != null || campoOculto(row, s.key));
   if (filas.length === 0) return null;
   return (
     <div className="rounded-2xl border p-5" style={{ borderColor: `${group.color}33`, background: `${group.color}0a` }}>
@@ -41,7 +42,7 @@ export function StatBarGroup({ group, row }: { group: StatGroup; row: Record<str
 /** Render de todos los grupos de stats de una entidad para una fila. */
 export function StatBars({ entidad, row }: { entidad: string; row: Record<string, unknown> }) {
   const groups = STATS_POR_ENTIDAD[entidad] ?? [];
-  const visibles = groups.filter((g) => g.stats.some((s) => clampStat(row[s.key]) != null));
+  const visibles = groups.filter((g) => g.stats.some((s) => clampStat(row[s.key]) != null || campoOculto(row, s.key)));
   if (visibles.length === 0) return null;
   return (
     <div className={visibles.length > 1 ? "grid gap-4 sm:grid-cols-2" : ""}>

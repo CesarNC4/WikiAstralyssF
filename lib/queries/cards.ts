@@ -4,6 +4,8 @@ import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import type { EntityKey } from "@/lib/entities";
 import type { EntityCard } from "@/lib/types";
+import { ocultarEnLista } from "@/lib/queries/visibilidad";
+import { censurar } from "@/lib/visibilidad";
 
 /**
  * Listado de cards por sección (§5.3). Normaliza cada tabla a EntityCard.
@@ -11,6 +13,32 @@ import type { EntityCard } from "@/lib/types";
  * centralizada para evitar fugas de borradores.
  */
 export async function listEntityCards(key: EntityKey): Promise<EntityCard[]> {
+  const cards = await leerCards(key);
+  const entidad = key as string;
+  // El lore se indexa por slug: sus tarjetas solo llevan textos, sin campos que mapear.
+  if (entidad === "lore") return censurar(cards);
+  return ocultarEnLista(entidad, cards, { alias: COLUMNA_DE_CARD[entidad] ?? {} });
+}
+
+/** De qué columna sale cada dato de la tarjeta, para vaciarlo si está oculto. */
+const COLUMNA_DE_CARD: Record<string, Record<string, string>> = {
+  personajes: { titulo: "nombre", subtitulo: "titulo", badge: "rangoAventurero" },
+  naciones: { titulo: "nombre" },
+  organizaciones: { titulo: "nombre", badge: "tipo" },
+  familias: { titulo: "nombre", badge: "origen" },
+  razas: { titulo: "nombre", badge: "clasificacion" },
+  bestias: { titulo: "nombre", badge: "nivelAmenaza" },
+  minerales: { titulo: "nombre", subtitulo: "tipo", badge: "rareza" },
+  conceptos: { titulo: "nombre", subtitulo: "categoria" },
+  magia: { titulo: "nombre", subtitulo: "categoria" },
+  capitulos: { subtitulo: "libro", badge: "tipo" },
+  arcos: { titulo: "nombre", subtitulo: "libro", badge: "tipo" },
+  misiones: { titulo: "nombre", subtitulo: "estado", badge: "nivelRiesgo" },
+  demonios: { titulo: "nombre", subtitulo: "titulo", badge: "estado" },
+  artefactos: { titulo: "nombre", subtitulo: "tipo", badge: "tipo" },
+};
+
+async function leerCards(key: EntityKey): Promise<EntityCard[]> {
   switch (key) {
     case "personajes": {
       const rows = await db

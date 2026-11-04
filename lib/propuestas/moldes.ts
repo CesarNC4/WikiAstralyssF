@@ -117,6 +117,7 @@ const A_MANO: Record<string, Molde> = {
     nombre: "nombre",
     campos: [
       c("nombre", "Nombre", "corto", "Identidad"),
+      c("nombreReal", "Nombre real", "corto", "Identidad", { hint: "Identidad oculta: el Nombre es el alias que conocen los lectores. Va oculto salvo que lo reveles." }),
       c("surname", "Apellido", "corto", "Identidad"),
       c("titulo", "Título", "corto", "Identidad"),
       c("edad", "Edad (texto)", "corto", "Identidad", { hint: "Solo si no tiene fecha de nacimiento: «Milenaria», «Desconocida»." }),

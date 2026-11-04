@@ -13,10 +13,12 @@ import {
   actualizarVinculo,
   borrarVinculo,
   reordenarVinculos,
+  marcarVinculoOculto,
   type OpcionFicha,
 } from "@/lib/actions/vinculos";
 import type { BloqueRelacion, FilaVinculo } from "@/lib/relaciones/tipos";
 import { entityByKey } from "@/lib/entities";
+import { BotonOculto } from "@/components/admin/candados";
 
 /**
  * Editor de un bloque de relación. El mismo componente sirve a los dos extremos
@@ -170,7 +172,10 @@ export function BloqueVinculos({
             filas.map((fila, i) => (
               <div
                 key={fila.id}
-                className="flex flex-wrap items-center gap-2 rounded-lg border border-border-base bg-surface/40 p-2"
+                className={
+                  "flex flex-wrap items-center gap-2 rounded-lg border bg-surface/40 p-2 " +
+                  (fila.oculto ? "border-warning/50" : "border-border-base")
+                }
               >
                 {bloque.ordenable && !bloque.editorPropio && (
                   <div className="flex flex-col">
@@ -253,6 +258,14 @@ export function BloqueVinculos({
                   ),
                 )}
 
+                <BotonOculto
+                  oculto={Boolean(fila.oculto)}
+                  onClick={() =>
+                    void conError(() =>
+                      marcarVinculoOculto(bloque.relId, bloque.lado, ownerId, fila.id, fila.objetivoId, !fila.oculto),
+                    )
+                  }
+                />
                 <IconButton onClick={() => quitar(fila.id)} title="Quitar vínculo" danger>
                   ✕
                 </IconButton>

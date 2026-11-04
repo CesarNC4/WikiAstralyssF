@@ -7,8 +7,9 @@ import { Galeria } from "@/components/fichas/Galeria";
 import { StatBars } from "@/components/viz/StatBars";
 import { ElementoGroup } from "@/components/viz/ElementoBadges";
 import { MiniMapa, type MiniPin } from "@/components/viz/MiniMapa";
-import { getGaleria } from "@/lib/queries/galeria";
+import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { getBestiaRelaciones } from "@/lib/queries/mundoRelaciones";
+import { conMarca } from "@/lib/visibilidad";
 
 interface BestiaRow {
   id: number;
@@ -42,7 +43,7 @@ function amenazaColor(n: string | null): string {
 
 export async function BestiaFichaBody({ bestia }: { bestia: BestiaRow }) {
   const [galeria, rel] = await Promise.all([
-    getGaleria("bestias", bestia.id).catch(() => []),
+    getGaleriaPublica("bestias", bestia.id).catch(() => []),
     getBestiaRelaciones(bestia.id).catch(() => null),
   ]);
   const color = amenazaColor(bestia.nivelAmenaza);
@@ -60,8 +61,8 @@ export async function BestiaFichaBody({ bestia }: { bestia: BestiaRow }) {
     { label: "Naturaleza", value: bestia.naturaleza, icon: "Star" },
     { label: "Tamaño", value: bestia.tamano, icon: "Ruler" },
     { label: "Dieta", value: bestia.dieta, icon: "Drumstick" },
-    { label: "Altura", value: bestia.altura ? `${bestia.altura.toLocaleString("es-ES")} m` : null, icon: "Ruler" },
-    { label: "Longitud", value: bestia.longitud ? `${bestia.longitud.toLocaleString("es-ES")} m` : null, icon: "Ruler" },
+    { label: "Altura", value: conMarca(bestia, "altura", bestia.altura ? `${bestia.altura.toLocaleString("es-ES")} m` : null), icon: "Ruler" },
+    { label: "Longitud", value: conMarca(bestia, "longitud", bestia.longitud ? `${bestia.longitud.toLocaleString("es-ES")} m` : null), icon: "Ruler" },
   ].filter((t) => t.value);
 
   return (

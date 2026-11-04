@@ -14,6 +14,7 @@ import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
 import type { Opcion } from "@/components/admin/blocks/shared";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
+import { CandadosFicha } from "@/components/admin/candados";
 
 // React Flow accede a `window`: cargar solo en cliente.
 const ArbolEditor = dynamic(() => import("@/components/admin/blocks/ArbolEditor").then((m) => m.ArbolEditor), {
@@ -113,22 +114,23 @@ export function FamiliaForm({
   return (
     // Dos columnas en pantallas anchas: la ficha y, a la derecha, el panel de
     // conexiones fijo mientras editas.
+    <CandadosFicha entidad="familias" id={id}>
     <div className="pb-28 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-6">
       <div className="space-y-4">
       <AccordionSection title="Identidad" defaultOpen>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre *" error={fe.nombre}><TextInput value={campos.nombre} onChange={(x) => set("nombre", x)} placeholder="Casa Valeria" /></Field>
-          <Field label="Apellido / casa"><TextInput value={campos.apellido} onChange={(x) => set("apellido", x)} /></Field>
-          <Field label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
-          <Field label="Origen" hint="de dónde viene"><Select value={campos.origen} onChange={(x) => set("origen", x)} options={catalogos.familia_origen ?? []} placeholder="Real, noble, mercante…" /></Field>
-          <Field label="Estatus" hint="dónde está hoy"><Select value={campos.estatus} onChange={(x) => set("estatus", x)} options={catalogos.familia_estatus ?? []} placeholder="En auge, consolidada, caída…" /></Field>
+          <Field campo="apellido" label="Apellido / casa"><TextInput value={campos.apellido} onChange={(x) => set("apellido", x)} /></Field>
+          <Field campo="subtitulo" label="Subtítulo"><TextInput value={campos.subtitulo} onChange={(x) => set("subtitulo", x)} /></Field>
+          <Field campo="origen" label="Origen" hint="de dónde viene"><Select value={campos.origen} onChange={(x) => set("origen", x)} options={catalogos.familia_origen ?? []} placeholder="Real, noble, mercante…" /></Field>
+          <Field campo="estatus" label="Estatus" hint="dónde está hoy"><Select value={campos.estatus} onChange={(x) => set("estatus", x)} options={catalogos.familia_estatus ?? []} placeholder="En auge, consolidada, caída…" /></Field>
         </div>
       </AccordionSection>
 
       <AccordionSection title="Contenido" subtitle="markdown">
         <div className="space-y-3">
           {LARGOS.map((x) => (
-            <Field key={x.k} label={x.label}>
+            <Field key={x.k} campo={x.k} label={x.label}>
               <MarkdownField value={campos[x.k]} onChange={(val) => set(x.k, val)} rows={x.k === "historia" ? 8 : 5} />
             </Field>
           ))}
@@ -199,5 +201,6 @@ export function FamiliaForm({
         </div>
       </div>
     </div>
+    </CandadosFicha>
   );
 }

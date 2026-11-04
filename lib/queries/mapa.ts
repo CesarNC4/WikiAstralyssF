@@ -3,6 +3,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { textosDeFechas } from "@/lib/queries/fechas";
+import { aplicarVisibilidad, ocultarEnLista, ocultarPorReferencia } from "@/lib/queries/visibilidad";
 import type { TextosFecha } from "@/lib/fechas";
 
 /** Datos para renderizar el mapa público (§10): naciones, regiones y locaciones publicadas. */
@@ -21,13 +22,17 @@ export async function getMapaPublico() {
       .from(s.locaciones)
       .where(and(eq(s.locaciones.estadoPublicacion, "publicado"), isNull(s.locaciones.eliminadoEn))),
   ]);
-  return { naciones, regiones, locaciones };
+  return {
+    naciones: await ocultarEnLista("naciones", naciones),
+    regiones: await ocultarEnLista("regiones", regiones),
+    locaciones: await ocultarEnLista("locaciones", locaciones),
+  };
 }
 
 export type MapaPublico = Awaited<ReturnType<typeof getMapaPublico>>;
 
-async function first<T>(rows: Promise<T[]>): Promise<T | undefined> {
-  return (await rows)[0];
+async function first<T>(rows: Promise<T[]>, entidad: string): Promise<T | undefined> {
+  return aplicarVisibilidad(entidad, (await rows)[0] as Record<string, unknown> | undefined) as Promise<T | undefined>;
 }
 
 /** Territorio de una nación para el mini-mapa: regiones y locaciones publicadas. */
@@ -42,13 +47,17 @@ export async function getNacionTerritorio(nacionId: number) {
       .from(s.locaciones)
       .where(and(eq(s.locaciones.nacionId, nacionId), eq(s.locaciones.estadoPublicacion, "publicado"), isNull(s.locaciones.eliminadoEn))),
   ]);
-  return { regiones, locaciones };
+  return {
+    regiones: await ocultarEnLista("regiones", await ocultarPorReferencia("regiones", regiones, ["nacionId"])),
+    locaciones: await ocultarEnLista("locaciones", await ocultarPorReferencia("locaciones", locaciones, ["nacionId"])),
+  };
 }
 
 /** Ficha de región: la región + su nación + sus locaciones publicadas. */
 export async function getRegionFicha(id: number) {
   const region = await first(
     db.select().from(s.regiones).where(and(eq(s.regiones.id, id), eq(s.regiones.estadoPublicacion, "publicado"), isNull(s.regiones.eliminadoEn))).limit(1),
+    "regiones",
   );
   if (!region) return null;
 
@@ -62,13 +71,18 @@ export async function getRegionFicha(id: number) {
     .where(and(eq(s.locaciones.regionId, id), eq(s.locaciones.estadoPublicacion, "publicado"), isNull(s.locaciones.eliminadoEn)))
     .orderBy(asc(s.locaciones.nombre));
 
-  return { region, nacion: nacion ?? null, locaciones };
+  return {
+    region,
+    nacion: nacion ?? null,
+    locaciones: await ocultarEnLista("locaciones", await ocultarPorReferencia("locaciones", locaciones, ["regionId"])),
+  };
 }
 
 /** Ficha de locación: la locación + su región + su nación + evento de cronología. */
 export async function getLocacionFicha(id: number) {
   const locacion = await first(
     db.select().from(s.locaciones).where(and(eq(s.locaciones.id, id), eq(s.locaciones.estadoPublicacion, "publicado"), isNull(s.locaciones.eliminadoEn))).limit(1),
+    "locaciones",
   );
   if (!locacion) return null;
 
@@ -82,7 +96,7 @@ export async function getLocacionFicha(id: number) {
     ? await db.select({ id: s.timelineEventos.id, titulo: s.timelineEventos.titulo }).from(s.timelineEventos).where(eq(s.timelineEventos.id, locacion.eventoId)).limit(1)
     : [undefined];
   const evento = ev
-    ? { ...ev, fecha: (await textosDeFechas("timeline", [ev.id]).catch(() => new Map<number, TextosFecha>())).get(ev.id) ?? null }
+    ? { ...ev, fecha: (await textosDeFechas("timeline", [ev.id], { publico: true }).catch(() => new Map<number, TextosFecha>())).get(ev.id) ?? null }
     : undefined;
 
   return { locacion, region: region ?? null, nacion: nacion ?? null, evento: evento ?? null };

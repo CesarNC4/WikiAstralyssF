@@ -182,6 +182,7 @@ export async function getTallerIndice(): Promise<TallerIndice> {
 export interface ActoEditor {
   acto: typeof s.actos.$inferSelect;
   fecha: Fecha | null;
+  fechaOculta: boolean;
   importante: boolean;
   hojas: { id: number; titulo: string; estado: string | null }[];
   hilosAbre: { id: number; nombre: string }[];
@@ -203,6 +204,7 @@ export interface FragmentoEditor {
   titulo: string | null;
   enlace: string | null;
   fecha: Fecha | null;
+  fechaOculta: boolean;
   /** Inicio en días absolutos, para la vista "Por fecha". */
   clave: number | null;
 }
@@ -227,7 +229,7 @@ export async function getFragmentosActo(actoId: number): Promise<FragmentosActo>
   ]);
   const fechas = await fechasDeEntidades("fragmentos", filas.map((f) => f.id));
   return {
-    fragmentos: filas.map((f) => ({ ...f, fecha: fechas.get(f.id)?.fecha ?? null, clave: fechas.get(f.id)?.claveIni ?? null })),
+    fragmentos: filas.map((f) => ({ ...f, fecha: fechas.get(f.id)?.fecha ?? null, fechaOculta: fechas.get(f.id)?.oculto ?? false, clave: fechas.get(f.id)?.claveIni ?? null })),
     fechaActo: fechaActo?.fecha ?? null,
     conFecha: fechas.size,
   };
@@ -279,6 +281,7 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
   return {
     acto,
     fecha: fecha?.fecha ?? null,
+    fechaOculta: fecha?.oculto ?? false,
     importante: fecha?.importante ?? false,
     hojas,
     hilosAbre: hilos.filter((h) => h.abre === id).map(({ id, nombre }) => ({ id, nombre })),

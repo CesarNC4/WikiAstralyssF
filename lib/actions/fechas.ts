@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
@@ -29,6 +30,7 @@ function rutaFicha(entidad: string, id: number): { ruta: string; tipo?: "page" }
     case "lore":
       return { ruta: "/lore/[slug]", tipo: "page" };
     case "actos":
+    case "fragmentos":
       return { ruta: "/capitulos/[id]/actos/[actoId]", tipo: "page" };
     case "demonios":
     case "personajes":
@@ -71,6 +73,24 @@ export async function guardarFechaFicha(
   } catch (e) {
     console.error("[guardarFechaFicha]", e);
     return { ok: false, error: "No se pudo guardar. Inténtalo de nuevo." };
+  }
+  revalidarCronologia();
+  const r = rutaFicha(entidadTipo, entidadId);
+  if (r) revalidatePath(r.ruta, r.tipo);
+  return { ok: true, data: undefined };
+}
+
+/** Oculta o muestra una fecha: la ficha enseña "???" y deja de estar en la cronología. */
+export async function marcarFechaOculta(entidadTipo: string, entidadId: number, rol: string, oculto: boolean): Promise<Resultado> {
+  await assertAdmin();
+  try {
+    await db
+      .update(s.fechaLore)
+      .set({ oculto })
+      .where(and(eq(s.fechaLore.entidadTipo, entidadTipo), eq(s.fechaLore.entidadId, entidadId), eq(s.fechaLore.rol, rol)));
+  } catch (e) {
+    console.error("[marcarFechaOculta]", e);
+    return { ok: false, error: "No se pudo cambiar la visibilidad." };
   }
   revalidarCronologia();
   const r = rutaFicha(entidadTipo, entidadId);

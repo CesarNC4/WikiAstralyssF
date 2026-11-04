@@ -17,6 +17,6 @@ export async function FechasFicha({ entidad, id }: { entidad: string; id: number
   if (!datos) return <p className="text-xs text-warning">No se pudieron cargar las fechas.</p>;
   const [cal, fechas] = datos;
   const inicial: Record<string, FechaInicial> = {};
-  for (const [rol, f] of Object.entries(fechas)) inicial[rol] = { fecha: f.fecha, importante: f.importante };
+  for (const [rol, f] of Object.entries(fechas)) inicial[rol] = { fecha: f.fecha, importante: f.importante, oculto: f.oculto };
   return <FechasEditor entidad={entidad} id={id} roles={roles} inicial={inicial} cal={cal} />;
 }

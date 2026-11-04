@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/admin/Toast";
 import { FechaInput } from "@/components/admin/FechaInput";
+import { CandadoFecha } from "@/components/admin/candados";
+import { VisibilidadCampos } from "@/components/admin/VisibilidadCampos";
 import { BloqueVinculos } from "@/components/admin/vinculos/BloqueVinculos";
 import {
   asignarFase,
@@ -211,6 +213,13 @@ export function ActoEditor({
               <input type="checkbox" checked={importante} onChange={(e) => marcar(setImportante)(e.target.checked)} />
               Importante (sale en la cronología destacada)
             </label>
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-fg-secondary">
+              Fecha al público:
+              <CandadoFecha entidad="actos" id={a.id} rol="principal" inicial={datos.fechaOculta} hayFecha={!!datos.fecha} />
+            </p>
+            <div className="mt-3">
+              <VisibilidadCampos entidad="actos" ownerId={a.id} />
+            </div>
           </>
         ) : (
           <p className="text-xs text-warning">El calendario no está disponible.</p>

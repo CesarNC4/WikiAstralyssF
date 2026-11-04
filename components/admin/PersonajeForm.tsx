@@ -12,6 +12,7 @@ import { AccordionSection, Repeater, MultiPicker } from "@/components/admin/ui";
 import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { GaleriaEditor } from "@/components/admin/blocks/GaleriaEditor";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
+import { BotonOculto, CandadoCampo, CandadosFicha } from "@/components/admin/candados";
 import { StatRadar } from "@/components/fichas/personaje/StatRadar";
 import { cn } from "@/lib/utils";
 import { FechaInput } from "@/components/admin/FechaInput";
@@ -41,6 +42,7 @@ import {
 
 // ── tipos locales del estado del formulario ─────────────────────────────────
 interface Hab {
+  oculto: boolean;
   modo: "existente" | "nueva";
   magiaFundamentoId: number | null;
   magiaLabel: string;
@@ -149,7 +151,7 @@ export function PersonajeForm({
 
   // ── estado del formulario ──
   const [f, setF] = useState({
-    nombre: s(inicial?.nombre), surname: s(inicial?.surname), titulo: s(inicial?.titulo),
+    nombre: s(inicial?.nombre), nombreReal: s(inicial?.nombreReal), surname: s(inicial?.surname), titulo: s(inicial?.titulo),
     edad: s(inicial?.edad), genero: s(inicial?.genero),
     altura: s(inicial?.altura), ocupacion: s(inicial?.ocupacion), ocupacionDetalle: s(inicial?.ocupacionDetalle),
     estadoVital: s(inicial?.estadoVital), rangoAventurero: s(inicial?.rangoAventurero),
@@ -179,6 +181,7 @@ export function PersonajeForm({
 
   const [habilidades, setHabilidades] = useState<Hab[]>(
     (inicial?.habilidades ?? []).map((h) => ({
+      oculto: h.oculto,
       modo: h.magiaFundamentoId ? "existente" : "nueva",
       magiaFundamentoId: h.magiaFundamentoId ?? null,
       magiaLabel: h.fundamento?.nombre ?? s(h.nombre),
@@ -271,6 +274,7 @@ export function PersonajeForm({
               nombre: h.nuevoNombre.trim(),
               tipo: h.nuevoTipo,
               descripcion: h.descripcion,
+              oculto: h.oculto,
             }
           : {
               magiaFundamentoId: h.magiaFundamentoId,
@@ -279,6 +283,7 @@ export function PersonajeForm({
               nombre: null,
               tipo: null,
               descripcion: h.descripcion,
+              oculto: h.oculto,
             },
       );
 
@@ -409,6 +414,7 @@ export function PersonajeForm({
   ];
 
   return (
+    <CandadosFicha entidad="personajes" id={inicial?.id}>
     <div className="lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[180px_minmax(0,1fr)_20rem]">
       {/* Índice de secciones (lateral fijo) */}
       <aside className="hidden lg:block">
@@ -437,15 +443,16 @@ export function PersonajeForm({
       <AccordionSection {...sec("identidad")} title="Identidad" badge={fe.nombre ? <span className="text-xs text-error">!</span> : null}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre *" error={fe.nombre}><TextInput value={f.nombre} onChange={(v) => patch({ nombre: v })} placeholder="Nombre" /></Field>
-          <Field label="Apellido"><TextInput value={f.surname} onChange={(v) => patch({ surname: v })} /></Field>
-          <Field label="Título"><TextInput value={f.titulo} onChange={(v) => patch({ titulo: v })} /></Field>
-          <Field label="Edad (texto)" hint="Solo se muestra si no tiene fecha de nacimiento: «Milenaria», «Desconocida»."><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
-          <Field label="Género"><Select value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} /></Field>
-          <Field label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" step="0.01" /></Field>
-          <Field label="Ocupación"><Select value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} options={catalogos.ocupacion} onCrear={(valor) => crearOpcion("ocupacion", valor)} /></Field>
-          <Field label="Ocupación (detalle)" hint="el matiz: 'Ex Princesa', 'Escriba del Consejo'…"><TextInput value={f.ocupacionDetalle} onChange={(v) => patch({ ocupacionDetalle: v })} /></Field>
-          <Field label="Estado vital"><Select value={f.estadoVital} onChange={(v) => patch({ estadoVital: v })} options={catalogos.estado_vital} /></Field>
-          <Field label="Rango aventurero"><Select value={f.rangoAventurero} onChange={(v) => patch({ rangoAventurero: v })} options={catalogos.rango_aventurero} /></Field>
+          <Field campo="nombreReal" label="Nombre real" hint="Identidad oculta: el Nombre es el alias que conocen los lectores. Va oculto hasta que abras el candado."><TextInput value={f.nombreReal} onChange={(v) => patch({ nombreReal: v })} /></Field>
+          <Field campo="surname" label="Apellido"><TextInput value={f.surname} onChange={(v) => patch({ surname: v })} /></Field>
+          <Field campo="titulo" label="Título"><TextInput value={f.titulo} onChange={(v) => patch({ titulo: v })} /></Field>
+          <Field campo="edad" label="Edad (texto)" hint="Solo se muestra si no tiene fecha de nacimiento: «Milenaria», «Desconocida»."><TextInput value={f.edad} onChange={(v) => patch({ edad: v })} /></Field>
+          <Field campo="genero" label="Género"><Select value={f.genero} onChange={(v) => patch({ genero: v })} options={catalogos.genero} /></Field>
+          <Field campo="altura" label="Altura (m)"><NumberInput value={f.altura} onChange={(v) => patch({ altura: v })} placeholder="1.75" step="0.01" /></Field>
+          <Field campo="ocupacion" label="Ocupación"><Select value={f.ocupacion} onChange={(v) => patch({ ocupacion: v })} options={catalogos.ocupacion} onCrear={(valor) => crearOpcion("ocupacion", valor)} /></Field>
+          <Field campo="ocupacionDetalle" label="Ocupación (detalle)" hint="el matiz: 'Ex Princesa', 'Escriba del Consejo'…"><TextInput value={f.ocupacionDetalle} onChange={(v) => patch({ ocupacionDetalle: v })} /></Field>
+          <Field campo="estadoVital" label="Estado vital"><Select value={f.estadoVital} onChange={(v) => patch({ estadoVital: v })} options={catalogos.estado_vital} /></Field>
+          <Field campo="rangoAventurero" label="Rango aventurero"><Select value={f.rangoAventurero} onChange={(v) => patch({ rangoAventurero: v })} options={catalogos.rango_aventurero} /></Field>
           {/* Lugar de nacimiento en 3 niveles (todos opcionales, en cascada). */}
           <div className="sm:col-span-2">
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-fg-muted">Lugar de nacimiento</p>
@@ -454,7 +461,7 @@ export function PersonajeForm({
               <Field label="Región"><ReferenceField value={f.lugarNacimientoRegionId} onChange={setNacRegion} options={regionesDisp} placeholder="Buscar región…" /></Field>
               <Field label="Locación"><ReferenceField value={f.lugarNacimientoLocacionId} onChange={setNacLocacion} options={locacionesDisp} placeholder="Buscar locación…" /></Field>
             </div>
-            <div className="mt-2"><Field label="Detalle libre" hint="Opcional, si el lugar no tiene ficha"><TextInput value={f.lugarNacimiento} onChange={(v) => patch({ lugarNacimiento: v })} placeholder="p. ej. 'una aldea en las montañas'" /></Field></div>
+            <div className="mt-2"><Field campo="lugarNacimiento" label="Detalle libre" hint="Opcional, si el lugar no tiene ficha"><TextInput value={f.lugarNacimiento} onChange={(v) => patch({ lugarNacimiento: v })} placeholder="p. ej. 'una aldea en las montañas'" /></Field></div>
           </div>
           {/* Punto 2: Familia derivada (solo lectura). */}
           <Field label="Familia" hint="Se asigna desde el editor de Familia (no editable)">
@@ -472,7 +479,7 @@ export function PersonajeForm({
             <input type="checkbox" checked={f.esInvocado} onChange={(e) => setEsInvocado(e.target.checked)} />
             Es invocado
           </label>
-          <Field label="Tipo de invocación">
+          <Field campo="tipoInvocacion" label="Tipo de invocación">
             <select
               value={f.tipoInvocacion}
               disabled={!f.esInvocado}
@@ -491,15 +498,15 @@ export function PersonajeForm({
       {/* Historia y personalidad */}
       <AccordionSection {...sec("historia")} title="Historia y personalidad" subtitle="markdown">
         <div className="space-y-3">
-          <Field label="Historia"><MarkdownField value={f.historia} onChange={(v) => patch({ historia: v })} rows={8} /></Field>
-          <Field label="Rasgos de personalidad"><MarkdownField value={f.rasgosPersonalidad} onChange={(v) => patch({ rasgosPersonalidad: v })} /></Field>
+          <Field campo="historia" label="Historia"><MarkdownField value={f.historia} onChange={(v) => patch({ historia: v })} rows={8} /></Field>
+          <Field campo="rasgosPersonalidad" label="Rasgos de personalidad"><MarkdownField value={f.rasgosPersonalidad} onChange={(v) => patch({ rasgosPersonalidad: v })} /></Field>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Motivación"><MarkdownField value={f.motivacion} onChange={(v) => patch({ motivacion: v })} rows={4} /></Field>
-            <Field label="Miedos"><MarkdownField value={f.miedos} onChange={(v) => patch({ miedos: v })} rows={4} /></Field>
-            <Field label="Filosofía"><MarkdownField value={f.filosofia} onChange={(v) => patch({ filosofia: v })} rows={4} /></Field>
-            <Field label="Debilidades"><MarkdownField value={f.debilidades} onChange={(v) => patch({ debilidades: v })} rows={4} /></Field>
-            <Field label="Gustos"><MarkdownField value={f.gustos} onChange={(v) => patch({ gustos: v })} rows={4} /></Field>
-            <Field label="Disgustos"><MarkdownField value={f.disgustos} onChange={(v) => patch({ disgustos: v })} rows={4} /></Field>
+            <Field campo="motivacion" label="Motivación"><MarkdownField value={f.motivacion} onChange={(v) => patch({ motivacion: v })} rows={4} /></Field>
+            <Field campo="miedos" label="Miedos"><MarkdownField value={f.miedos} onChange={(v) => patch({ miedos: v })} rows={4} /></Field>
+            <Field campo="filosofia" label="Filosofía"><MarkdownField value={f.filosofia} onChange={(v) => patch({ filosofia: v })} rows={4} /></Field>
+            <Field campo="debilidades" label="Debilidades"><MarkdownField value={f.debilidades} onChange={(v) => patch({ debilidades: v })} rows={4} /></Field>
+            <Field campo="gustos" label="Gustos"><MarkdownField value={f.gustos} onChange={(v) => patch({ gustos: v })} rows={4} /></Field>
+            <Field campo="disgustos" label="Disgustos"><MarkdownField value={f.disgustos} onChange={(v) => patch({ disgustos: v })} rows={4} /></Field>
           </div>
         </div>
       </AccordionSection>
@@ -507,22 +514,23 @@ export function PersonajeForm({
       {/* Magia y combate (punto 4: campos grandes markdown) */}
       <AccordionSection {...sec("magia")} title="Magia y combate">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Magia principal"><MagiaPicker tipo={f.magiaPrincipalTipo} variante={f.magiaPrincipalVariante} onTipo={(v) => patch({ magiaPrincipalTipo: v })} onVariante={(v) => patch({ magiaPrincipalVariante: v })} tipos={catalogos.magiaTipos} elementos={catalogos.elementos} familias={MAGIA_FAMILIA_ELEMENTAL} /></Field>
-          <Field label="Magia secundaria"><MagiaPicker tipo={f.magiaSecundariaTipo} variante={f.magiaSecundariaVariante} onTipo={(v) => patch({ magiaSecundariaTipo: v })} onVariante={(v) => patch({ magiaSecundariaVariante: v })} tipos={catalogos.magiaTipos} elementos={catalogos.elementos} familias={MAGIA_FAMILIA_ELEMENTAL} /></Field>
-          <Field label="Nivel de consciencia"><Select value={f.nivelDeConsciencia} onChange={(v) => patch({ nivelDeConsciencia: v })} options={catalogos.nivel_consciencia} /></Field>
+          <Field campo="magiaPrincipalTipo" label="Magia principal"><MagiaPicker tipo={f.magiaPrincipalTipo} variante={f.magiaPrincipalVariante} onTipo={(v) => patch({ magiaPrincipalTipo: v })} onVariante={(v) => patch({ magiaPrincipalVariante: v })} tipos={catalogos.magiaTipos} elementos={catalogos.elementos} familias={MAGIA_FAMILIA_ELEMENTAL} /></Field>
+          <Field campo="magiaSecundariaTipo" label="Magia secundaria"><MagiaPicker tipo={f.magiaSecundariaTipo} variante={f.magiaSecundariaVariante} onTipo={(v) => patch({ magiaSecundariaTipo: v })} onVariante={(v) => patch({ magiaSecundariaVariante: v })} tipos={catalogos.magiaTipos} elementos={catalogos.elementos} familias={MAGIA_FAMILIA_ELEMENTAL} /></Field>
+          <Field campo="nivelDeConsciencia" label="Nivel de consciencia"><Select value={f.nivelDeConsciencia} onChange={(v) => patch({ nivelDeConsciencia: v })} options={catalogos.nivel_consciencia} /></Field>
           <div />
         </div>
         <div className="mt-3 space-y-3">
-          <Field label="Circuito Forte"><MarkdownField value={f.circuitoForte} onChange={(v) => patch({ circuitoForte: v })} rows={4} /></Field>
-          <Field label="Essentia"><MarkdownField value={f.essentia} onChange={(v) => patch({ essentia: v })} rows={4} /></Field>
-          <Field label="Zenithra"><MarkdownField value={f.zenithra} onChange={(v) => patch({ zenithra: v })} rows={4} /></Field>
-          <Field label="Bendición"><MarkdownField value={f.bendicion} onChange={(v) => patch({ bendicion: v })} rows={4} /></Field>
-          <Field label="Segundo despertar"><MarkdownField value={f.segundoDespertar} onChange={(v) => patch({ segundoDespertar: v })} rows={4} /></Field>
+          <Field campo="circuitoForte" label="Circuito Forte"><MarkdownField value={f.circuitoForte} onChange={(v) => patch({ circuitoForte: v })} rows={4} /></Field>
+          <Field campo="essentia" label="Essentia"><MarkdownField value={f.essentia} onChange={(v) => patch({ essentia: v })} rows={4} /></Field>
+          <Field campo="zenithra" label="Zenithra"><MarkdownField value={f.zenithra} onChange={(v) => patch({ zenithra: v })} rows={4} /></Field>
+          <Field campo="bendicion" label="Bendición"><MarkdownField value={f.bendicion} onChange={(v) => patch({ bendicion: v })} rows={4} /></Field>
+          <Field campo="segundoDespertar" label="Segundo despertar"><MarkdownField value={f.segundoDespertar} onChange={(v) => patch({ segundoDespertar: v })} rows={4} /></Field>
         </div>
       </AccordionSection>
 
       {/* Stats (punto 5: tres grupos + Poder de Combate dinámico) */}
       <AccordionSection {...sec("stats")} title="Estadísticas" subtitle={`Poder de Combate ${poder.total}% · ${poder.letra}`}>
+        <div className="mb-2 flex justify-end"><CandadoCampo campo="estadisticas" texto="ocultar toda la sección" /></div>
         <div className="grid gap-3 lg:grid-cols-[1fr_15rem]">
           <PoderDeCombatePanel poder={poder} />
           <div className="grid place-items-center rounded-xl border border-border-base bg-deep/40 p-2">
@@ -570,10 +578,13 @@ export function PersonajeForm({
         <Repeater
           items={habilidades}
           onChange={wrapSetter(setHabilidades)}
-          blank={(): Hab => ({ modo: "existente", magiaFundamentoId: null, magiaLabel: "", nuevoNombre: "", nuevoTipo: "", nuevoSubcategoria: "", categoria: "", descripcion: "" })}
+          blank={(): Hab => ({ oculto: false, modo: "existente", magiaFundamentoId: null, magiaLabel: "", nuevoNombre: "", nuevoTipo: "", nuevoSubcategoria: "", categoria: "", descripcion: "" })}
           addLabel="Añadir habilidad"
           renderItem={(h, up) => (
             <div className="space-y-2">
+              <div className="flex justify-end">
+                <BotonOculto oculto={h.oculto} texto="ocultar" onClick={() => up({ oculto: !h.oculto })} />
+              </div>
               <ModoToggle
                 modo={h.modo}
                 etiquetas={["Escoger de Magia", "Crear nueva"]}
@@ -828,6 +839,7 @@ export function PersonajeForm({
         </div>
       </div>
     </div>
+    </CandadosFicha>
   );
 }
 

@@ -1,9 +1,12 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
+import { camposOcultos, escribirCampoOculto } from "@/lib/queries/visibilidad";
+import { infoDe } from "@/lib/relaciones/tablas";
 
 /**
  * Notas privadas del autor y visibilidad por campo. Las dos tablas existían en
@@ -59,17 +62,19 @@ export async function guardarNota(entidadTipo: string, entidadId: number, conten
 export async function leerCamposOcultos(entidadTipo: string, entidadId: number): Promise<string[]> {
   await assertAdmin();
   if (!entidadId) return [];
-  const filas = await db
-    .select({ campo: s.campoVisibilidad.campo })
-    .from(s.campoVisibilidad)
-    .where(
-      and(
-        eq(s.campoVisibilidad.entidadTipo, entidadTipo),
-        eq(s.campoVisibilidad.entidadId, entidadId),
-        eq(s.campoVisibilidad.visible, false),
-      ),
-    );
-  return filas.map((f) => f.campo);
+  return [...(await camposOcultos(entidadTipo, entidadId))];
+}
+
+/** Lo público que enseña una ficha: la suya, su índice y lo que se monta con todas. */
+function revalidarFicha(entidad: string, id: number) {
+  const ruta = infoDe(entidad)?.ruta;
+  if (entidad === "actos" || entidad === "fragmentos") revalidatePath("/capitulos/[id]/actos/[actoId]", "page");
+  else if (entidad === "lore") revalidatePath("/lore/[slug]", "page");
+  else if (entidad === "gremio") revalidatePath("/gremio");
+  else if (ruta) revalidatePath(`${ruta}/${id}`);
+  if (ruta) revalidatePath(ruta);
+  for (const r of ["/atlas", "/compendio", "/alturas", "/mapa"]) revalidatePath(r);
+  revalidatePath("/timeline", "layout");
 }
 
 /**
@@ -84,23 +89,8 @@ export async function marcarCampo(
 ): Promise<string[]> {
   await assertAdmin();
   if (!entidadId || !campo) return [];
-
-  const filtro = and(
-    eq(s.campoVisibilidad.entidadTipo, entidadTipo),
-    eq(s.campoVisibilidad.entidadId, entidadId),
-    eq(s.campoVisibilidad.campo, campo),
-  );
-
-  if (visible) {
-    await db.delete(s.campoVisibilidad).where(filtro);
-  } else {
-    const [ya] = await db.select({ id: s.campoVisibilidad.id }).from(s.campoVisibilidad).where(filtro).limit(1);
-    if (ya) {
-      await db.update(s.campoVisibilidad).set({ visible: false }).where(eq(s.campoVisibilidad.id, ya.id));
-    } else {
-      await db.insert(s.campoVisibilidad).values({ entidadTipo, entidadId, campo, visible: false });
-    }
-  }
+  await escribirCampoOculto(entidadTipo, entidadId, campo, visible);
+  revalidarFicha(entidadTipo, entidadId);
   return leerCamposOcultos(entidadTipo, entidadId);
 }
 

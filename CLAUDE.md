@@ -21,6 +21,8 @@ español.
 - Antes de dar algo por terminado: `pnpm typecheck`, `pnpm lint` y `pnpm build`,
   y si cambia algo visual, **probarlo en el navegador** (cómo, en
   `CLAUDE.local.md`) y contar lo que se vio.
+- Si tocas una consulta pública, respeta lo oculto (`lib/queries/visibilidad.ts`) y
+  pasa `pnpm --silent verificar-ocultos`: el público nunca debe recibir un dato oculto.
 
 ## Dónde está cada cosa
 

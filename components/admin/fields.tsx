@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Markdown } from "@/components/markdown/Markdown";
 import { cn } from "@/lib/utils";
+import { Icon } from "@/components/Icon";
+import { CandadoCampo } from "@/components/admin/candados";
+import { ABRE_TROZO, CIERRA_TROZO } from "@/lib/visibilidad";
 
 // ── Campos base ─────────────────────────────────────────────────────────────
 const inputCls =
@@ -13,16 +16,24 @@ export function Field({
   label,
   hint,
   error,
+  campo,
   children,
 }: {
   label?: string;
   hint?: string;
   error?: string;
+  /** Columna del campo: le da su candado, si el formulario está dentro de `CandadosFicha`. */
+  campo?: string;
   children: ReactNode;
 }) {
   return (
     <label className="block">
-      {label && <span className={labelCls}>{label}</span>}
+      {label && (
+        <span className={cn(labelCls, campo && "flex items-center gap-1.5")}>
+          {label}
+          {campo && <CandadoCampo campo={campo} />}
+        </span>
+      )}
       {children}
       {hint && !error && <span className="mt-1 block text-xs text-fg-muted">{hint}</span>}
       {error && <span className="mt-1 block text-xs text-error">{error}</span>}
@@ -487,9 +498,18 @@ export function MarkdownField({
   rows?: number;
 }) {
   const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const area = useRef<HTMLTextAreaElement>(null);
+  // Envuelve lo seleccionado: el lector ve "???" en su lugar.
+  const ocultarSeleccion = () => {
+    const el = area.current;
+    if (!el || el.selectionStart === el.selectionEnd) return;
+    const { selectionStart: a, selectionEnd: b } = el;
+    onChange(value.slice(0, a) + ABRE_TROZO + value.slice(a, b) + CIERRA_TROZO + value.slice(b));
+  };
   return (
-    <div className="rounded-lg border border-border-base bg-surface">
-      <div className="flex items-center gap-1 border-b border-border-base px-2 py-1">
+    <div className="@container rounded-lg border border-border-base bg-surface">
+      {/* flex-wrap: en columnas estrechas la barra pasa a varias líneas en vez de salirse del campo. */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-border-base px-2 py-1">
         {(["edit", "preview"] as const).map((t) => (
           <button
             key={t}
@@ -503,12 +523,26 @@ export function MarkdownField({
             {t === "edit" ? "Editar" : "Previsualizar"}
           </button>
         ))}
-        <span className="ml-auto text-[10px] text-fg-muted">
+        {tab === "edit" && (
+          <button
+            type="button"
+            // Sin esto, el clic quita el foco del texto y se pierde la selección.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={ocultarSeleccion}
+            title={`Oculta lo seleccionado: el público ve "???" y aquí queda entre ${ABRE_TROZO} y ${CIERRA_TROZO}.`}
+            className="inline-flex items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-xs text-fg-muted hover:text-warning"
+          >
+            <Icon name="Lock" size={11} /> Ocultar selección
+          </button>
+        )}
+        {/* La chuleta solo si cabe: en un campo estrecho haría la barra más alta que el texto. */}
+        <span className="ml-auto hidden text-[10px] text-fg-muted @lg:inline">
           **negrita** · *cursiva* · ||spoiler|| · &gt; cita · - lista · | tabla |
         </span>
       </div>
       {tab === "edit" ? (
         <textarea
+          ref={area}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}

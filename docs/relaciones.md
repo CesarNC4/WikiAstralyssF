@@ -73,6 +73,21 @@ una sub-raza desde la ficha madre escribe `raza_padre_id` en la ficha hija.
 dos sentidos. Una referencia reflexiva da **dos**: "de quién deriva" y "qué deriva
 de esto" son listas distintas.
 
+## Conexiones ocultas
+
+Una conexión puede existir sin que el público sepa con qué (docs/area-ia.md, Fase
+4). En los medios `tabla` y `vinculo` es la columna `oculto` de la fila; en
+`referencia`, la columna de clave foránea se oculta como un campo de la ficha.
+
+`leerFilas` con `publico: true` devuelve esas filas como una marca: `label: "???"`,
+`objetivoId: 0` y sin ruta, imagen ni campos, de modo que los bloques la pintan sin
+enlace y los grafos, que se saltan lo que no tiene ficha, no la dibujan. Las dos
+fichas la enseñan, y en las recíprocas el candado cambia también el reflejo.
+
+**Si escribes una consulta pública a mano sobre una de estas tablas, tiene que
+respetar `oculto`**: `ocultarFilas` y `ocultarPorReferencia` en
+`lib/queries/visibilidad.ts`. `pnpm --silent verificar-ocultos` lo comprueba.
+
 ## Canciones
 
 Desde la Fase 3 de [fragmentos-y-musica.md](./fragmentos-y-musica.md), todas
