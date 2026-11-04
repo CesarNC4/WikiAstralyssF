@@ -40,6 +40,8 @@ autor los aplica desde el panel. Claude nunca escribe lore en la base.
 - `/lore`: consultar el lore.
 - `/lore-fichas`: proponer fichas nuevas o cambios.
 - `/lore-entrevista`: sacar lo que el autor tiene en la cabeza.
+- `/lore-revisar`: auditar la coherencia del lore.
 
 Lectura: `pnpm --silent lore <orden>` (`scripts/lore/leer.ts`; `pnpm --silent lore ayuda`).
 Si tocas el formato o la bandeja de propuestas, pasa `pnpm --silent probar-propuestas`.
+Si tocas las reglas de la revisión, pasa `pnpm --silent probar-revision`.

@@ -23,6 +23,7 @@ import { bloquesDe } from "@/lib/relaciones/registro";
 import { ENTIDAD_INFO, infoDe } from "@/lib/relaciones/tablas";
 import { getCalendario, leerFechasDe } from "@/lib/queries/fechas";
 import { camposOcultos } from "@/lib/queries/visibilidad";
+import { ordenRevisar, ordenTextos } from "./revision/orden";
 
 type Cols = Record<string, PgColumn>;
 type Fila = Record<string, unknown>;
@@ -37,6 +38,8 @@ const AYUDA = `Lectura del lore (solo lectura).
   menciones <texto>            Dónde se menciona un texto dentro de las fichas y notas
   campos <tipo>                El molde: campos, opciones, conexiones y fechas posibles
   catalogo <campo>             Las opciones de un catálogo
+  revisar [tema]               Audita la coherencia de la wiki o de un tema; deja el informe en lore/revisiones/
+  textos [tipo]                Cuánto texto hay por tipo, o los textos de un tipo
 
 <tipo>: personajes, naciones, regiones, locaciones, organizaciones, familias,
 gremio, razas, bestias, minerales, conceptos, magia, artefactos, demonios,
@@ -412,6 +415,12 @@ try {
       break;
     case "catalogo":
       await catalogo(args[0]);
+      break;
+    case "revisar":
+      await ordenRevisar(args);
+      break;
+    case "textos":
+      await ordenTextos(args[0] ? resolverTipo(args[0]) : undefined);
       break;
     default:
       console.log(AYUDA);

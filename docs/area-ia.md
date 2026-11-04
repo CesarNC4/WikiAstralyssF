@@ -1,10 +1,10 @@
 # Área IA — Claude como asistente de lore
 
-> **Estado (2026-11-03): Fases 1–5 hechas, guía de estilo respondida, web
-> fuera de los buscadores y datos de prueba limpios.** Ya se puede trabajar:
-> `/lore`, `/lore-fichas` y `/lore-entrevista` funcionan, y el autor aplica las
-> propuestas desde `/admin/propuestas`. Siguiente: Fase 6 (`/lore-revisar`). Este
-> documento sirve para retomar el trabajo desde cualquier chat sin más contexto.
+> **Estado (2026-11-04): las seis fases hechas, guía de estilo respondida, web
+> fuera de los buscadores y datos de prueba limpios.** `/lore`, `/lore-fichas`,
+> `/lore-entrevista` y `/lore-revisar` funcionan, y el autor aplica las propuestas
+> desde `/admin/propuestas`. Este documento sirve para retomar el trabajo desde
+> cualquier chat sin más contexto.
 
 ## Qué es
 
@@ -32,14 +32,15 @@ mundo.
 |---|---|---|
 | Contexto fijo | `CLAUDE.md` | Lo lee cualquier chat al arrancar: reglas y dónde está cada cosa |
 | Contexto personal | `CLAUDE.local.md` (fuera de git) | El equipo del autor: rutas de Node, cómo probar en local |
-| Carpeta de trabajo | `lore/` (fuera de git) | `propuestas/`, `entrevistas/`, `guia-de-estilo.md` |
+| Carpeta de trabajo | `lore/` (fuera de git) | `propuestas/`, `entrevistas/`, `revisiones/`, `guia-de-estilo.md` |
 | Lectura | `scripts/lore/leer.ts` (`pnpm --silent lore …`) | Lee fichas, conexiones, fechas, catálogos y moldes. Solo lectura |
 | Moldes | `lib/propuestas/moldes.ts` | Los campos de cada ficha con los rótulos del panel. Lo usan la lectura y la bandeja |
 | Formato | [propuestas-formato.md](./propuestas-formato.md) | Cómo se escribe una propuesta |
 | Verificador | `scripts/lore/verificar-ocultos.ts` (`pnpm --silent verificar-ocultos`) | Comprueba que nada oculto llega a un lector |
-| Skills | `.claude/skills/` | `/lore`, `/lore-fichas`, `/lore-entrevista` (y `/lore-revisar` en la Fase 6) |
+| Skills | `.claude/skills/` | `/lore`, `/lore-fichas`, `/lore-entrevista`, `/lore-revisar` |
 | Bandeja | `/admin/propuestas` | El autor abre sus propuestas y las aplica dato a dato |
-| Pruebas | `scripts/lore/probar-propuestas.ts` (`pnpm --silent probar-propuestas`) | Comprueba lo puro de la bandeja: el formato, las fechas, la comparación y la reescritura del archivo |
+| Revisión | `scripts/lore/revision/` (`pnpm --silent lore revisar`) | Audita la coherencia de la wiki. Solo lee; deja el informe en `lore/revisiones/` |
+| Pruebas | `scripts/lore/probar-propuestas.ts` y `probar-revision.ts` (`pnpm --silent probar-…`) | Comprueban lo puro de la bandeja y las reglas de la revisión, sin tocar la base |
 
 `scripts/lore/registrar.mjs` permite ejecutar con Node el código de `lib/` y
 `db/` (alias `@/…`, imports sin extensión, `server-only`): la lectura usa las
@@ -128,7 +129,8 @@ Cómo está hecho:
 Limitaciones conocidas, si se oculta a mano en el taller: la fecha de un acto se
 calcula de sus fragmentos, también de los ocultos, y el POV de un fragmento entra en
 el bloque POV del acto. Si un fragmento lleva una fecha o un POV secretos, hay que
-ocultar también los del acto. La bandeja lo hace sola al aplicar un fragmento con 🔒.
+ocultar también los del acto. La bandeja lo hace sola al aplicar un fragmento con 🔒, y
+`/lore-revisar` avisa si se queda a medias.
 
 Lo que se pedía:
 
@@ -193,14 +195,44 @@ Cómo está hecho:
 Sin probar con la ventana real del sistema: el selector de carpetas y su permiso se
 sustituyeron por una carpeta privada del navegador (OPFS), que tiene la misma API.
 
-### Fase 6 — `/lore-revisar`
+### Fase 6 — `/lore-revisar` ✔ hecha (2026-11-04)
 
-Auditoría de coherencia: edades frente a fechas, fichas a medias, conexiones
-que faltan o se contradicen, referencias rotas. Si llena demasiado el chat, se
-pasa a un agente lector.
+Auditoría de coherencia en dos partes: `pnpm --silent lore revisar [tema]` comprueba todo lo
+que se puede comprobar con reglas, y Claude lee los textos en busca de lo que un script no
+ve. Decisiones del autor (2026-11-04):
+
+- **Qué revisa:** secretos en riesgo, fechas imposibles, conexiones y duplicados, referencias
+  rotas, coherencia del taller, menciones sin conexión, guía de estilo y restos de prueba, y
+  fichas a medias.
+- **Textos:** se leen por tema. Toda la wiki solo si se pide, con agentes lectores.
+- **Fechas:** solo lo imposible. Con razas milenarias, una edad enorme no es un fallo.
+- **Fichas a medias:** cuentas por tipo y, una a una, solo las publicadas.
+- **Resultado:** resumen en el chat y detalle en `lore/revisiones/AAAA-MM-DD.md`, un archivo
+  nuevo por revisión, fuera de git porque puede citar lo oculto.
+- **Hallazgos:** el autor elige qué arreglar y se propone con `/lore-fichas`. Nada se corrige solo.
+- **A propósito:** su clave va a `lore/revisiones/excepciones.md` con el motivo; deja de salir,
+  el resumen cuenta cuántas se omiten y avisa de las que ya no corresponden a nada.
+
+Cómo está hecho:
+
+- `revision/foto.ts` lee la wiki entera; `revision/reglas.ts` son funciones puras que reciben esa
+  foto, y por eso se prueban con una wiki inventada; `revision/informe.ts` escribe el resultado.
+  Una regla nueva es una función más en `reglas.ts` con su caso en `probar-revision.ts`.
+- Cada hallazgo tiene una clave estable: es lo que se apunta en las excepciones.
+- **El parentesco solo se comprueba en el árbol genealógico**, donde padre y madre son explícitos.
+  Una relación "Padre" entre personajes no dice en qué sentido se lee: la documentación dice que
+  describe al dueño de la ficha, y la pantalla parece decir lo contrario. El autor no lo ha
+  decidido porque aún no hay ninguna relación real; si se decide, la regla es fácil de añadir.
+- La bandeja y el mapa de relaciones guardan la fila de vuelta de una relación entre personajes, y
+  el formulario no. Por eso la fila de vuelta no es obligatoria, y la ficha pública no la repite.
+- Un secreto solo se busca entero, y si tiene hasta 80 caracteres: un párrafo oculto no se
+  compara con los textos públicos. Eso, y lo que un texto insinúa sin nombrarlo, queda para la
+  lectura.
 
 ## Decisiones
 
+- 2026-11-04: en Trama hay botón para mandar arcos, hojas e hilos a la papelera. Antes no se
+  podían borrar desde el panel.
 - 2026-11-03: toda hoja de trama va en un arco. No hubo migración: la base ya lo exigía.
   Se arregló el taller, que creaba hojas sin arco desde un acto
   (docs/taller-del-autor.md §8). De paso, el formulario genérico ya no falla al dejar en

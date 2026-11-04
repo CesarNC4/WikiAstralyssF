@@ -2,15 +2,38 @@ import "server-only";
 import { and, eq, asc, desc, inArray, isNull, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { etiquetaInversa } from "@/lib/catalogos";
 import { aplicarVisibilidad, camposOcultos, filaOculta, ocultarCampos, ocultarEnLista, ocultarFilas, ocultarPorReferencia } from "@/lib/queries/visibilidad";
+import { getRelacion, terminoInverso } from "@/lib/relaciones/registro";
 import { MARCA_OCULTO, censurar } from "@/lib/visibilidad";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 const COLS_RELACIONADO = { id: true, nombre: true, surname: true, imagenUrl: true, titulo: true, estadoPublicacion: true, eliminadoEn: true } as const;
 const COLS_LUGAR = { id: true, nombre: true, subtitulo: true, imagenUrl: true, estadoPublicacion: true, eliminadoEn: true } as const;
 
+/**
+ * La bandeja y el mapa de relaciones guardan también la fila de vuelta; el formulario
+ * del personaje, no. La fila de vuelta de una relación que ya es propia no se repite:
+ * si no, la ficha enseñaría la relación dos veces. Va aquí, antes de enmascarar, porque
+ * después una relación oculta ya no dice con quién es.
+ */
+function sinReflejos<I extends { personajeId: number | null; tipoRelacion: string | null }>(
+  propias: { personajeRelacionadoId: number | null; tipoRelacion: string | null }[],
+  inversas: I[],
+): I[] {
+  const rel = getRelacion("relaciones")!;
+  return inversas.filter(
+    (i) =>
+      !propias.some(
+        (p) =>
+          p.personajeRelacionadoId === i.personajeId &&
+          (etiquetaInversa(i.tipoRelacion) === p.tipoRelacion || terminoInverso(rel, i.tipoRelacion) === p.tipoRelacion),
+      ),
+  );
+}
+
 async function leerPersonaje(id: number, soloPublicado: boolean) {
-  return db.query.personajes.findFirst({
+  const fila = await db.query.personajes.findFirst({
     where: (p, { eq, and, isNull }) =>
       and(eq(p.id, id), isNull(p.eliminadoEn), soloPublicado ? eq(p.estadoPublicacion, "publicado") : undefined),
     with: {
@@ -30,6 +53,7 @@ async function leerPersonaje(id: number, soloPublicado: boolean) {
       organizaciones: { with: { organizacion: { columns: COLS_LUGAR } } },
     },
   });
+  return fila && { ...fila, relacionesInversas: sinReflejos(fila.relaciones, fila.relacionesInversas) };
 }
 
 type FilaPersonaje = NonNullable<Awaited<ReturnType<typeof leerPersonaje>>>;

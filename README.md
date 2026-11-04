@@ -117,6 +117,9 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - **Bandeja de propuestas** (`/admin/propuestas`): lo que Claude propone en
   `lore/propuestas/` se revisa frente a lo que hay y se aplica dato a dato; lo
   aplicado se quita del archivo (docs/area-ia.md, Fase 5).
+- Revisión del lore: `/lore-revisar` audita secretos en riesgo, fechas imposibles, conexiones,
+  referencias, el taller y fichas a medias, y deja el informe en `lore/revisiones/`, fuera de
+  git (docs/area-ia.md, Fase 6).
 - Mapa con Leaflet + Geoman, grafo global en `/atlas` y mini-grafo por ficha,
   ambos alimentados por el registro de relaciones.
 - Acciones en lote y duplicado de fichas en el panel. Duplicar arrastra también

@@ -818,6 +818,24 @@ function esTipoPapelera(t: string): t is TipoPapelera {
 }
 
 /**
+ * Manda a la papelera un arco, una hoja o un hilo. Lo que apunta a ellos no se toca,
+ * para que al restaurarlos todo siga en su sitio. Los capítulos y los actos tienen
+ * su propia acción, porque además reordenan.
+ */
+export async function moverTramaAPapelera(tipo: "arcos" | "hojas" | "hilos", id: number): Promise<Resultado> {
+  await assertAdmin();
+  if (tipo !== "arcos" && tipo !== "hojas" && tipo !== "hilos") return { ok: false, error: "Tipo desconocido." };
+  const r = await intentar("moverTramaAPapelera", async () => {
+    const t = TABLAS_PAPELERA[tipo];
+    const hecho = await db.update(t).set({ eliminadoEn: new Date() }).where(and(eq(t.id, id), isNull(t.eliminadoEn))).returning({ id: t.id });
+    if (hecho.length === 0) throw new Rechazo("Ya no existe.");
+    return undefined;
+  });
+  if (r.ok) revalidarNarrativa();
+  return r;
+}
+
+/**
  * Saca algo de la papelera. Un capítulo vuelve al final de su libro y un acto
  * al final de su capítulo (y a su primera fase si la plantilla cambió mientras
  * estaba borrado), para no pisar el orden que se haya hecho entretanto.

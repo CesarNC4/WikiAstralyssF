@@ -32,7 +32,8 @@ Cómo trabajar:
    dilo cuando un dato no sea público.
 5. Si falta información o algo no cuadra (una edad que no casa con la fecha,
    dos fichas que se contradicen), dilo y ofrece `/lore-fichas` para proponer
-   el cambio o `/lore-entrevista` para preguntarle al autor.
+   el cambio, `/lore-entrevista` para preguntarle al autor o `/lore-revisar` para
+   auditar todo el tema.
 
 Nunca escribas en la base. Si el autor pide cambiar algo, eso es
 `/lore-fichas`: se propone en un archivo y lo aplica él.

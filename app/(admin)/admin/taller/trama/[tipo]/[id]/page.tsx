@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/auth";
 import { EntidadForm } from "@/components/admin/EntidadForm";
+import { BotonPapeleraTrama } from "@/components/taller/BotonPapeleraTrama";
 import { TallerCabecera } from "@/components/taller/TallerShell";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import {
@@ -14,6 +15,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const TIPOS = ["arcos", "hojas", "hilos"] as const;
+type Tipo = (typeof TIPOS)[number];
 
 /**
  * Editor de un arco, una hoja o un hilo dentro del taller (spec §8). Usa el
@@ -23,7 +25,7 @@ const TIPOS = ["arcos", "hojas", "hilos"] as const;
 export default async function TramaEditorPage({ params }: { params: Promise<{ tipo: string; id: string }> }) {
   await assertAdmin();
   const { tipo, id } = await params;
-  if (!TIPOS.includes(tipo as (typeof TIPOS)[number])) notFound();
+  if (!TIPOS.includes(tipo as Tipo)) notFound();
   const config = getEntidadConfig(tipo);
   if (!config) notFound();
 
@@ -47,6 +49,7 @@ export default async function TramaEditorPage({ params }: { params: Promise<{ ti
         <Link href={`/admin/taller/trama?vista=${tipo}`} className="text-xs text-fg-muted hover:text-fg">
           ← {config.plural}
         </Link>
+        {!nuevo && <BotonPapeleraTrama tipo={tipo as Tipo} id={Number(id)} nombre={nombre} />}
       </TallerCabecera>
       <div className="mx-auto max-w-6xl px-6 py-6">
         <EntidadForm

@@ -64,7 +64,10 @@ a propósito (un personaje puede pertenecer dos veces a la misma organización, 
 
 **Recíprocas con término inverso.** Marcar A como "Vasalla" de B deja a B como
 "Soberana" de A. Los tipos simétricos ("Aliada", "Rival") se copian tal cual: lo
-que no aparece en el mapa de inversos se mantiene, que es justo lo correcto.
+que no aparece en el mapa de inversos se mantiene, que es justo lo correcto. Entre
+personajes, la fila de vuelta es opcional: el formulario no la crea, porque la ficha
+lee también las relaciones donde el personaje es el destino. La bandeja y el mapa de
+relaciones sí la crean, y la ficha no repite la relación.
 
 **Editar el reverso escribe en la otra ficha.** En las referencias simples, añadir
 una sub-raza desde la ficha madre escribe `raza_padre_id` en la ficha hija.
