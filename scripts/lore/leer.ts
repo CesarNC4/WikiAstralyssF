@@ -15,6 +15,8 @@ import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { textosFecha } from "@/lib/fechas";
 import { rolesDe } from "@/lib/fechas/roles";
+import { ESTADISTICAS, EXTRAS_JERARQUIA, TITULO_ESTADISTICAS, lineaDeFila, listasDe } from "@/lib/propuestas/listas";
+import { extrasDeMiembros, leerLista } from "@/lib/propuestas/listasDb";
 import { moldeDe, entidadesConMolde, type CampoMolde } from "@/lib/propuestas/moldes";
 import { etiquetas, leerFilas } from "@/lib/relaciones/consultas";
 import { bloquesDe } from "@/lib/relaciones/registro";
@@ -215,6 +217,12 @@ async function ficha(entidad: string, arg: string | undefined) {
       const extra = Object.entries(f.campos)
         .filter(([, v]) => v && v !== "false")
         .map(([k, v]) => `${b.campos.find((c) => c.name === k)?.label ?? k}: ${v === "true" ? "sí" : v}`);
+      // Rango, facción y apodo de un miembro viven en la tabla del grupo.
+      const defsExtra = EXTRAS_JERARQUIA[b.relId];
+      if (defsExtra) {
+        const extras = (await extrasDeMiembros(b.relId, b.lado === "a" ? id : f.objetivoId)).get(f.id) ?? {};
+        for (const e of defsExtra) if (extras[e.name]) extra.push(`${e.label}: ${extras[e.name]}`);
+      }
       const tipo = f.objetivoTipo && f.objetivoTipo !== b.objetivo ? `${f.objetivoTipo} ` : "";
       const est = f.estado && f.estado !== "publicado" ? ` [${f.estado}]` : "";
       conexiones.push(`- ${b.titulo}: ${tipo}${f.label}${extra.length ? ` (${extra.join("; ")})` : ""}${est}${f.oculto ? " 🔒" : ""}`);
@@ -237,7 +245,22 @@ async function ficha(entidad: string, arg: string | undefined) {
     if (sin.length) vacios.push(...sin.map((x) => `fecha de ${x.toLowerCase()}`));
   }
 
-  if (entidad === "personajes") await extrasPersonaje(id);
+  // Las filas propias de la ficha: habilidades, rangos, árbol, secciones, fragmentos…
+  for (const def of listasDe(entidad)) {
+    const filas = await leerLista(entidad, def.clase, id);
+    if (!filas.length) continue;
+    if (def.clase === "secciones") {
+      for (const f of filas) console.log(`\n### Sección: ${f.nombre || "(sin título)"} (Tipo: ${f.valores.tipo})${f.oculto ? " 🔒" : ""}\n${f.texto ?? ""}`);
+      continue;
+    }
+    console.log(`\n### ${def.titulo}\n${filas.map((f) => lineaDeFila(def, f)).join("\n")}`);
+  }
+
+  if (entidad === "personajes") {
+    const [st] = await db.select().from(s.estadisticas).where(eq(s.estadisticas.personajeId, id));
+    const lineas = st ? ESTADISTICAS.filter((e) => (st as Fila)[e.name] != null).map((e) => `- ${e.label}: ${(st as Fila)[e.name]}`) : [];
+    if (lineas.length) console.log(`\n### ${TITULO_ESTADISTICAS}${ocultos.has("estadisticas") ? " 🔒" : ""}\n${lineas.join("\n")}`);
+  }
 
   const notas = await db
     .select({ contenido: s.notaPrivada.contenido })
@@ -247,20 +270,6 @@ async function ficha(entidad: string, arg: string | undefined) {
 
   if (vacios.length) console.log(`\n<!-- vacío: ${vacios.join(", ")} -->`);
   if (!molde) console.log(`\n<!-- ${entidad} no tiene molde: solo se listan conexiones, fechas y notas -->`);
-}
-
-/** Lo propio del personaje que no es campo ni conexión: habilidades y estadísticas. */
-async function extrasPersonaje(id: number) {
-  const habs = await db.select().from(s.habilidades).where(eq(s.habilidades.personajeId, id));
-  if (habs.length) {
-    console.log("\n### Habilidades (solo lectura)");
-    for (const h of habs) console.log(`- ${h.nombre ?? "(sin nombre)"} · ${h.categoria}${h.tipo ? ` · ${h.tipo}` : ""}${h.descripcion ? `: ${h.descripcion.trim()}` : ""}${h.oculto ? " 🔒" : ""}`);
-  }
-  const [st] = await db.select().from(s.estadisticas).where(eq(s.estadisticas.personajeId, id));
-  if (st) {
-    const vals = Object.entries(st).filter(([k, v]) => !/^id|personajeId/.test(k) && v != null && v !== 0);
-    if (vals.length) console.log(`\n### Estadísticas (solo lectura)\n${vals.map(([k, v]) => `${k} ${v}`).join(" · ")}`);
-  }
 }
 
 async function menciones(q: string) {
@@ -323,6 +332,7 @@ async function campos(entidad: string) {
   const cats = [
     ...molde.campos.map((c) => c.catalogo),
     ...bloques.flatMap((b) => b.campos.map((c) => c.catalogo)),
+    ...listasDe(entidad).flatMap((l) => l.campos.map((c) => c.catalogo)),
   ].filter(Boolean) as string[];
   const ops = await opciones([...new Set(cats)]);
   const lista = (c: { catalogo?: string; opciones?: string[] }) => {
@@ -340,12 +350,21 @@ async function campos(entidad: string) {
   if (bloques.length) {
     console.log("\n### Conexiones posibles (título del bloque → con qué)");
     for (const b of bloques) {
-      const extra = b.campos.map((c) => `${c.label}${c.tipo === "select" ? lista(c) : ""}`).join("; ");
+      const extra = [...b.campos.map((c) => `${c.label}${c.tipo === "select" ? lista(c) : ""}`), ...(EXTRAS_JERARQUIA[b.relId] ?? []).map((c) => c.label)].join("; ");
       console.log(`- ${b.titulo} → ${b.objetivo}${b.unico ? " (solo una)" : ""}${extra ? `  [${extra}]` : ""}`);
     }
   }
   const roles = rolesDe(entidad);
   if (roles.length) console.log(`\n### Fechas posibles\n- ${roles.map((r) => r.etiqueta).join("\n- ")}`);
+
+  const listas = listasDe(entidad);
+  if (listas.length || entidad === "personajes") console.log("\n### Listas propias (`### <Título>` y una línea por fila; ver docs/propuestas-formato.md)");
+  for (const l of listas) {
+    const extras = l.campos.map((c) => (c.catalogo || c.opciones ? `${c.label}${lista(c)}` : c.label)).join("; ");
+    const forma = l.clase === "secciones" ? `${l.titulo}: <título> (Tipo: …)` : l.titulo;
+    console.log(`- ${forma}${extras ? `  [${extras}]` : ""}${l.texto ? `  + texto: ${l.texto}` : ""}${l.ocultable ? "" : "  (no admite 🔒)"}`);
+  }
+  if (entidad === "personajes") console.log(`- ${TITULO_ESTADISTICAS} (🔒 en el encabezado oculta todas): ${ESTADISTICAS.map((e) => e.label).join(", ")}`);
 }
 
 async function catalogo(campo: string) {

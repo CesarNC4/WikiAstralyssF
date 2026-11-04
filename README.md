@@ -114,6 +114,9 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - Visibilidad completa: cualquier campo, conexión, fecha o trozo de texto se oculta con un candado y el público ve "???" (docs/area-ia.md, Fase 4).
 - Notas privadas del autor y visibilidad por campo: ocultar un dato al público
   sin borrarlo.
+- **Bandeja de propuestas** (`/admin/propuestas`): lo que Claude propone en
+  `lore/propuestas/` se revisa frente a lo que hay y se aplica dato a dato; lo
+  aplicado se quita del archivo (docs/area-ia.md, Fase 5).
 - Mapa con Leaflet + Geoman, grafo global en `/atlas` y mini-grafo por ficha,
   ambos alimentados por el registro de relaciones.
 - Acciones en lote y duplicado de fichas en el panel. Duplicar arrastra también

@@ -266,9 +266,10 @@ export interface DestinoNuevo {
 }
 
 /**
- * Crea un vínculo. Si la relación es recíproca, escribe también la fila inversa
- * con el término opuesto: marcar A como "Depredador" de B deja a B como "Presa"
- * de A sin que haya que editar la otra ficha.
+ * Crea un vínculo y devuelve el id de su fila. Si la relación es recíproca, escribe
+ * también la fila inversa con el término opuesto: marcar A como "Depredador" de B deja
+ * a B como "Presa" de A sin que haya que editar la otra ficha. `oculto` la deja con el
+ * candado puesto desde el principio, también en el reflejo.
  */
 export async function crearVinculo(
   relId: string,
@@ -276,44 +277,70 @@ export async function crearVinculo(
   ownerId: number,
   destino: DestinoNuevo,
   campos: Campos = {},
-): Promise<void> {
+  { oculto = false }: { oculto?: boolean } = {},
+): Promise<number | null> {
   const rel = getRelacion(relId);
-  if (!rel || !ownerId || !destino.id) return;
+  if (!rel || !ownerId || !destino.id) return null;
 
   if (rel.medio === "referencia") {
     await crearReferencia(rel, lado, ownerId, destino.id);
-    return;
+    const filaId = lado === "a" ? ownerId : destino.id;
+    if (oculto && rel.columna) await escribirCampoOculto(rel.a.entidad, filaId, rel.columna, false);
+    return filaId;
   }
 
+  let id: number | null = null;
   if (rel.medio === "tabla") {
     const def = tablaDe(rel.id);
-    if (!def) return;
+    if (!def) return null;
     const colPropia = lado === "a" ? def.colA : def.colB;
     const colOtra = lado === "a" ? def.colB : def.colA;
     const fila: Record<string, unknown> = {
       [colPropia]: ownerId,
       [colOtra]: destino.id,
       ...valoresDeCampos(rel, campos),
+      oculto,
     };
     if (def.filtroA) fila[def.filtroA.col] = def.filtroA.valor;
     if (def.orden) fila[def.orden] = await siguienteOrden(def, colPropia, ownerId);
-    await db.insert(def.tabla).values(fila as never);
+    const [creada] = (await db.insert(def.tabla).values(fila as never).returning({ id: cols(def.tabla)[def.pk] })) as unknown as { id: number }[];
+    id = creada?.id ?? null;
   } else {
     const miEntidad = lado === "a" ? rel.a.entidad : rel.b.entidad;
     const suEntidad = destino.tipo ?? objetivoDe(rel, lado);
-    await db.insert(s.vinculo).values(
-      lado === "a"
-        ? { origenTipo: miEntidad, origenId: ownerId, destinoTipo: suEntidad, destinoId: destino.id, relacion: rel.relacion ?? rel.id, tipo: limpio(campos.tipo), nota: limpio(campos.nota) }
-        : { origenTipo: suEntidad, origenId: destino.id, destinoTipo: miEntidad, destinoId: ownerId, relacion: rel.relacion ?? rel.id, tipo: limpio(campos.tipo), nota: limpio(campos.nota) },
-    );
+    const [creada] = await db
+      .insert(s.vinculo)
+      .values(
+        lado === "a"
+          ? { origenTipo: miEntidad, origenId: ownerId, destinoTipo: suEntidad, destinoId: destino.id, relacion: rel.relacion ?? rel.id, tipo: limpio(campos.tipo), nota: limpio(campos.nota), oculto }
+          : { origenTipo: suEntidad, origenId: destino.id, destinoTipo: miEntidad, destinoId: ownerId, relacion: rel.relacion ?? rel.id, tipo: limpio(campos.tipo), nota: limpio(campos.nota), oculto },
+      )
+      .returning({ id: s.vinculo.id });
+    id = creada?.id ?? null;
   }
 
-  if (rel.reciproca) await crearReflejo(rel, lado, ownerId, destino, campos);
+  if (rel.reciproca) await crearReflejo(rel, lado, ownerId, destino, campos, oculto);
 
   if (rel.id === "personaje_objeto") {
     const [personajeId, artefactoId] = lado === "a" ? [ownerId, destino.id] : [destino.id, ownerId];
     await sincronizarPropietario(artefactoId, personajeId);
   }
+  return id;
+}
+
+/**
+ * Una fila que guarda un nombre suelto en vez de apuntar a una ficha: un miembro de
+ * una jerarquía o una relación con alguien que no tiene ficha. Devuelve su id, o null
+ * si la relación no admite nombres sueltos.
+ */
+export async function crearVinculoLibre(relId: string, ownerId: number, nombre: string, campos: Campos = {}, { oculto = false }: { oculto?: boolean } = {}): Promise<number | null> {
+  const rel = getRelacion(relId);
+  const def = tablaDe(relId);
+  if (!rel || !def?.colLibre || !ownerId || !nombre.trim()) return null;
+  const fila: Record<string, unknown> = { [def.colA]: ownerId, [def.colLibre]: nombre.trim(), ...valoresDeCampos(rel, campos), oculto };
+  if (def.orden) fila[def.orden] = await siguienteOrden(def, def.colA, ownerId);
+  const [creada] = (await db.insert(def.tabla).values(fila as never).returning({ id: cols(def.tabla)[def.pk] })) as unknown as { id: number }[];
+  return creada?.id ?? null;
 }
 
 /** Escribe la fila inversa de una relación recíproca, con el término opuesto. */
@@ -323,6 +350,7 @@ async function crearReflejo(
   ownerId: number,
   destino: DestinoNuevo,
   campos: Campos,
+  oculto: boolean,
 ): Promise<void> {
   if (!rel.reciproca) return;
   const inverso = terminoInverso(rel, campos[rel.reciproca.campo]);
@@ -339,6 +367,7 @@ async function crearReflejo(
       [colPropia]: destino.id,
       [colOtra]: ownerId,
       ...valoresDeCampos(rel, camposReflejo),
+      oculto,
     };
     if (def.filtroA) fila[def.filtroA.col] = def.filtroA.valor;
     if (def.orden) fila[def.orden] = await siguienteOrden(def, colPropia, destino.id);
@@ -354,6 +383,7 @@ async function crearReflejo(
     relacion: rel.relacion ?? rel.id,
     tipo: limpio(camposReflejo.tipo),
     nota: limpio(camposReflejo.nota),
+    oculto,
   });
 }
 

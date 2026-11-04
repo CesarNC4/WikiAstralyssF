@@ -25,6 +25,7 @@ export function AdminShell({
           <nav className="flex flex-col gap-1 px-2 text-sm">
             <NavLink href="/admin" icon="Home" label="Dashboard" />
             <NavLink href="/admin/taller" icon="PenLine" label="Taller del autor" />
+            <NavLink href="/admin/propuestas" icon="Inbox" label="Propuestas" />
             <div className="my-2 border-t border-border-base" />
             <NavLink href="/admin/personajes" icon="Users" label="Personajes" />
             {/* Lo narrativo vive en el taller, enlazado arriba. */}

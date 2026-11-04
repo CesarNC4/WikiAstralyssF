@@ -6,6 +6,7 @@
 export * from "./tipos.ts";
 export * from "./calendario.ts";
 export * from "./formato.ts";
+export * from "./leer.ts";
 export * from "./texto.ts";
 export * from "./roles.ts";
 export * from "./edad.ts";

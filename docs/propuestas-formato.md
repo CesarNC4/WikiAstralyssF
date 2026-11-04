@@ -65,7 +65,8 @@ singular del panel (Personaje, Nación, Hoja de trama…).
 **Campos.**
 
 - Los de una línea: `- <Rótulo>: <valor>`.
-- Los de texto largo: un encabezado `### <Rótulo>` y el texto debajo.
+- Los de texto largo: un encabezado `### <Rótulo>` y el texto debajo. El texto no puede
+  llevar encabezados `##` ni `###`, que marcan dónde acaba: de `####` para abajo sí.
 - Las opciones de catálogo se escriben tal cual aparecen en el catálogo. Si
   hace falta una opción nueva, se marca: `- Ocupación: Cartógrafo (opción nueva)`.
 - `Estado` (borrador, publicado u oculto) es solo una sugerencia: decide el
@@ -93,7 +94,87 @@ y el valor como lo escribe la lectura absoluta de la wiki: `Año 1203`,
 `(aprox.)` al final si es aproximada. `★` al final la marca como importante
 para la cronología.
 
+Algunas conexiones llevan datos propios o admiten un nombre suelto:
+
+- Los **miembros** de una organización, familia o gremio llevan también su rango y
+  su facción: `- Miembros: Kael (Rol: Capitana; Rango: Capitán; Facción: Ala Norte)`.
+  Vale igual desde el personaje: `- Organizaciones: ORDEN ABISAL (Rango: Capitán)`. Un
+  rango o una facción que no existan se crean al aplicar.
+- Quien **no tiene ficha** se marca así, en los bloques que lo admiten (miembros,
+  relaciones): `- Miembros: Anciano del valle (sin ficha; Rango: Patriarca)`.
+- En los bloques que aceptan **cualquier ficha** (Menciona, Participantes…), el nombre
+  va detrás de su tipo: `- Menciona: personaje Alhaitham`.
+
 **Notas de autor.** El texto se añade a las notas privadas de la ficha.
+
+## Listas propias de una ficha
+
+Filas con varios datos. Un encabezado `###` con el título y una línea por fila. Los
+datos van entre paréntesis y `🔒` al final oculta la fila. El orden de lectura y lo que
+admite cada una lo lista `pnpm --silent lore campos <tipo>`.
+
+| Ficha | Lista |
+|---|---|
+| Personaje | Habilidades, Estadísticas |
+| Organización, Gremio | Rangos, Facciones, Historial |
+| Familia | Rangos, Facciones, Árbol genealógico |
+| Página de lore | Secciones |
+| Acto | Fragmentos |
+
+```markdown
+## Personaje: Kael Varn · nueva
+
+### Habilidades
+- Puño de Ceniza (Categoría: Técnica; Tipo: Elemental; Elemento: Pyro): Lo que hace. 🔒
+
+### Estadísticas 🔒
+- Fuerza: 7
+- Ataque físico: 120
+- C. a cuerpo: S
+
+## Organización: ORDEN ABISAL · nueva
+
+### Rangos
+- Gran Maestre
+- Capitán
+
+### Facciones
+- Ala Norte (Color: #5b8def)
+
+### Historial
+- Fundador (Rol: Líder; Periodo: Era vieja; Estado: Fallecido; Destacado: Fundó la orden; Notas: …) 🔒
+
+## Familia: CASA VARN · nueva
+
+### Árbol genealógico
+- Aldric Varn (Generación: 0; Estado: Fallecido)
+- Kael Varn (Generación: 1; Padre: Aldric Varn; Madre: Mira Varn; Destacado: Heredero) 🔒
+
+## Página de lore: Un tema · nueva
+
+### Sección: Un apartado (Tipo: Cita) 🔒
+Una sección por encabezado, con su texto debajo.
+
+## Acto: Despertar · nueva
+- Capítulo: Prólogo
+
+### Fragmentos
+- Primer tramo (POV: Aqua; Enlace: https://…; Fecha: Año 3) 🔒
+- (POV: Lloyd)
+```
+
+- **Habilidades:** si el nombre es una magia que existe, se enlaza; si no, se crea en
+  borrador, igual que en el formulario. Lo que sigue a los dos puntos es la nota propia
+  del personaje.
+- **Estadísticas:** `🔒` va en el encabezado y las oculta todas. El poder de combate se
+  calcula solo.
+- **Rangos:** de arriba abajo, como en el formulario. Los que ya existían y no salen en
+  la lista se quedan debajo. Rangos y facciones no admiten `🔒`.
+- **Historial y árbol:** el nombre se enlaza a la ficha del personaje si hay una; si no,
+  queda como nombre suelto. Padre y madre se buscan entre las personas de ese árbol.
+- **Secciones:** `🔒` deja la sección como oculta. Las tablas van en Markdown (`| a | b |`).
+- **Fragmentos:** el título es opcional. `🔒` oculta el POV y la fecha, y con ellos el POV
+  que entra en el bloque del acto y la fecha del acto, que los delatarían.
 
 ## Cambios en una ficha que existe
 
@@ -118,6 +199,9 @@ Este párrafo se añade al final de la historia actual, sin tocar lo que ya hay.
   sustituir.
 - `- <Rótulo>: (vaciar)` deja el campo vacío.
 - `- quitar <Título del bloque>: <Nombre>` quita una conexión.
+- En una lista, `- quitar <Nombre>` quita esa fila. Una sección, con
+  `- quitar Sección: <Título>` entre los campos de la cabecera.
+- Una fila que ya existe (mismo nombre) se actualiza: lo que no se menciona se conserva.
 
 ## Lo que no es una ficha
 
@@ -131,6 +215,14 @@ Texto libre.
 
 La bandeja no lo aplica sola: el autor decide si va a una hoja de trama, a las
 notas de una ficha o a la basura.
+
+## Al aplicarla
+
+La bandeja (`/admin/propuestas`, docs/area-ia.md) enseña cada ficha frente a lo que hay y
+deja elegir por dato: **Visible**, **Oculto**, **A notas**, **Descartar** o **Luego**, editando
+el valor antes. Lo que no entiende no lo pierde: se queda en el archivo hasta que el autor
+decida. Lo aplicado se quita del archivo, lo dejado para luego se queda bajo
+`## <Tipo> #<id>: <Nombre> · cambios`, y un archivo sin nada pendiente se borra.
 
 ## Reglas para Claude al escribir
 

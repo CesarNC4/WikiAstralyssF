@@ -66,6 +66,9 @@ const TIPO: Record<FieldDef["type"], TipoCampo> = {
   reference: "ficha",
 };
 
+/** Lo calcula el taller: lo que se escribiera aquí se reemplazaría al guardar. */
+const CALCULADOS: Record<string, string[]> = { capitulos: ["numero"], actos: ["numeroOrden"] };
+
 /** Columnas de clave foránea que el registro ya trata como conexión. */
 function columnasDeReferencia(entidad: string): Set<string> {
   return new Set(
@@ -84,7 +87,7 @@ function desdeConfig(entidad: string): Molde | undefined {
     campos: [
       { name: c.nameField, label: c.nameLabel ?? "Nombre", tipo: "corto", seccion: "Identidad" },
       ...c.fields
-        .filter((f) => !(f.type === "reference" && refs.has(f.name)))
+        .filter((f) => !(f.type === "reference" && refs.has(f.name)) && !CALCULADOS[entidad]?.includes(f.name))
         .map((f) => ({
           name: f.name,
           label: f.label,

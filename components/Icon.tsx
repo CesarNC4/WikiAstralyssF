@@ -81,6 +81,13 @@ import {
   LockOpen,
   EyeOff,
   CircleHelp,
+  Inbox,
+  FolderOpen,
+  Upload,
+  Download,
+  Pencil,
+  TriangleAlert,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 
@@ -167,6 +174,13 @@ const REGISTRY: Record<string, LucideIcon> = {
   LockOpen,
   EyeOff,
   HelpCircle: CircleHelp,
+  Inbox,
+  FolderOpen,
+  Upload,
+  Download,
+  Pencil,
+  TriangleAlert,
+  ExternalLink,
 };
 
 /** Nombres que entiende `Icon`, para elegir uno desde el panel. */

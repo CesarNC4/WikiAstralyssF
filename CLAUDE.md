@@ -42,3 +42,4 @@ autor los aplica desde el panel. Claude nunca escribe lore en la base.
 - `/lore-entrevista`: sacar lo que el autor tiene en la cabeza.
 
 Lectura: `pnpm --silent lore <orden>` (`scripts/lore/leer.ts`; `pnpm --silent lore ayuda`).
+Si tocas el formato o la bandeja de propuestas, pasa `pnpm --silent probar-propuestas`.

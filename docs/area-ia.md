@@ -1,11 +1,10 @@
 # Área IA — Claude como asistente de lore
 
-> **Estado (2026-11-03): Fases 1–4 hechas, guía de estilo respondida, web
+> **Estado (2026-11-03): Fases 1–5 hechas, guía de estilo respondida, web
 > fuera de los buscadores y datos de prueba limpios.** Ya se puede trabajar:
 > `/lore`, `/lore-fichas` y `/lore-entrevista` funcionan, y el autor aplica las
-> propuestas a mano en el panel, con sus candados. Siguiente: Fase 5 (bandeja de
-> propuestas). Este documento sirve para retomar el trabajo desde
-> cualquier chat sin más contexto.
+> propuestas desde `/admin/propuestas`. Siguiente: Fase 6 (`/lore-revisar`). Este
+> documento sirve para retomar el trabajo desde cualquier chat sin más contexto.
 
 ## Qué es
 
@@ -39,7 +38,8 @@ mundo.
 | Formato | [propuestas-formato.md](./propuestas-formato.md) | Cómo se escribe una propuesta |
 | Verificador | `scripts/lore/verificar-ocultos.ts` (`pnpm --silent verificar-ocultos`) | Comprueba que nada oculto llega a un lector |
 | Skills | `.claude/skills/` | `/lore`, `/lore-fichas`, `/lore-entrevista` (y `/lore-revisar` en la Fase 6) |
-| Bandeja | `/admin/propuestas` | El autor sube una propuesta y la aplica dato a dato |
+| Bandeja | `/admin/propuestas` | El autor abre sus propuestas y las aplica dato a dato |
+| Pruebas | `scripts/lore/probar-propuestas.ts` (`pnpm --silent probar-propuestas`) | Comprueba lo puro de la bandeja: el formato, las fechas, la comparación y la reescritura del archivo |
 
 `scripts/lore/registrar.mjs` permite ejecutar con Node el código de `lib/` y
 `db/` (alias `@/…`, imports sin extensión, `server-only`): la lectura usa las
@@ -125,9 +125,10 @@ Cómo está hecho:
 - `pnpm --silent verificar-ocultos [url]` pide las páginas como un lector sin
   sesión y comprueba el HTML en bruto. **Pásalo si tocas una consulta pública.**
 
-Limitación conocida: la fecha de un acto se calcula de sus fragmentos, también de
-los ocultos. Si un fragmento lleva una fecha secreta, conviene ocultar también la
-del acto.
+Limitaciones conocidas, si se oculta a mano en el taller: la fecha de un acto se
+calcula de sus fragmentos, también de los ocultos, y el POV de un fragmento entra en
+el bloque POV del acto. Si un fragmento lleva una fecha o un POV secretos, hay que
+ocultar también los del acto. La bandeja lo hace sola al aplicar un fragmento con 🔒.
 
 Lo que se pedía:
 
@@ -150,14 +151,47 @@ Lo que se pedía:
 
 Migración con ensayo; ningún `--aplicar` sin el visto bueno del autor.
 
-### Fase 5 — Bandeja de propuestas
+### Fase 5 — Bandeja de propuestas ✔ hecha (2026-11-03)
 
-`/admin/propuestas`: el autor sube un archivo de `lore/propuestas/`, ve cada
-ficha (nueva, o actual frente a propuesta) y elige por dato: **publicar**,
-**aplicar oculto**, **pasar a notas** o **descartar**, pudiendo editar el texto
-antes. Aplica con las acciones de siempre del panel (validación, conexiones,
-fechas, revalidación). Los nombres de otras fichas se resuelven a su id; si no
-existe o es ambiguo, el autor elige o crea un borrador al vuelo.
+`/admin/propuestas`: el autor abre sus propuestas, ve cada ficha (nueva, o actual
+frente a propuesta, con lo que cambia resaltado) y elige por dato: **Visible**,
+**Oculto**, **A notas**, **Descartar** o **Luego**, pudiendo editarlo antes. Los nombres
+de otras fichas se resuelven a su id; si no existe o es ambiguo, el autor elige o crea
+un borrador al vuelo. Decisiones del autor (2026-11-03):
+
+- **Carpeta recordada**: se elige una vez `lore/propuestas/` y el panel la recuerda;
+  lo aplicado se quita del archivo y el archivo vacío se borra. En un navegador sin
+  acceso a carpetas se suben los archivos y se descarga lo que queda.
+- **"Luego"** aplica el resto de la ficha y deja ese dato pendiente en el archivo.
+- **Por ficha y "Aplicar todas"**, con confirmación, las que no tengan nada por resolver.
+- **Lo sustituido no se guarda**: la bandeja lo enseña antes, y la wiki no tiene versiones.
+- **Nombre que ya existe**: se aplica sobre esa ficha por defecto, y se puede crear otra.
+- **Conexión que ya existe con otros datos**: se actualiza esa fila por defecto, y se
+  puede añadir otra.
+- **El formato cubre también** habilidades, estadísticas, rangos, facciones, miembros
+  con rango, árbol, historial, secciones de lore y fragmentos de acto.
+
+Cómo está hecho:
+
+- `lib/propuestas/formato.ts` lee el Markdown sin mirar la base, con las líneas exactas
+  de cada dato; `lib/queries/propuestas.ts` lo compara con la base (solo lee);
+  `lib/propuestas/aplicar.ts` escribe; `lib/propuestas/archivo.ts` reescribe el archivo,
+  buscando cada bloque por su texto porque puede haber cambiado mientras tanto.
+- **No hay nada en la base**: ni migración ni tabla. El archivo vive en el disco del autor
+  y en el navegador, y las Server Actions solo lo reciben para analizarlo y aplicarlo.
+- **Aplicar nunca borra y reinserta**, a diferencia de los formularios: lo que la propuesta
+  no menciona no se toca. Va dato a dato por las vías de siempre (`crearVinculo`,
+  `guardarFechaFicha`, `crearCapitulo`…); uno que falla se queda en el archivo con su
+  motivo y no detiene al resto. Por eso se puede repetir: cada dato busca antes lo que hay,
+  y lo que ya está así se salta.
+- Una ficha nueva no hereda los valores por defecto de la base que los admiten vacíos: una
+  propuesta no debe traer datos que nadie ha dicho. Lo que hace falta para nacer (el libro
+  de un capítulo, el capítulo de un acto, el arco de una hoja) lo pide aunque no venga.
+- **Publicar por primera vez avisa por Discord**, como en el resto del panel. Al probar en
+  local con fichas publicadas, los webhooks de `.env.local` deben apuntar a otro sitio.
+
+Sin probar con la ventana real del sistema: el selector de carpetas y su permiso se
+sustituyeron por una carpeta privada del navegador (OPFS), que tiene la misma API.
 
 ### Fase 6 — `/lore-revisar`
 

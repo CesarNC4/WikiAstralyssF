@@ -10,6 +10,7 @@ import { ImageField, type ImageValue } from "@/components/admin/ImageField";
 import { Field, TextInput, MarkdownField } from "@/components/admin/fields";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 import { CandadosFicha } from "@/components/admin/candados";
+import { TIPOS_SECCION } from "@/lib/propuestas/listas";
 
 type Tipo = "texto" | "cita" | "tabla" | "lista" | "aviso" | "cronologia" | "separador";
 interface Seccion {
@@ -26,21 +27,6 @@ interface LoreInicial {
   pagina: Record<string, unknown>;
   secciones: { id: number; titulo: string | null; contenido: string | null; tipo: string; estadoPublicacion: EstadoPublicacion }[];
 }
-
-/**
- * Bloques que puede tener una página de lore. El valor guardado es el de
- * siempre (minúsculas, sin tildes) para no invalidar las secciones ya escritas;
- * la etiqueta es lo único que cambia.
- */
-const TIPOS_SECCION = [
-  { valor: "texto", label: "Texto" },
-  { valor: "cita", label: "Cita" },
-  { valor: "tabla", label: "Tabla" },
-  { valor: "lista", label: "Lista" },
-  { valor: "aviso", label: "Aviso / Nota" },
-  { valor: "cronologia", label: "Cronología" },
-  { valor: "separador", label: "Separador" },
-] as const;
 
 export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
   const toast = useToast();

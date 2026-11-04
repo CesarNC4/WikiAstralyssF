@@ -30,7 +30,8 @@ bloques en `lore/propuestas/<área>.md`, en el formato de
 - Si falta un dato que la ficha necesita, pregúntalo en lugar de dejarlo a
   medias.
 - Rótulos y opciones exactos del molde. Una opción que no existe se marca
-  `(opción nueva)`.
+  `(opción nueva)`. Habilidades, estadísticas, rangos, árbol, secciones y fragmentos
+  van en sus listas propias (`docs/propuestas-formato.md`).
 - En una ficha que existe, escribe solo lo que cambia. Para ampliar un texto
   sin pisarlo, `### <Rótulo> (añadir)`.
 - Marca con 🔒 lo que la guía de estilo pone oculto por defecto; si es solo una
@@ -45,8 +46,8 @@ bloques en `lore/propuestas/<área>.md`, en el formato de
 
 Resume en el chat: qué archivos, cuántas fichas nuevas y cuántas con cambios,
 qué quedó oculto con 🔒 y qué dudas siguen abiertas. Recuerda al autor que
-lo aplica él (desde la bandeja del panel cuando exista, o a mano) y que borre
-cada propuesta al aplicarla.
+lo aplica él desde la bandeja del panel (`/admin/propuestas`), que quita del
+archivo lo que aplica.
 
 Si el autor corrige el estilo o una decisión de fondo, añádelo a
 "Correcciones del autor" en `lore/guia-de-estilo.md`.
