@@ -555,15 +555,17 @@ async function capituloDelActo(ex: Ejecutor, actoId: number): Promise<number | n
   return a.capituloId;
 }
 
-/** Crea una hoja de trama ya ligada al acto (y a su capítulo). */
-export async function crearHojaEnActo(actoId: number, titulo: string): Promise<Resultado<{ id: number }>> {
+/** Crea una hoja de trama en un arco, ya ligada al acto (y a su capítulo). */
+export async function crearHojaEnActo(actoId: number, titulo: string, arcoId: number): Promise<Resultado<{ id: number }>> {
   await assertAdmin();
   const t = titulo.trim();
   if (!t) return { ok: false, error: "La hoja necesita un título." };
   const r = await intentar("crearHojaEnActo", () =>
     db.transaction(async (tx) => {
       const capituloId = await capituloDelActo(tx, actoId);
-      const [h] = await tx.insert(s.tramaHojas).values({ titulo: t, actoId, capituloId }).returning({ id: s.tramaHojas.id });
+      const [arco] = await tx.select({ id: s.tramaArcos.id }).from(s.tramaArcos).where(and(eq(s.tramaArcos.id, arcoId), isNull(s.tramaArcos.eliminadoEn)));
+      if (!arco) throw new Rechazo("La hoja necesita un arco que exista.");
+      const [h] = await tx.insert(s.tramaHojas).values({ titulo: t, arcoId, actoId, capituloId }).returning({ id: s.tramaHojas.id });
       return { id: h.id };
     }),
   );
@@ -894,7 +896,9 @@ export async function eliminarDelTaller(tipo: string, id: number): Promise<Resul
         await tx.delete(s.actoFragmento).where(eq(s.actoFragmento.actoId, id));
       }
       if (tipo === "arcos") {
-        await tx.update(s.tramaHojas).set({ arcoId: null }).where(eq(s.tramaHojas.arcoId, id));
+        // Toda hoja va en un arco, y la clave foránea se las llevaría en cascada.
+        const [{ n }] = await tx.select({ n: count() }).from(s.tramaHojas).where(eq(s.tramaHojas.arcoId, id));
+        if (n > 0) throw new Rechazo(`Tiene ${n === 1 ? "1 hoja" : `${n} hojas`} de trama (vivas o en la papelera). Muévelas a otro arco o bórralas antes.`);
         await tx.update(s.hiloNarrativo).set({ arcoId: null }).where(eq(s.hiloNarrativo.arcoId, id));
       }
       await tx.delete(s.fechaLore).where(and(eq(s.fechaLore.entidadTipo, tipo), eq(s.fechaLore.entidadId, id)));

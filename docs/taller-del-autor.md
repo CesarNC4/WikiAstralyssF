@@ -168,6 +168,9 @@ publicación, y un buscador.
 - Las hojas y los hilos siguen siendo solo del panel, porque guardan giros y notas
   de autor.
 - Novedad: el acto puede pertenecer a **varios arcos**.
+- **Toda hoja de trama va en un arco** (decisión del autor, 2026-11-03): la base lo exige,
+  el acto lo pide al crear una hoja (propone el arco del acto si tiene uno) y un arco con
+  hojas no se puede borrar para siempre. Los hilos sí pueden ir sin arco.
 
 ## 9. Estadísticas y papelera
 

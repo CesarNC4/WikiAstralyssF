@@ -290,6 +290,9 @@ function Trama({
 }) {
   const id = datos.acto.id;
   const [hoja, setHoja] = useState("");
+  const [arcoHoja, setArcoHoja] = useState("");
+  // Sin elegir, la hoja va al arco del acto si tiene exactamente uno.
+  const arcoElegido = arcoHoja || (datos.arcosDelActo.length === 1 ? String(datos.arcosDelActo[0]) : "");
   const [hiloNuevo, setHiloNuevo] = useState("");
   const [hiloSel, setHiloSel] = useState("");
   const [eventoSel, setEventoSel] = useState("");
@@ -315,20 +318,40 @@ function Trama({
             ))}
             {datos.hojas.length === 0 && <li className="text-xs italic text-fg-muted">Ninguna.</li>}
           </ul>
-          <form
-            className="flex gap-1"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!hoja.trim()) return;
-              ya(() => crearHojaEnActo(id, hoja), "Hoja creada.");
-              setHoja("");
-            }}
-          >
-            <input value={hoja} onChange={(e) => setHoja(e.target.value)} placeholder="Nueva hoja…" className={cn(inputCls, "py-1 text-xs")} />
-            <button type="submit" disabled={pendiente} className={botonCls}>
-              <Icon name="Plus" size={13} />
-            </button>
-          </form>
+          {datos.arcos.length === 0 ? (
+            <p className="text-xs text-fg-muted">
+              Toda hoja va en un arco y aún no hay ninguno.{" "}
+              <Link href="/admin/taller/trama/arcos/nuevo" className="text-accent hover:underline">
+                Crea uno
+              </Link>
+              .
+            </p>
+          ) : (
+            <form
+              className="space-y-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!hoja.trim() || !arcoElegido) return;
+                ya(() => crearHojaEnActo(id, hoja, Number(arcoElegido)), "Hoja creada.");
+                setHoja("");
+              }}
+            >
+              <select value={arcoElegido} onChange={(e) => setArcoHoja(e.target.value)} aria-label="Arco de la hoja nueva" className={cn(inputCls, "py-1 text-xs")}>
+                <option value="">Elige el arco…</option>
+                {datos.arcos.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nombre}
+                  </option>
+                ))}
+              </select>
+              <div className="flex gap-1">
+                <input value={hoja} onChange={(e) => setHoja(e.target.value)} placeholder="Nueva hoja…" aria-label="Título de la hoja nueva" className={cn(inputCls, "py-1 text-xs")} />
+                <button type="submit" disabled={pendiente || !arcoElegido} aria-label="Crear hoja" className={botonCls}>
+                  <Icon name="Plus" size={13} />
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
         {/* Hilos */}

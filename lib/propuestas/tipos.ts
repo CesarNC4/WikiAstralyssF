@@ -279,6 +279,7 @@ export function faltaEn(d: DatoAnalizado, cal: Calendario): string | null {
   if (d.obligatorio && d.editor !== "ficha" && !d.valor.trim()) return "Hace falta para crear esta ficha.";
   const o = d.objetivo;
   if (o && o.id == null && !o.crear && !o.sinFicha) {
+    if (d.obligatorio) return "Hace falta para crear esta ficha: elígela.";
     return o.candidatos.length ? "Hay varias fichas posibles: elige una." : "No hay ninguna ficha con ese nombre: elige una o créala.";
   }
   if (d.clase === "fecha" && !d.vaciar) {

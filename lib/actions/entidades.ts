@@ -46,6 +46,21 @@ function revalidar(route: string, id?: number) {
   revalidatePath("/alturas");
 }
 
+/**
+ * Un campo en blanco llega como null, y hay columnas obligatorias con valor por
+ * defecto (el libro de un arco, el nivel de amenaza de una bestia) que no lo
+ * admiten. Se quita del guardado: al crear toma el valor por defecto de la base
+ * y al editar conserva el que tenía. Se pregunta a la base porque es quien manda.
+ */
+async function sinVaciosProhibidos(table: Parameters<typeof getTableName>[0], c: Cols, data: Record<string, unknown>) {
+  const filas = (await db.execute(sql`
+    select column_name from information_schema.columns
+    where table_schema = 'public' and table_name = ${getTableName(table)} and is_nullable = 'NO' and column_default is not null
+  `)) as unknown as { column_name: string }[];
+  const columnas = new Set(filas.map((f) => f.column_name));
+  for (const [campo, valor] of Object.entries(data)) if (valor === null && columnas.has(c[campo]?.name)) delete data[campo];
+}
+
 export async function guardarEntidad(
   _prev: EntidadFormState | undefined,
   formData: FormData,
@@ -120,6 +135,7 @@ export async function guardarEntidad(
   let savedId: number;
   let notificar = false;
   try {
+    await sinVaciosProhibidos(table, c, data);
     if (id) {
       const [existing] = await db
         .select({ ppv: c.publicadoPrimeraVezEn })

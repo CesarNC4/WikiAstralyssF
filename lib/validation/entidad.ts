@@ -76,7 +76,8 @@ export function buildEntidadSchema(config: EntidadConfig) {
     estadoPublicacion: estadoPublicacionSchema.default("borrador"),
   };
   for (const field of config.fields) {
-    if (field.type === "reference") shape[field.name] = idField;
+    // Una referencia obligatoria lo es de verdad: la base la exige (el arco de una hoja).
+    if (field.type === "reference") shape[field.name] = field.required ? idField.refine((v) => v != null, "Es obligatorio: elige uno.") : idField;
     else if (field.type === "multi") shape[field.name] = listField;
     else if (field.type === "slider") shape[field.name] = statField;
     else if (field.type === "number") shape[field.name] = intField;
@@ -84,7 +85,7 @@ export function buildEntidadSchema(config: EntidadConfig) {
     else if (field.type === "opciones")
       shape[field.name] = str.refine((v) => v == null || (field.opciones ?? []).some((o) => o.valor === v), "Opción no válida");
     else if (field.type === "checkbox") shape[field.name] = boolField;
-    // Regla de producto: solo el nombre es obligatorio; el resto siempre opcional.
+    // Regla de producto: en los campos de texto, solo el nombre es obligatorio.
     else shape[field.name] = str;
   }
   if (config.hasImage) {

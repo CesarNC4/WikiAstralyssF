@@ -201,6 +201,11 @@ pasa a un agente lector.
 
 ## Decisiones
 
+- 2026-11-03: toda hoja de trama va en un arco. No hubo migración: la base ya lo exigía.
+  Se arregló el taller, que creaba hojas sin arco desde un acto
+  (docs/taller-del-autor.md §8). De paso, el formulario genérico ya no falla al dejar en
+  blanco una columna obligatoria con valor por defecto (el libro de un arco, el nivel de
+  amenaza de una bestia): al crear toma ese valor y al editar conserva el que tenía.
 - 2026-11-02: guía de estilo respondida (`lore/guia-de-estilo.md`, fuera de
   git). Lo que toca al código está arriba: web sin indexar, limpieza, quitar
   `personaje_narrativa` y las decisiones de la Fase 4. Los textos de las

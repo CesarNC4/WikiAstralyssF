@@ -121,7 +121,8 @@ export const tramaArcos = pgTable("trama_arcos", {
 
 export const tramaHojas = pgTable("trama_hojas", {
   id: serial("id").primaryKey(),
-  arcoId: integer("arco_id"),
+  /** Obligatorio: toda hoja va en un arco (docs/taller-del-autor.md §8). */
+  arcoId: integer("arco_id").notNull(),
   capituloId: integer("capitulo_id"),
   actoId: integer("acto_id"),
   titulo: varchar("titulo").notNull(),

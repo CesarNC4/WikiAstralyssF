@@ -542,7 +542,7 @@ export const ENTIDADES: Record<string, EntidadConfig> = {
     hasFicha: false,
     orderBy: "orden",
     fields: [
-      f("arcoId", "Arco", "reference", "Identidad", { refTarget: "arcos" }),
+      f("arcoId", "Arco", "reference", "Identidad", { refTarget: "arcos", required: true, hint: "Toda hoja de trama va en un arco." }),
       f("capituloId", "Capítulo", "reference", "Identidad", { refTarget: "capitulos" }),
       f("actoId", "Acto", "reference", "Identidad", { refTarget: "actos" }),
       f("orden", "Orden", "number", "Identidad"),

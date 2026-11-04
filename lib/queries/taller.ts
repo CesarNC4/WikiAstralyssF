@@ -196,6 +196,10 @@ export interface ActoEditor {
   fragmentos: FragmentosActo;
   /** Para el selector de POV de los fragmentos: los personajes vivos. */
   personajes: { id: number; nombre: string }[];
+  /** Para la hoja nueva, que siempre va en un arco: los arcos vivos. */
+  arcos: { id: number; nombre: string }[];
+  /** Los arcos vivos a los que pertenece el acto. */
+  arcosDelActo: number[];
 }
 
 export interface FragmentoEditor {
@@ -242,7 +246,7 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
     .where(and(eq(s.actos.id, id), isNull(s.actos.eliminadoEn)));
   if (!acto) return null;
 
-  const [fecha, hojas, hilos, eventos, todosHilos, todosEventos, fragmentos, personajes] = await Promise.all([
+  const [fecha, hojas, hilos, eventos, todosHilos, todosEventos, fragmentos, personajes, arcos, vinculosArco] = await Promise.all([
     leerFecha({ entidadTipo: "actos", entidadId: id, rol: "principal" }),
     db
       .select({ id: s.tramaHojas.id, titulo: s.tramaHojas.titulo, estado: s.tramaHojas.estado })
@@ -273,6 +277,15 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
       .from(s.personajes)
       .where(isNull(s.personajes.eliminadoEn))
       .orderBy(asc(s.personajes.nombre)),
+    db
+      .select({ id: s.tramaArcos.id, nombre: s.tramaArcos.nombre })
+      .from(s.tramaArcos)
+      .where(isNull(s.tramaArcos.eliminadoEn))
+      .orderBy(asc(s.tramaArcos.orden), asc(s.tramaArcos.nombre)),
+    db
+      .select({ id: s.vinculo.destinoId })
+      .from(s.vinculo)
+      .where(and(eq(s.vinculo.relacion, "acto_arco"), eq(s.vinculo.origenTipo, "actos"), eq(s.vinculo.origenId, id), eq(s.vinculo.destinoTipo, "arcos"))),
   ]);
 
   const textos = await textosDeFechas("timeline", todosEventos.map((e) => e.id), { corto: true });
@@ -291,6 +304,8 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
     todosEventos: todosEventos.map(conFecha),
     fragmentos,
     personajes,
+    arcos,
+    arcosDelActo: vinculosArco.map((v) => v.id).filter((v) => arcos.some((a) => a.id === v)),
   };
 }
 

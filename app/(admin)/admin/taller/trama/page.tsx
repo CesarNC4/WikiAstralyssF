@@ -64,7 +64,7 @@ export default async function TramaPage({ searchParams }: { searchParams: Promis
         {vista === "hojas" &&
           (t.hojas.length ? (
             t.hojas.map((h) => {
-              const arco = h.arcoId != null ? arcoPorId.get(h.arcoId) : undefined;
+              const arco = arcoPorId.get(h.arcoId);
               return (
                 <Fila
                   key={h.id}
