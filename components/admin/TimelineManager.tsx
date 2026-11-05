@@ -73,11 +73,11 @@ export function TimelineManager({ eventos, capitulos }: { eventos: TimelineEvent
       <div className="space-y-2">
         {items.map((ev) => (
           <div key={ev.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border-base bg-surface/40 p-2">
-            <span className="w-44 shrink-0 text-xs" title={ev.fecha?.absoluto}>
+            <span className="w-44 shrink-0 text-xs">
               {ev.fecha ? (
                 <>
                   <span className="block text-fg-secondary">{ev.fecha.eras}</span>
-                  {ev.fecha.eras !== ev.fecha.absoluto && <span className="block font-mono text-fg-muted">{ev.fecha.absoluto}</span>}
+                  <span className="block text-fg-muted">{ev.fecha.relativo}</span>
                 </>
               ) : (
                 <span className="text-warning">Sin fecha</span>

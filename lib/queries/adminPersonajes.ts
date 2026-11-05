@@ -220,7 +220,7 @@ export async function listTimelineOpciones(): Promise<Opcion[]> {
     .where(isNull(s.timelineEventos.eliminadoEn))
     .orderBy(asc(s.timelineEventos.orden), asc(s.timelineEventos.titulo));
   const fechas = await textosDeFechas("timeline", rows.map((r) => r.id), { corto: true });
-  return rows.map((r) => ({ id: r.id, label: [fechas.get(r.id)?.absoluto, r.titulo].filter(Boolean).join(" · ") }));
+  return rows.map((r) => ({ id: r.id, label: [fechas.get(r.id)?.eras, r.titulo].filter(Boolean).join(" · ") }));
 }
 
 /** Armas/artefactos/objetos del catálogo global (para vincular objetos del PJ). */

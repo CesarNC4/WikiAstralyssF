@@ -4,7 +4,11 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   formatoFecha,
+  mayuscula,
+  numeroEnEra,
   segmentosOrdenados,
+  tramoDeAnio,
+  tramosDeEras,
   validarFecha,
   type Calendario,
   type Extremo,
@@ -16,6 +20,9 @@ import {
  * su propia precisión (año · año + mes · año + mes + día), y la marca de
  * aproximada. Enseña debajo cómo la leerá el público en las dos lecturas.
  *
+ * El año se escribe dentro de una era. Por dentro se guarda en el eje, y solo se
+ * teclea ese número si el calendario aún no tiene eras con inicio.
+ *
  * Controlado: `value` null es "sin fecha". Mientras el año está a medio escribir
  * (vacío o solo "-") se emite null, así que el padre nunca recibe una fecha rota.
  */
@@ -25,22 +32,34 @@ const inputCls =
 
 interface ExtremoTexto {
   anio: string;
+  /** La era en la que se teclea el año. Vacío: el número del eje. */
+  eraId: string;
   segmentoId: string;
   dia: string;
 }
 
-const vacio: ExtremoTexto = { anio: "", segmentoId: "", dia: "" };
-
-function aTexto(e: Extremo | null | undefined): ExtremoTexto {
-  if (!e) return vacio;
-  return { anio: String(e.anio), segmentoId: e.segmentoId != null ? String(e.segmentoId) : "", dia: e.dia != null ? String(e.dia) : "" };
+function erasConInicio(cal: Calendario) {
+  return tramosDeEras(cal).filter((t) => t.inicio != null);
 }
 
-function aExtremo(t: ExtremoTexto): Extremo | null {
+function aTexto(cal: Calendario, e: Extremo | null | undefined): ExtremoTexto {
+  if (!e) return { anio: "", eraId: String(erasConInicio(cal).at(-1)?.era.id ?? ""), segmentoId: "", dia: "" };
+  const t = tramoDeAnio(cal, e.anio);
+  const conEra = t?.inicio != null && e.anio >= t.inicio;
+  return {
+    anio: String(numeroEnEra(cal, e.anio)),
+    eraId: conEra ? String(t.era.id) : "",
+    segmentoId: e.segmentoId != null ? String(e.segmentoId) : "",
+    dia: e.dia != null ? String(e.dia) : "",
+  };
+}
+
+function aExtremo(cal: Calendario, t: ExtremoTexto): Extremo | null {
   if (!/^-?\d+$/.test(t.anio.trim())) return null;
+  const inicio = erasConInicio(cal).find((x) => String(x.era.id) === t.eraId)?.inicio;
   const segmentoId = t.segmentoId ? Number(t.segmentoId) : null;
   const dia = segmentoId != null && /^\d+$/.test(t.dia.trim()) ? Number(t.dia) : null;
-  return { anio: Number(t.anio), segmentoId, dia };
+  return { anio: inicio != null ? inicio + Number(t.anio) - 1 : Number(t.anio), segmentoId, dia };
 }
 
 export function FechaInput({
@@ -53,15 +72,15 @@ export function FechaInput({
   onChange: (f: Fecha | null) => void;
 }) {
   // El texto vive aquí para poder escribir "-" o borrar el año sin perder lo demás.
-  const [ini, setIni] = useState<ExtremoTexto>(() => aTexto(value?.ini));
-  const [fin, setFin] = useState<ExtremoTexto>(() => aTexto(value?.fin));
+  const [ini, setIni] = useState<ExtremoTexto>(() => aTexto(cal, value?.ini));
+  const [fin, setFin] = useState<ExtremoTexto>(() => aTexto(cal, value?.fin));
   const [esRango, setEsRango] = useState(value?.fin != null);
   const [aproximada, setAproximada] = useState(value?.aproximada ?? false);
 
   const emitir = (p: { ini?: ExtremoTexto; fin?: ExtremoTexto; esRango?: boolean; aproximada?: boolean }) => {
-    const i = aExtremo(p.ini ?? ini);
+    const i = aExtremo(cal, p.ini ?? ini);
     const rango = p.esRango ?? esRango;
-    const f = rango ? aExtremo(p.fin ?? fin) : null;
+    const f = rango ? aExtremo(cal, p.fin ?? fin) : null;
     if (!i || (rango && !f)) return onChange(null);
     onChange({ ini: i, fin: f, aproximada: p.aproximada ?? aproximada });
   };
@@ -127,7 +146,7 @@ export function FechaInput({
         <p className="text-xs text-fg-muted">
           <span className="text-fg-secondary">{formatoFecha(cal, value, "eras")}</span>
           <span className="mx-2">·</span>
-          {formatoFecha(cal, value, "absoluto")}
+          {formatoFecha(cal, value, "relativo")}
         </p>
       )}
       {errores.map((e) => (
@@ -152,17 +171,33 @@ function ExtremoEditor({
 }) {
   const segmentos = segmentosOrdenados(cal);
   const seg = segmentos.find((s) => String(s.id) === valor.segmentoId);
+  const eras = erasConInicio(cal);
   return (
     <div className="flex flex-wrap items-center gap-2">
       {etiqueta && <span className="w-12 text-xs uppercase tracking-wide text-fg-muted">{etiqueta}</span>}
       <input
         value={valor.anio}
-        onChange={(e) => onChange({ ...valor, anio: e.target.value.replace(/[^\d-]/g, "") })}
+        onChange={(e) => onChange({ ...valor, anio: e.target.value.replace(valor.eraId ? /\D/g : /[^\d-]/g, "") })}
         placeholder="Año"
         inputMode="numeric"
         aria-label="Año"
         className={cn(inputCls, "w-24 font-mono")}
       />
+      {eras.length > 0 && (
+        <select
+          value={valor.eraId}
+          onChange={(e) => onChange({ ...valor, eraId: e.target.value })}
+          aria-label="Era"
+          className={cn(inputCls, "w-44")}
+        >
+          {!valor.eraId && <option value="">Número del eje</option>}
+          {eras.map((t) => (
+            <option key={t.era.id} value={t.era.id}>
+              {t.era.nombre}
+            </option>
+          ))}
+        </select>
+      )}
       <select
         value={valor.segmentoId}
         onChange={(e) => onChange({ ...valor, segmentoId: e.target.value, dia: e.target.value ? valor.dia : "" })}
@@ -172,7 +207,7 @@ function ExtremoEditor({
         <option value="">— Todo el año —</option>
         {segmentos.map((s) => (
           <option key={s.id} value={s.id}>
-            {s.nombre}
+            {mayuscula(s.nombre)}
             {s.tipo === "intercalar" ? " (fuera de mes)" : ""}
           </option>
         ))}

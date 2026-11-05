@@ -211,12 +211,16 @@ function CampoFecha({ dato, cal, onCambio }: { dato: DatoAnalizado; cal: Calenda
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        <input value={dato.valor} onChange={(e) => onCambio({ valor: e.target.value })} className={cn(subInp, "min-w-48 flex-1")} placeholder="20 de Mes 3, año 1203" />
+        <input value={dato.valor} onChange={(e) => onCambio({ valor: e.target.value })} className={cn(subInp, "min-w-48 flex-1")} placeholder="12 de la Cuarta Luna, año 1013 de la Era Post-Ishkoria" />
         <label className="flex items-center gap-1 text-xs text-fg-secondary" title="Sale en la cronología destacada">
           <input type="checkbox" checked={Boolean(dato.importante)} onChange={(e) => onCambio({ importante: e.target.checked })} /> ★ importante
         </label>
       </div>
-      {textos && textos.eras !== textos.absoluto && <p className="mt-1 text-xs text-fg-muted">En eras: {textos.eras}</p>}
+      {textos && (
+        <p className="mt-1 text-xs text-fg-muted">
+          {textos.eras} · {textos.relativo}
+        </p>
+      )}
     </div>
   );
 }

@@ -266,7 +266,7 @@ export function TimelineEspiral({ eventos }: { eventos: Ev[] }) {
 
   return (
     <div>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* === Túnel del tiempo === */}
         <div
           className="relative h-[440px] select-none overflow-hidden rounded-3xl border border-border-glow bg-gradient-to-b from-deep to-void md:h-[560px]"

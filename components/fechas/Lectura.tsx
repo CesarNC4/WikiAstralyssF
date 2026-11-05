@@ -11,7 +11,7 @@ export function FechaTexto({ t, className }: { t: TextosFecha; className?: strin
   return <span className={className}>{t[modo]}</span>;
 }
 
-/** Interruptor "Eras / Año absoluto" (§13, "Cómo lo ve el público"). */
+/** Interruptor "Eras / Respecto al rol" (§13, "Cómo lo ve el público"). */
 export function ConmutadorFechas({ className }: { className?: string }) {
   const modo = useModoFecha();
   const setModo = useLectura((s) => s.setModo);
@@ -24,7 +24,7 @@ export function ConmutadorFechas({ className }: { className?: string }) {
       {(
         [
           ["eras", "Eras"],
-          ["absoluto", "Año absoluto"],
+          ["relativo", "Respecto al rol"],
         ] as const
       ).map(([m, label]) => (
         <button
@@ -70,16 +70,17 @@ export function EdadLectura({ cal, nacimiento, muerte }: { cal: Calendario; naci
               aplicar();
             }}
           >
-            en el año absoluto
+            a
             <input
               autoFocus
               value={texto}
               onChange={(e) => setTexto(e.target.value.replace(/[^\d-]/g, ""))}
               onBlur={aplicar}
               inputMode="numeric"
-              aria-label="Año del momento de lectura"
+              aria-label="Años respecto al inicio del rol; antes, en negativo"
               className="w-16 rounded border border-border-base bg-surface px-1 font-mono text-fg outline-none"
             />
+            años del inicio del rol (antes, en negativo)
           </form>
         ) : (
           <button
@@ -91,12 +92,12 @@ export function EdadLectura({ cal, nacimiento, muerte }: { cal: Calendario; naci
             className="underline decoration-dotted underline-offset-2 hover:text-fg"
             title="Cambiar el momento de lectura"
           >
-            {origen ?? `en ${formatoAnio(cal, anio, modo).replace(/^Año/, "el año")}`}
+            {origen ?? (modo === "relativo" ? formatoAnio(cal, anio, modo) : `en ${formatoAnio(cal, anio, modo).replace(/^Año/, "el año")}`)}
           </button>
         )}
         {momento != null && !editando && (
-          <button type="button" onClick={() => setMomento(null)} className="hover:text-fg" title="Volver al año 0">
-            · volver al año 0
+          <button type="button" onClick={() => setMomento(null)} className="hover:text-fg" title="Volver al inicio del rol">
+            · volver al inicio del rol
           </button>
         )}
       </span>

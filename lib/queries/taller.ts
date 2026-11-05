@@ -289,7 +289,7 @@ export async function getActoEditor(id: number): Promise<ActoEditor | null> {
   ]);
 
   const textos = await textosDeFechas("timeline", todosEventos.map((e) => e.id), { corto: true });
-  const conFecha = (e: { id: number; titulo: string }) => ({ ...e, fecha: textos.get(e.id)?.absoluto ?? null });
+  const conFecha = (e: { id: number; titulo: string }) => ({ ...e, fecha: textos.get(e.id)?.eras ?? null });
 
   return {
     acto,

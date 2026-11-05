@@ -58,9 +58,9 @@ export async function guardarCalendario(entrada: CalendarioEntrada): Promise<Res
   const datos = parsed.data;
 
   // Las eras se suceden: cada una configurada empieza después de la anterior.
-  // La primera no tiene inicio (se extiende hacia atrás sin límite).
+  // La primera puede no tener inicio: entonces se extiende hacia atrás sin límite.
   let previo: { nombre: string; anio: number } | null = null;
-  for (const e of datos.eras.slice(1)) {
+  for (const e of datos.eras) {
     if (e.anioInicio == null) continue;
     if (previo && e.anioInicio <= previo.anio)
       return { ok: false, error: `«${e.nombre}» empieza en ${e.anioInicio}, que no es posterior a «${previo.nombre}» (${previo.anio}).` };
@@ -108,7 +108,7 @@ export async function guardarCalendario(entrada: CalendarioEntrada): Promise<Res
           orden,
           nombre: e.nombre,
           abreviatura: e.abreviatura || null,
-          anioInicio: orden === 0 ? null : e.anioInicio,
+          anioInicio: e.anioInicio,
         };
         if (e.id != null && erasPrevias.some((p) => p.id === e.id)) {
           await tx.update(s.era).set(fila).where(eq(s.era.id, e.id));

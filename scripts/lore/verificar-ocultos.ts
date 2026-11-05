@@ -340,7 +340,7 @@ async function verificarFechas() {
     );
     comprobaciones++;
     const html = await pagina(ruta).catch(() => "");
-    for (const texto of [t.eras, t.absoluto]) if (html.includes(texto)) fuga(que, ruta, texto);
+    for (const texto of [t.eras, t.relativo, t.absoluto]) if (html.includes(texto)) fuga(que, ruta, texto);
   }
 }
 

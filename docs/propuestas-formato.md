@@ -89,9 +89,12 @@ El título es el del bloque en el panel desde ESTA ficha (los lista
 misma propuesta. Si el nombre es ambiguo, se añade su id: `Lloyd #45`.
 
 **Fechas.** `- <Fecha>: <valor>` con el rótulo del panel (Nacimiento, Fundación…)
-y el valor como lo escribe la lectura absoluta de la wiki: `Año 1203`,
-`Mes 3, año 1203`, `20 de Mes 3, año 1203`, `Del año 10 al año 15`, y
-`(aprox.)` al final si es aproximada. `★` al final la marca como importante
+y el valor como lo escribe la wiki, por eras: `Año 1013 de la Era Post-Ishkoria`,
+`la Cuarta Luna, año 1013 de la Era Post-Ishkoria`,
+`12 de la Cuarta Luna, año 1013 de la Era Post-Ishkoria`,
+`Del año 3 de la Era de Ishkoria al año 40 de la Era de Ishkoria`, y `(aprox.)` al
+final si es aproximada. También vale el número del eje interno (`Año -34`), que es
+como lo enseña `lore ficha` entre paréntesis. `★` al final la marca como importante
 para la cronología.
 
 Algunas conexiones llevan datos propios o admiten un nombre suelto:

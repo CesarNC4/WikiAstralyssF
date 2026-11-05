@@ -85,7 +85,7 @@ export function CalendarioConfig({ inicial, uso }: { inicial: Calendario; uso: R
         orden,
         nombre: e.nombre || "(sin nombre)",
         abreviatura: e.abreviatura || null,
-        anioInicio: orden > 0 && /^-?\d+$/.test(e.anioInicio) ? Number(e.anioInicio) : null,
+        anioInicio: /^-?\d+$/.test(e.anioInicio) ? Number(e.anioInicio) : null,
       })),
     }),
     [segs, semana, eras],
@@ -96,11 +96,11 @@ export function CalendarioConfig({ inicial, uso }: { inicial: Calendario; uso: R
       const r = await guardarCalendario({
         segmentos: segs.map((s) => ({ id: s.id > 0 ? s.id : null, nombre: s.nombre, dias: Number(s.dias) || 0, tipo: s.tipo })),
         diasSemana: semana,
-        eras: eras.map((e, i) => ({
+        eras: eras.map((e) => ({
           id: e.id > 0 ? e.id : null,
           nombre: e.nombre,
           abreviatura: e.abreviatura,
-          anioInicio: i > 0 && /^-?\d+$/.test(e.anioInicio.trim()) ? Number(e.anioInicio) : null,
+          anioInicio: /^-?\d+$/.test(e.anioInicio.trim()) ? Number(e.anioInicio) : null,
         })),
       });
       if (!r.ok) return toast(r.error, "error");
@@ -226,7 +226,7 @@ export function CalendarioConfig({ inicial, uso }: { inicial: Calendario; uso: R
       <Bloque
         titulo="Las eras"
         resumen={`${eras.length} eras`}
-        ayuda="Cada era empieza en un año del eje absoluto y termina donde empieza la siguiente. La primera no tiene inicio: se cuenta hacia atrás desde su fin. Una era sin año de inicio se ignora al mostrar fechas."
+        ayuda="Cada era empieza en un año del eje interno, donde el 0 es el inicio del rol y lo anterior va en negativo, y termina donde empieza la siguiente. Si la primera no tiene inicio, se cuenta hacia atrás desde su fin. Cualquier otra era sin inicio se ignora al mostrar fechas."
       >
         <div className="space-y-2">
           {eras.map((e, i) => (
@@ -244,19 +244,15 @@ export function CalendarioConfig({ inicial, uso }: { inicial: Calendario; uso: R
                 placeholder="Abrev."
                 className={cn(inputCls, "w-24")}
               />
-              {i === 0 ? (
-                <span className="w-40 text-xs italic text-fg-muted">Sin inicio (la primera)</span>
-              ) : (
-                <input
-                  value={e.anioInicio}
-                  onChange={(ev) =>
-                    cambiarEras(eras.map((x) => (x.id === e.id ? { ...x, anioInicio: ev.target.value.replace(/[^\d-]/g, "") } : x)))
-                  }
-                  placeholder="Año de inicio"
-                  inputMode="numeric"
-                  className={cn(inputCls, "w-40 font-mono", !e.anioInicio && "border-warning/60")}
-                />
-              )}
+              <input
+                value={e.anioInicio}
+                onChange={(ev) =>
+                  cambiarEras(eras.map((x) => (x.id === e.id ? { ...x, anioInicio: ev.target.value.replace(/[^\d-]/g, "") } : x)))
+                }
+                placeholder={i === 0 ? "Inicio (opcional)" : "Año de inicio"}
+                inputMode="numeric"
+                className={cn(inputCls, "w-40 font-mono", i > 0 && !e.anioInicio && "border-warning/60")}
+              />
               <button
                 type="button"
                 onClick={() => cambiarEras(eras.filter((x) => x.id !== e.id))}

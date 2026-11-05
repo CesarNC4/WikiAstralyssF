@@ -7,7 +7,18 @@ import { colorDe, DetallePanel } from "@/components/viz/timelineShared";
 import { useModoFecha } from "@/components/fechas/store";
 import { cn } from "@/lib/utils";
 import type { Suceso } from "@/lib/cronologia";
-import { anioDeClave, diasPorAnio, formatoAnio, segmentosOrdenados, type Calendario, type Extremo } from "@/lib/fechas";
+import {
+  anioCorto,
+  anioDeClave,
+  diasPorAnio,
+  formatoAnio,
+  numeroEnEra,
+  segmentosOrdenados,
+  tramoDeAnio,
+  tramosDeEras,
+  type Calendario,
+  type Extremo,
+} from "@/lib/fechas";
 
 /**
  * Vista de calendario de un año (spec §13): sus meses y bloques de días fuera
@@ -32,25 +43,33 @@ export function CalendarioAnual({
 }) {
   const modo = useModoFecha();
   const [anio, setAnio] = useState(0);
-  const [texto, setTexto] = useState("0");
+  const [texto, setTexto] = useState(() => String(numeroEnEra(cal, 0)));
   const [sel, setSel] = useState<Suceso | null>(null);
 
-  // El año viaja en la URL (?anio=) para poder enlazarlo; se lee ya en el navegador.
+  // El año viaja en la URL (?anio=, en el eje interno) para poder enlazarlo; se lee ya en el navegador.
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get("anio");
     if (v && /^-?\d+$/.test(v)) {
       queueMicrotask(() => {
         setAnio(Number(v));
-        setTexto(v);
+        setTexto(String(numeroEnEra(cal, Number(v))));
       });
     }
-  }, []);
+  }, [cal]);
   const ir = (a: number) => {
     setAnio(a);
-    setTexto(String(a));
+    setTexto(String(numeroEnEra(cal, a)));
     const url = new URL(window.location.href);
     url.searchParams.set("anio", String(a));
     window.history.replaceState(null, "", url);
+  };
+
+  // Lo que se teclea es el año dentro de la era en curso.
+  const tramo = tramoDeAnio(cal, anio);
+  const eras = tramosDeEras(cal).filter((t) => t.inicio != null);
+  const tecleado = () => {
+    if (!/^-?\d+$/.test(texto.trim())) return null;
+    return tramo?.inicio != null && anio >= tramo.inicio ? tramo.inicio + Number(texto) - 1 : Number(texto);
   };
 
   const D = diasPorAnio(cal);
@@ -105,6 +124,7 @@ export function CalendarioAnual({
 
   const n = cal.diasSemana.length;
   const lecturaAnio = formatoAnio(cal, anio, modo);
+  const delAnio = formatoAnio(cal, anio, "eras").replace(/^Año/, "año");
 
   return (
     <div>
@@ -117,15 +137,19 @@ export function CalendarioAnual({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (/^-?\d+$/.test(texto.trim())) ir(Number(texto));
+              const a = tecleado();
+              if (a != null) ir(a);
             }}
           >
             <input
               value={texto}
               onChange={(e) => setTexto(e.target.value.replace(/[^\d-]/g, ""))}
-              onBlur={() => /^-?\d+$/.test(texto.trim()) && Number(texto) !== anio && ir(Number(texto))}
+              onBlur={() => {
+                const a = tecleado();
+                if (a != null && a !== anio) ir(a);
+              }}
               inputMode="numeric"
-              aria-label="Año absoluto"
+              aria-label="Año dentro de la era"
               className="w-20 bg-transparent text-center font-mono text-sm text-fg outline-none"
             />
           </form>
@@ -133,8 +157,25 @@ export function CalendarioAnual({
             <Icon name="ChevronRight" size={16} />
           </button>
         </div>
+        {eras.length > 0 && (
+          <select
+            value={tramo?.era.id ?? ""}
+            onChange={(e) => {
+              const t = eras.find((x) => String(x.era.id) === e.target.value);
+              if (t?.inicio != null) ir(t.inicio);
+            }}
+            aria-label="Era del año mostrado"
+            className="rounded-full border border-border-base bg-surface/50 px-3 py-1.5 text-sm text-fg outline-none"
+          >
+            {eras.map((t) => (
+              <option key={t.era.id} value={t.era.id}>
+                {t.era.nombre}
+              </option>
+            ))}
+          </select>
+        )}
         <p className="font-display text-xl text-fg">{lecturaAnio}</p>
-        {modo === "eras" && lecturaAnio !== `Año ${anio}` && <p className="font-mono text-xs text-fg-muted">año absoluto {anio}</p>}
+        <p className="text-xs text-fg-muted">{formatoAnio(cal, anio, modo === "eras" ? "relativo" : "eras")}</p>
       </div>
 
       {cercanos.length > 0 && (
@@ -150,7 +191,7 @@ export function CalendarioAnual({
                 a === anio ? "border-accent text-accent" : "border-border-base text-fg-muted hover:text-fg",
               )}
             >
-              {a}
+              {anioCorto(cal, a, modo)}
             </button>
           ))}
         </div>
@@ -161,7 +202,7 @@ export function CalendarioAnual({
         <div className="mb-2 flex items-center gap-2">
           <h2 className="text-xs uppercase tracking-wider text-fg-muted">Todo el año</h2>
           {onCrear && (
-            <BotonCrear onClick={() => onCrear({ anio, segmentoId: null, dia: null }, `el año ${anio}`)} titulo="Evento en este año" />
+            <BotonCrear onClick={() => onCrear({ anio, segmentoId: null, dia: null }, `el ${delAnio}`)} titulo="Evento en este año" />
           )}
         </div>
         {franja.length === 0 ? (
@@ -192,11 +233,11 @@ export function CalendarioAnual({
               )}
             >
               <div className="mb-2 flex items-center gap-2">
-                <h3 className="font-display text-base text-fg">{seg.nombre}</h3>
+                <h3 className="font-display text-base text-fg first-letter:uppercase">{seg.nombre.replace(/^(la|el|los|las)\s+/i, "")}</h3>
                 {seg.tipo === "intercalar" && <span className="text-[10px] uppercase tracking-wider text-fg-muted">fuera de mes</span>}
                 {onCrear && (
                   <BotonCrear
-                    onClick={() => onCrear({ anio, segmentoId: seg.id, dia: null }, `${seg.nombre} del año ${anio}`)}
+                    onClick={() => onCrear({ anio, segmentoId: seg.id, dia: null }, `${seg.nombre} del ${delAnio}`)}
                     titulo="Evento en este mes, sin día"
                   />
                 )}
@@ -249,7 +290,7 @@ export function CalendarioAnual({
                       {onCrear && (
                         <button
                           type="button"
-                          onClick={() => onCrear({ anio, segmentoId: seg.id, dia: i + 1 }, `el ${i + 1} de ${seg.nombre} del año ${anio}`)}
+                          onClick={() => onCrear({ anio, segmentoId: seg.id, dia: i + 1 }, `el ${i + 1} de ${seg.nombre} del ${delAnio}`)}
                           aria-label={`Crear evento el ${i + 1} de ${seg.nombre}`}
                           className="absolute right-0.5 top-0.5 hidden h-4 w-4 place-items-center rounded bg-primary text-void group-hover:grid"
                         >

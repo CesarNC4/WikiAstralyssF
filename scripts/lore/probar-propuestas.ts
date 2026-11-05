@@ -7,7 +7,7 @@
  *
  * Los nombres del ejemplo son los de docs/propuestas-formato.md: no es lore.
  */
-import { formatoFecha } from "@/lib/fechas/formato";
+import { formatoCorto, formatoFecha } from "@/lib/fechas/formato";
 import { leerFecha } from "@/lib/fechas/leer";
 import type { Calendario, Fecha } from "@/lib/fechas/tipos";
 import { bloquePendiente, estaVacio, reemplazarBloque } from "@/lib/propuestas/archivo";
@@ -229,6 +229,50 @@ igual("fecha en eras", leerFecha(cal, "Año 5 E.A.")?.ini.anio, 104);
 igual("salida de lore ficha", leerFecha(cal, "Año 5 E.A. (absoluto: Año 104) ★ importante")?.ini.anio, 104);
 igual("fecha ininteligible", leerFecha(cal, "hace mucho"), null);
 igual("mes que no existe", leerFecha(cal, "Mes 9, año 3"), null);
+
+// Las fechas por eras, con la primera contada hacia delante y meses que llevan artículo.
+const calEras: Calendario = {
+  segmentos: [
+    { id: 1, orden: 1, nombre: "la Cuarta Luna", dias: 30, tipo: "mes" },
+    { id: 2, orden: 2, nombre: "la Quinta Luna", dias: 30, tipo: "mes" },
+    { id: 3, orden: 3, nombre: "los Días de Ceniza", dias: 5, tipo: "intercalar" },
+  ],
+  diasSemana: [],
+  eras: [
+    { id: 1, orden: 1, nombre: "Era de Paz", abreviatura: "E.P.", anioInicio: -500 },
+    { id: 2, orden: 2, nombre: "Era Post-Ishkoria", abreviatura: "Post-I.", anioInicio: -100 },
+  ],
+};
+const punto = (e: ReturnType<typeof ext>): Fecha => ({ ini: e, fin: null, aproximada: false });
+const CASOS_ERAS: [string, Fecha, string][] = [
+  ["primera era hacia delante", punto(ext(-500)), "Año 1 de la Era de Paz"],
+  ["fin de la primera era", punto(ext(-101)), "Año 400 de la Era de Paz"],
+  ["segunda era", punto(ext(-100)), "Año 1 de la Era Post-Ishkoria"],
+  ["día y luna", punto(ext(0, 1, 12)), "12 de la Cuarta Luna, año 101 de la Era Post-Ishkoria"],
+  ["solo la luna", punto(ext(0, 2)), "La Quinta Luna, año 101 de la Era Post-Ishkoria"],
+  ["día de ceniza", punto(ext(0, 3, 3)), "Día 3 de los Días de Ceniza, año 101 de la Era Post-Ishkoria"],
+  ["rango de días", { ini: ext(0, 1, 3), fin: ext(0, 1, 9), aproximada: false }, "Del 3 al 9 de la Cuarta Luna, año 101 de la Era Post-Ishkoria"],
+  ["rango de lunas", { ini: ext(0, 1), fin: ext(0, 2), aproximada: false }, "De la Cuarta Luna a la Quinta Luna, año 101 de la Era Post-Ishkoria"],
+  ["rango de años", { ini: ext(-200), fin: ext(-150), aproximada: true }, "Del año 301 de la Era de Paz al año 351 de la Era de Paz (aprox.)"],
+];
+for (const [nombre, f, texto] of CASOS_ERAS) {
+  igual(`eras: ${nombre}`, formatoFecha(calEras, f, "eras"), texto);
+  igual(`eras, de vuelta: ${nombre}`, leerFecha(calEras, texto), f);
+}
+const CASOS_RELATIVOS: [Fecha, string][] = [
+  [punto(ext(-1000)), "1.000 años antes del inicio del rol"],
+  [punto(ext(-1)), "1 año antes del inicio del rol"],
+  [punto(ext(0)), "Año del inicio del rol"],
+  [punto(ext(3)), "3 años después del inicio del rol"],
+  [punto(ext(0, 1, 12)), "12 de la Cuarta Luna, año del inicio del rol"],
+  [{ ini: ext(-300), fin: ext(-200), aproximada: false }, "De 300 a 200 años antes del inicio del rol"],
+  [{ ini: ext(-2), fin: ext(0), aproximada: false }, "De 2 años antes al inicio del rol"],
+  [{ ini: ext(0), fin: ext(2), aproximada: false }, "Del inicio del rol a 2 años después"],
+  [{ ini: ext(-2), fin: ext(2), aproximada: false }, "De 2 años antes a 2 años después del inicio del rol"],
+];
+for (const [f, texto] of CASOS_RELATIVOS) igual(`relativo: ${texto}`, formatoFecha(calEras, f, "relativo"), texto);
+igual("corto en eras", formatoCorto(calEras, punto(ext(0)), "eras"), "101 Post-I.");
+igual("corto relativo", formatoCorto(calEras, punto(ext(-1000)), "relativo"), "1.000 antes");
 
 // ── Comparación ────────────────────────────────────────────────────────────
 

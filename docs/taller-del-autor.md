@@ -247,23 +247,28 @@ publicación, y un buscador.
 
 ## 13. Fechas, eras y calendario
 
-### Eje absoluto
-- Un único eje de años enteros con **año 0 = el inicio de la trama principal**
-  (fijo). Antes, negativos; después, positivos. **El año 0 existe** (-1, 0, 1).
+### Eje interno
+- Un único eje de años enteros con **año 0 = el inicio del rol** (fijo). Antes,
+  negativos; después, positivos. **El año 0 existe** (-1, 0, 1).
 - Todas las fechas se guardan en este eje: así se ordenan y se comparan.
+- **El lector no lo ve** (decisión del autor, 2026-11-04): las fechas se escriben
+  por eras, y los números negativos no se usan como fecha. El año 0 solo sirve de
+  guía para ver cuánto falta para el inicio del rol o cuánto ha pasado desde él.
 
 ### Eras
-- Cada era tiene **nombre, abreviatura y año de inicio** en el eje absoluto, y
-  termina donde empieza la siguiente.
+- Cada era tiene **nombre, abreviatura y año de inicio** en el eje, y termina donde
+  empieza la siguiente.
 - Dentro de una era, el **año 1 es su primer año**.
-- La **primera era no tiene inicio**: se extiende sin límite hacia atrás y sus
-  años se cuentan **hacia atrás desde su fin** ("500 antes del fin de la E.P.").
-- El catálogo `era` actual (Primordial, de los Dioses, Antigua, Actual) pasa a ser
-  esta tabla de eras.
+- La **primera era puede tener inicio**, y entonces se cuenta hacia delante como
+  las demás. Sin él, se extiende sin límite hacia atrás y sus años se cuentan **hacia
+  atrás desde su fin** ("500 antes del fin de la Era de Paz").
+- La abreviatura solo se usa en las versiones cortas, como la cronología; el resto
+  lleva el nombre completo.
 
 ### Cómo lo ve el público
-- **Conmutador del lector**: por defecto, la fecha en eras; con un interruptor,
-  el eje absoluto. La elección se recuerda en su navegador.
+- **Conmutador del lector**: por defecto, la fecha en eras; con un interruptor, la
+  distancia al inicio del rol ("1.000 años antes del inicio del rol"). La elección se
+  recuerda en su navegador.
 
 ### Precisión de una fecha
 - Una fecha es un **punto o un rango**, y cada extremo tiene **su propia

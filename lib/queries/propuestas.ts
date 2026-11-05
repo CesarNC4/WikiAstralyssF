@@ -366,9 +366,9 @@ async function analizarFecha(ctx: Ctx, l: Leido, d: DatoCrudo): Promise<DatoAnal
   }
   const fechas = l.id ? await leerFechasDe(l.entidad, l.id) : {};
   const guardada = fechas[rol.rol];
-  const actual = guardada ? textosFecha(ctx.cal, guardada.fecha).absoluto : null;
+  const actual = guardada ? textosFecha(ctx.cal, guardada.fecha).eras : null;
   const propuesta = d.vaciar ? null : leerFecha(ctx.cal, d.valor);
-  const textoPropuesto = propuesta ? textosFecha(ctx.cal, propuesta).absoluto : d.valor;
+  const textoPropuesto = propuesta ? textosFecha(ctx.cal, propuesta).eras : d.valor;
   const quiereOculto = d.oculto || Boolean(guardada?.oculto);
   const igual = d.vaciar ? !guardada : Boolean(guardada) && actual === textoPropuesto && Boolean(guardada?.importante) === d.importante && quiereOculto === Boolean(guardada?.oculto);
   const calculada = l.entidad === "actos" && l.id ? (await contarFragmentosConFecha(db, l.id)) > 0 : false;

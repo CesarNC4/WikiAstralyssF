@@ -49,7 +49,7 @@ export function FechasEditor({
           <UnaFecha key={r.rol} entidad={entidad} id={id} rol={r} inicial={inicial[r.rol] ?? null} cal={cal} />
         ))}
         <p className="text-xs text-fg-muted">
-          El año 0 es el inicio de la trama principal; antes, negativos. Los meses y las eras se configuran en{" "}
+          El año se escribe dentro de su era. Los meses y las eras se configuran en{" "}
           <Link href="/admin/taller/universo/calendario/configurar" className="text-accent hover:underline">
             Universo › Calendario
           </Link>

@@ -197,7 +197,7 @@ export function ActoEditor({
                   <>
                     {formatoFecha(cal, fecha, "eras")}
                     <span className="mx-2 text-fg-muted">·</span>
-                    <span className="text-fg-muted">{formatoFecha(cal, fecha, "absoluto")}</span>
+                    <span className="text-fg-muted">{formatoFecha(cal, fecha, "relativo")}</span>
                   </>
                 ) : (
                   "—"

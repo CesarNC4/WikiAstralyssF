@@ -1,10 +1,11 @@
 /**
  * Tipos del sistema de fechas del lore (spec del taller §13). Client-safe.
  *
- * Todo se apoya en un **eje absoluto** de años enteros con el año 0 en el inicio
- * de la trama principal: antes, negativos; después, positivos; el 0 existe. Las
- * eras y el calendario son formas de *leer* ese eje, no de guardarlo, así que
- * reconfigurarlos nunca cambia cuándo pasó algo.
+ * Todo se apoya en un **eje interno** de años enteros con el año 0 en el inicio
+ * del rol: antes, negativos; después, positivos; el 0 existe. El lector no lo ve:
+ * las fechas se escriben por eras, y el año 0 solo sirve de guía para ver la
+ * distancia al inicio del rol. Las eras y el calendario son formas de *leer* ese
+ * eje, no de guardarlo, así que reconfigurarlos nunca cambia cuándo pasó algo.
  */
 
 /** Un mes normal o un bloque de días que no pertenece a ningún mes. */
@@ -25,7 +26,7 @@ export interface Era {
   nombre: string;
   abreviatura: string | null;
   /**
-   * Año absoluto en que empieza. La primera era no lo tiene: se extiende sin
+   * Año del eje en que empieza. Si la primera era no lo tiene, se extiende sin
    * límite hacia atrás y se cuenta hacia atrás desde su fin. En las demás, null
    * significa "aún sin configurar" y la era se ignora al formatear.
    */
@@ -57,5 +58,8 @@ export interface Fecha {
   aproximada: boolean;
 }
 
+/** Las formas de escribir una fecha (`absoluto` es interno; ver formato.ts). */
+export type ModoFecha = "eras" | "relativo" | "absoluto";
+
 /** Cómo quiere leer las fechas el lector (§13, conmutador). */
-export type ModoFecha = "eras" | "absoluto";
+export type ModoLectura = Exclude<ModoFecha, "absoluto">;
