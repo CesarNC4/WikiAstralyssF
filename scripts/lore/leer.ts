@@ -23,6 +23,7 @@ import { bloquesDe } from "@/lib/relaciones/registro";
 import { ENTIDAD_INFO, infoDe } from "@/lib/relaciones/tablas";
 import { getCalendario, leerFechasDe } from "@/lib/queries/fechas";
 import { camposOcultos } from "@/lib/queries/visibilidad";
+import { leerFoto } from "./revision/foto";
 import { ordenRevisar, ordenTextos } from "./revision/orden";
 
 type Cols = Record<string, PgColumn>;
@@ -35,7 +36,7 @@ const AYUDA = `Lectura del lore (solo lectura).
   buscar <texto>               Fichas cuyo nombre contiene el texto (todas las secciones)
   lista <tipo> [estado]        Las fichas de un tipo: #id, nombre y estado
   ficha <tipo> <id|nombre>     Una ficha completa en formato de propuesta
-  menciones <texto>            Dónde se menciona un texto dentro de las fichas y notas
+  menciones <texto>            Dónde se menciona un texto: campos, secciones de lore y notas
   campos <tipo>                El molde: campos, opciones, conexiones y fechas posibles
   catalogo <campo>             Las opciones de un catálogo
   revisar [tema]               Audita la coherencia de la wiki o de un tema; deja el informe en lore/revisiones/
@@ -282,29 +283,16 @@ async function menciones(q: string) {
     const ini = Math.max(0, i - 60);
     return (ini > 0 ? "…" : "") + t.slice(ini, i + q.length + 60).replace(/\s+/g, " ") + (i + q.length + 60 < t.length ? "…" : "");
   };
+  // La misma foto de la revisión: campos, secciones de lore y notas, sin tope de resultados.
+  const { fichas } = await leerFoto();
   let total = 0;
-  for (const entidad of entidadesConMolde()) {
-    if (!tablaDe(entidad)) continue;
-    const molde = moldeDe(entidad)!;
-    const textos = molde.campos.filter((c) => (c.tipo === "largo" || c.tipo === "corto") && c.name !== molde.nombre);
-    const m = metaDe(entidad);
-    const presentes = textos.filter((c) => m.c[c.name]);
-    if (!presentes.length) continue;
-    const cond = sql.join(presentes.map((c) => contiene(m.c[c.name], q)), sql` or `);
-    const filas = (await db.select().from(m.t).where(and(sql`(${cond})`, m.vivo)).limit(40)) as Fila[];
-    for (const f of filas) {
-      for (const c of presentes) {
-        const v = texto(f[c.name]);
-        if (!sinAcentos(v).includes(sinAcentos(q))) continue;
-        total++;
-        console.log(`  ${entidad} #${f.id} ${f[molde.nombre]} · ${c.label}: ${corta(v)}`);
-      }
+  for (const f of fichas) {
+    if (f.enPapelera) continue;
+    for (const t of f.textos) {
+      if (!sinAcentos(t.texto).includes(sinAcentos(q))) continue;
+      total++;
+      console.log(`  ${f.entidad} #${f.id} ${f.nombre} · ${t.rotulo}: ${corta(t.texto)}`);
     }
-  }
-  const notas = await db.select().from(s.notaPrivada).where(contiene(s.notaPrivada.contenido, q)).limit(40);
-  for (const n of notas) {
-    total++;
-    console.log(`  ${n.entidadTipo} #${n.entidadId} · Notas de autor: ${corta(n.contenido)}`);
   }
   if (!total) console.log(`  "${q}" no aparece en ningún texto.`);
 }

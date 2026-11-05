@@ -13,7 +13,7 @@ pnpm --silent lore resumen                    cuántas fichas hay de cada tipo
 pnpm --silent lore buscar <texto>             fichas por nombre, en todas las secciones
 pnpm --silent lore lista <tipo> [estado]      todas las de un tipo
 pnpm --silent lore ficha <tipo> <id|nombre>   una ficha completa: campos, conexiones, fechas, notas
-pnpm --silent lore menciones <texto>          dónde aparece un texto dentro de las fichas y notas
+pnpm --silent lore menciones <texto>          dónde aparece un texto: campos, secciones de lore y notas
 pnpm --silent lore campos <tipo>              qué campos, conexiones y fechas admite un tipo
 pnpm --silent lore catalogo [campo]           las opciones de un desplegable
 ```
