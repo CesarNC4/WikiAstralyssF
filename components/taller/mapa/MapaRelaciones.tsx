@@ -486,7 +486,7 @@ function NuevaConexion({
     start(async () => {
       if (!op) return;
       try {
-        await crearVinculo(op.rel.id, op.lado, origen.entidadId, { id: destino.entidadId, tipo: destino.tipo }, valores);
+        await crearVinculo(op.rel.id, op.lado, origen.entidadId, origen.tipo, { id: destino.entidadId, tipo: destino.tipo }, valores);
         toast("Conexión creada.", "success");
         onHecho();
       } catch {
@@ -570,7 +570,7 @@ function EditarConexion({
   // Los campos de la fila se piden al abrirla: el mapa solo trae el destacado.
   useEffect(() => {
     let vivo = true;
-    listarVinculos(arista.relId, "a", a.entidadId)
+    listarVinculos(arista.relId, "a", a.entidadId, a.tipo)
       .then((filas) => {
         if (vivo) setValores(filas.find((f) => f.id === arista.fila)?.campos ?? {});
       })
@@ -578,14 +578,14 @@ function EditarConexion({
     return () => {
       vivo = false;
     };
-  }, [arista.relId, arista.fila, a.entidadId]);
+  }, [arista.relId, arista.fila, a.entidadId, a.tipo]);
 
   if (!rel) return <p className="text-sm text-fg-muted">Relación desconocida: {arista.relId}.</p>;
 
   const guardar = () =>
     start(async () => {
       try {
-        await actualizarVinculo(rel.id, "a", a.entidadId, arista.fila, valores ?? {});
+        await actualizarVinculo(rel.id, "a", a.entidadId, a.tipo, arista.fila, valores ?? {});
         toast("Conexión guardada.", "success");
         onHecho();
       } catch {
@@ -597,7 +597,7 @@ function EditarConexion({
     if (!confirm(`¿Borrar la conexión entre ${a.label} y ${b.label}?`)) return;
     start(async () => {
       try {
-        await borrarVinculo(rel.id, "a", a.entidadId, arista.fila);
+        await borrarVinculo(rel.id, "a", a.entidadId, a.tipo, arista.fila);
         toast("Conexión borrada.", "success");
         onHecho();
       } catch {

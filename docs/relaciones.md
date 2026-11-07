@@ -76,6 +76,12 @@ una sub-raza desde la ficha madre escribe `raza_padre_id` en la ficha hija.
 dos sentidos. Una referencia reflexiva da **dos**: "de quién deriva" y "qué deriva
 de esto" son listas distintas.
 
+**El lado comodín tiene que saber quién mira.** En las relaciones con `*` (Menciona /
+Aparece en, y las de su familia) el registro no conoce el tipo de la ficha, y el número no
+basta: el personaje #7 y la organización #7 son fichas distintas. Por eso leer, contar y
+crear reciben la entidad (`BloqueRelacion.entidad`), y `vinculo` guarda siempre el tipo
+real, nunca `*`.
+
 ## Conexiones ocultas
 
 Una conexión puede existir sin que el público sepa con qué (docs/area-ia.md, Fase

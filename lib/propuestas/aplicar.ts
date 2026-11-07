@@ -301,7 +301,7 @@ async function aplicarConexion(entidad: string, id: number, d: DatoAnalizado, di
   // Nombre suelto, sin ficha.
   if (o.sinFicha) {
     let filaId = d.modoFila === "actualizar" ? (d.filaId ?? null) : null;
-    if (filaId) await actualizarVinculo(relId, filaId, await conCamposActuales(relId, b.lado, id, filaId, campos));
+    if (filaId) await actualizarVinculo(relId, filaId, await conCamposActuales(relId, b.lado, id, entidad, filaId, campos));
     else filaId = await crearVinculoLibre(relId, id, o.nombre, campos, { oculto });
     if (!filaId) throw new Rechazo("Esta conexión no admite nombres sin ficha.");
     if (d.filaId) await marcarVinculoOculto(relId, filaId, oculto);
@@ -312,18 +312,18 @@ async function aplicarConexion(entidad: string, id: number, d: DatoAnalizado, di
   const destino = await fichaDe(dir, o);
   let filaId = d.modoFila === "actualizar" ? (d.filaId ?? null) : null;
   if (filaId) {
-    await actualizarVinculo(relId, filaId, await conCamposActuales(relId, b.lado, id, filaId, campos));
+    await actualizarVinculo(relId, filaId, await conCamposActuales(relId, b.lado, id, entidad, filaId, campos));
     await marcarVinculoOculto(relId, filaId, oculto);
   } else {
-    filaId = await crearVinculo(relId, b.lado, id, { id: destino.id, tipo: b.objetivo === CUALQUIERA ? destino.entidad : undefined }, campos, { oculto });
+    filaId = await crearVinculo(relId, b.lado, id, entidad, { id: destino.id, tipo: b.objetivo === CUALQUIERA ? destino.entidad : undefined }, campos, { oculto });
   }
   if (filaId) await fijarExtrasMiembro(relId, filaId, b.lado === "a" ? id : destino.id, d);
   revalidarFicha(destino.entidad, destino.id);
 }
 
 /** Actualizar una fila escribe todos sus campos: lo que la propuesta no trae se conserva. */
-async function conCamposActuales(relId: string, lado: "a" | "b", ownerId: number, filaId: number, campos: Record<string, string>) {
-  const fila = (await leerFilas(relId, lado, ownerId)).find((f) => f.id === filaId);
+async function conCamposActuales(relId: string, lado: "a" | "b", ownerId: number, entidad: string, filaId: number, campos: Record<string, string>) {
+  const fila = (await leerFilas(relId, lado, ownerId, entidad)).find((f) => f.id === filaId);
   const limpios = Object.fromEntries(Object.entries(campos).filter(([, v]) => v !== ""));
   return { ...(fila?.campos ?? {}), ...limpios };
 }

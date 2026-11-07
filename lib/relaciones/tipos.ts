@@ -93,6 +93,8 @@ export interface RelacionDef {
 /** Un bloque tal y como lo ve una ficha concreta: ya resuelto a un lado. */
 export interface BloqueRelacion {
   relId: string;
+  /** Entidad de la ficha dueña del bloque. En el lado comodín, el registro no la sabe. */
+  entidad: string;
   /** Qué extremo de la relación es esta ficha. */
   lado: "a" | "b";
   /** Entidad que se lista en el bloque (el otro extremo). */

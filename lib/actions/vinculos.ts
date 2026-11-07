@@ -47,9 +47,9 @@ export async function resumenConexiones(entidad: string, ownerId: number): Promi
   return contarBloques(entidad, ownerId);
 }
 
-export async function listarVinculos(relId: string, lado: "a" | "b", ownerId: number): Promise<FilaVinculo[]> {
+export async function listarVinculos(relId: string, lado: "a" | "b", ownerId: number, entidad: string): Promise<FilaVinculo[]> {
   await assertAdmin();
-  return leerFilas(relId, lado, ownerId);
+  return leerFilas(relId, lado, ownerId, entidad);
 }
 
 /**
@@ -113,19 +113,20 @@ export async function buscarFichas(entidad: string, q: string, limite = 20): Pro
 }
 
 /** Revalida las dos fichas implicadas, para que el espejo se vea al momento. */
-async function revalidarLados(relId: string, lado: "a" | "b", ownerId: number, objetivoId?: number) {
+async function revalidarLados(relId: string, lado: "a" | "b", ownerId: number, entidad: string, objetivoId?: number) {
   const rel = getRelacion(relId);
   if (!rel) return;
   // Toda conexión es una línea del Atlas.
   revalidatePath("/atlas");
-  const mia = lado === "a" ? rel.a.entidad : rel.b.entidad;
+  const declarada = lado === "a" ? rel.a.entidad : rel.b.entidad;
+  const mia = declarada === CUALQUIERA ? entidad : declarada;
   const suya = lado === "a" ? rel.b.entidad : rel.a.entidad;
-  for (const [entidad, id] of [
+  for (const [tipo, id] of [
     [mia, ownerId],
     [suya, objetivoId],
   ] as const) {
-    if (!id || entidad === CUALQUIERA) continue;
-    const info = infoDe(entidad);
+    if (!id || tipo === CUALQUIERA) continue;
+    const info = infoDe(tipo);
     if (info?.ruta) revalidatePath(`${info.ruta}/${id}`);
   }
 }
@@ -134,13 +135,14 @@ export async function crearVinculo(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   destino: DestinoNuevo,
   campos: Campos = {},
 ): Promise<FilaVinculo[]> {
   await assertAdmin();
-  await crear(relId, lado, ownerId, destino, campos);
-  await revalidarLados(relId, lado, ownerId, destino.id);
-  return leerFilas(relId, lado, ownerId);
+  await crear(relId, lado, ownerId, entidad, destino, campos);
+  await revalidarLados(relId, lado, ownerId, entidad, destino.id);
+  return leerFilas(relId, lado, ownerId, entidad);
 }
 
 /**
@@ -152,38 +154,41 @@ export async function crearVinculosEnLote(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   destinos: DestinoNuevo[],
   campos: Campos = {},
 ): Promise<FilaVinculo[]> {
   await assertAdmin();
-  for (const d of destinos) await crear(relId, lado, ownerId, d, campos);
-  await revalidarLados(relId, lado, ownerId);
-  return leerFilas(relId, lado, ownerId);
+  for (const d of destinos) await crear(relId, lado, ownerId, entidad, d, campos);
+  await revalidarLados(relId, lado, ownerId, entidad);
+  return leerFilas(relId, lado, ownerId, entidad);
 }
 
 export async function actualizarVinculo(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   filaId: number,
   campos: Campos,
 ): Promise<FilaVinculo[]> {
   await assertAdmin();
   await actualizar(relId, filaId, campos);
-  await revalidarLados(relId, lado, ownerId);
-  return leerFilas(relId, lado, ownerId);
+  await revalidarLados(relId, lado, ownerId, entidad);
+  return leerFilas(relId, lado, ownerId, entidad);
 }
 
 export async function borrarVinculo(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   filaId: number,
 ): Promise<FilaVinculo[]> {
   await assertAdmin();
   await borrar(relId, filaId);
-  await revalidarLados(relId, lado, ownerId);
-  return leerFilas(relId, lado, ownerId);
+  await revalidarLados(relId, lado, ownerId, entidad);
+  return leerFilas(relId, lado, ownerId, entidad);
 }
 
 /** Oculta o muestra una conexión al público; en las fichas sale como "???". */
@@ -191,26 +196,28 @@ export async function marcarVinculoOculto(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   filaId: number,
   objetivoId: number,
   oculto: boolean,
 ): Promise<FilaVinculo[]> {
   await assertAdmin();
   await marcarOculto(relId, filaId, oculto);
-  await revalidarLados(relId, lado, ownerId, objetivoId);
-  return leerFilas(relId, lado, ownerId);
+  await revalidarLados(relId, lado, ownerId, entidad, objetivoId);
+  return leerFilas(relId, lado, ownerId, entidad);
 }
 
 export async function reordenarVinculos(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   filaIds: number[],
 ): Promise<FilaVinculo[]> {
   await assertAdmin();
   await reordenar(relId, filaIds);
-  await revalidarLados(relId, lado, ownerId);
-  return leerFilas(relId, lado, ownerId);
+  await revalidarLados(relId, lado, ownerId, entidad);
+  return leerFilas(relId, lado, ownerId, entidad);
 }
 
 /**

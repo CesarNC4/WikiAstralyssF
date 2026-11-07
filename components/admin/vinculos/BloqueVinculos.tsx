@@ -54,13 +54,13 @@ export function BloqueVinculos({
 
   const cargar = useCallback(async () => {
     try {
-      setFilas(await listarVinculos(bloque.relId, bloque.lado, ownerId));
+      setFilas(await listarVinculos(bloque.relId, bloque.lado, ownerId, bloque.entidad));
     } catch {
       toast("No se pudieron cargar los vínculos.", "error");
     } finally {
       setCargado(true);
     }
-  }, [bloque.relId, bloque.lado, ownerId, toast]);
+  }, [bloque.relId, bloque.lado, bloque.entidad, ownerId, toast]);
 
   // Las filas se piden al abrir, desde el propio manejador del clic: una ficha
   // de personaje tiene 18 bloques y cargarlos todos de golpe sería una
@@ -102,6 +102,7 @@ export function BloqueVinculos({
         bloque.relId,
         bloque.lado,
         ownerId,
+        bloque.entidad,
         // Un bloque de referencia simple apunta a una sola ficha: si se marcan
         // varias, la última ganaría en silencio, así que se queda la primera.
         (bloque.unico ? fichas.slice(0, 1) : fichas).map((f) => ({ id: f.id, tipo: f.entidad })),
@@ -109,7 +110,7 @@ export function BloqueVinculos({
     );
 
   const quitar = (filaId: number) =>
-    conError(() => borrarVinculo(bloque.relId, bloque.lado, ownerId, filaId));
+    conError(() => borrarVinculo(bloque.relId, bloque.lado, ownerId, bloque.entidad, filaId));
 
   const cambiarCampo = (fila: FilaVinculo, name: string, valor: string) => {
     setFilas((prev) =>
@@ -120,7 +121,7 @@ export function BloqueVinculos({
   const guardarCampos = (filaId: number) => {
     const fila = filas.find((f) => f.id === filaId);
     if (!fila) return;
-    void conError(() => actualizarVinculo(bloque.relId, bloque.lado, ownerId, filaId, fila.campos));
+    void conError(() => actualizarVinculo(bloque.relId, bloque.lado, ownerId, bloque.entidad, filaId, fila.campos));
   };
 
   const mover = (i: number, delta: number) => {
@@ -130,7 +131,7 @@ export function BloqueVinculos({
     [next[i], next[j]] = [next[j], next[i]];
     setFilas(next);
     void conError(() =>
-      reordenarVinculos(bloque.relId, bloque.lado, ownerId, next.map((f) => f.id)),
+      reordenarVinculos(bloque.relId, bloque.lado, ownerId, bloque.entidad, next.map((f) => f.id)),
     );
   };
 
@@ -237,7 +238,7 @@ export function BloqueVinculos({
                           const valor = String(e.target.checked);
                           cambiarCampo(fila, campo.name, valor);
                           void conError(() =>
-                            actualizarVinculo(bloque.relId, bloque.lado, ownerId, fila.id, {
+                            actualizarVinculo(bloque.relId, bloque.lado, ownerId, bloque.entidad, fila.id, {
                               ...fila.campos,
                               [campo.name]: valor,
                             }),
@@ -262,7 +263,7 @@ export function BloqueVinculos({
                   oculto={Boolean(fila.oculto)}
                   onClick={() =>
                     void conError(() =>
-                      marcarVinculoOculto(bloque.relId, bloque.lado, ownerId, fila.id, fila.objetivoId, !fila.oculto),
+                      marcarVinculoOculto(bloque.relId, bloque.lado, ownerId, bloque.entidad, fila.id, fila.objetivoId, !fila.oculto),
                     )
                   }
                 />

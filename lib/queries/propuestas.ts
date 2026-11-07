@@ -297,7 +297,7 @@ async function analizarConexion(ctx: Ctx, l: Leido, d: DatoCrudo): Promise<DatoA
   let filas: FilaVinculo[] = [];
   if (l.id) {
     const k = `${b.relId}:${b.lado}`;
-    if (!l.filas.has(k)) l.filas.set(k, leerFilas(b.relId, b.lado, l.id));
+    if (!l.filas.has(k)) l.filas.set(k, leerFilas(b.relId, b.lado, l.id, l.entidad));
     filas = await l.filas.get(k)!;
   }
   const mismaFila = (f: FilaVinculo) =>

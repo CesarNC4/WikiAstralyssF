@@ -428,11 +428,12 @@ export function getRelacion(id: string): RelacionDef | undefined {
   return PORID.get(id);
 }
 
-function aBloque(rel: RelacionDef, lado: "a" | "b"): BloqueRelacion {
+function aBloque(rel: RelacionDef, lado: "a" | "b", entidad: string): BloqueRelacion {
   const propio = lado === "a" ? rel.a : rel.b;
   const otro = lado === "a" ? rel.b : rel.a;
   return {
     relId: rel.id,
+    entidad,
     lado,
     objetivo: otro.entidad,
     titulo: propio.titulo,
@@ -460,13 +461,13 @@ export function bloquesDe(entidad: string): BloqueRelacion[] {
   for (const rel of RELACIONES) {
     const esA = rel.a.entidad === entidad || rel.a.entidad === CUALQUIERA;
     const esB = rel.b.entidad === entidad || rel.b.entidad === CUALQUIERA;
-    if (esA) out.push(aBloque(rel, "a"));
+    if (esA) out.push(aBloque(rel, "a", entidad));
     // Una relación reflexiva N:M se refleja sola (marcar A rival de B deja a B
     // rival de A), así que un único bloque ya muestra los dos sentidos y dos
     // serían idénticos. Una referencia reflexiva es otra cosa: "de quién deriva"
     // y "qué deriva de esto" son listas distintas y las dos hacen falta.
     const colapsa = esA && rel.a.entidad === rel.b.entidad && rel.medio !== "referencia";
-    if (esB && !colapsa) out.push(aBloque(rel, "b"));
+    if (esB && !colapsa) out.push(aBloque(rel, "b", entidad));
   }
   return out.sort((x, y) => x.orden - y.orden || x.titulo.localeCompare(y.titulo));
 }
@@ -477,7 +478,7 @@ export function bloqueDe(entidad: string, relId: string, lado: "a" | "b"): Bloqu
   if (!rel) return undefined;
   const propio = lado === "a" ? rel.a : rel.b;
   if (propio.entidad !== entidad && propio.entidad !== CUALQUIERA) return undefined;
-  return aBloque(rel, lado);
+  return aBloque(rel, lado, entidad);
 }
 
 /**

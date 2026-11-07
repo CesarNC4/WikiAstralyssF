@@ -74,6 +74,17 @@ function objetivoDe(rel: RelacionDef, lado: "a" | "b"): string {
   return lado === "a" ? rel.b.entidad : rel.a.entidad;
 }
 
+/**
+ * De qué entidad es la ficha que mira. En el lado comodín el registro no lo sabe y el número de
+ * ficha no basta: sin el tipo, lo del personaje #7 saldría también en la organización #7.
+ */
+function tipoPropio(rel: RelacionDef, lado: "a" | "b", entidad: string): string {
+  const declarada = lado === "a" ? rel.a.entidad : rel.b.entidad;
+  if (declarada !== CUALQUIERA) return declarada;
+  if (!entidad || entidad === CUALQUIERA) throw new Error(`«${rel.id}»: falta la entidad de la ficha.`);
+  return entidad;
+}
+
 function visible(e: Etiqueta): boolean {
   return e.estado === null || e.estado === "publicado";
 }
@@ -94,13 +105,14 @@ export async function leerFilas(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   opts: OpcionesLectura = {},
 ): Promise<FilaVinculo[]> {
   const rel = getRelacion(relId);
   if (!rel || !ownerId) return [];
   if (rel.medio === "tabla") return leerDeTabla(rel, lado, ownerId, opts);
   if (rel.medio === "referencia") return leerDeReferencia(rel, lado, ownerId, opts);
-  return leerDeVinculo(rel, lado, ownerId, opts);
+  return leerDeVinculo(rel, lado, ownerId, entidad, opts);
 }
 
 async function leerDeTabla(
@@ -168,6 +180,7 @@ async function leerDeVinculo(
   rel: RelacionDef,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   opts: OpcionesLectura,
 ): Promise<FilaVinculo[]> {
   const v = s.vinculo;
@@ -177,11 +190,7 @@ async function leerDeVinculo(
   const otroTipo = lado === "a" ? v.destinoTipo : v.origenTipo;
   const otroId = lado === "a" ? v.destinoId : v.origenId;
 
-  // El lado comodín acepta fichas de cualquier entidad: su tipo no se filtra
-  // por una constante, ya viene fijado por la ficha que consulta.
-  const miEntidad = lado === "a" ? rel.a.entidad : rel.b.entidad;
-  const filtros: SQL[] = [eq(v.relacion, rel.relacion ?? rel.id), eq(propioId, ownerId)];
-  if (miEntidad !== CUALQUIERA) filtros.push(eq(propioTipo, miEntidad));
+  const filtros: SQL[] = [eq(v.relacion, rel.relacion ?? rel.id), eq(propioId, ownerId), eq(propioTipo, tipoPropio(rel, lado, entidad))];
 
   const brutas = await db
     .select({ id: v.id, otroTipo, otroId, tipo: v.tipo, nota: v.nota, oculto: v.oculto })
@@ -275,6 +284,7 @@ export async function crearVinculo(
   relId: string,
   lado: "a" | "b",
   ownerId: number,
+  entidad: string,
   destino: DestinoNuevo,
   campos: Campos = {},
   { oculto = false }: { oculto?: boolean } = {},
@@ -306,8 +316,9 @@ export async function crearVinculo(
     const [creada] = (await db.insert(def.tabla).values(fila as never).returning({ id: cols(def.tabla)[def.pk] })) as unknown as { id: number }[];
     id = creada?.id ?? null;
   } else {
-    const miEntidad = lado === "a" ? rel.a.entidad : rel.b.entidad;
+    const miEntidad = tipoPropio(rel, lado, entidad);
     const suEntidad = destino.tipo ?? objetivoDe(rel, lado);
+    if (suEntidad === CUALQUIERA) throw new Error(`«${rel.id}»: falta la entidad de la otra ficha.`);
     const [creada] = await db
       .insert(s.vinculo)
       .values(
@@ -614,9 +625,7 @@ export async function contarBloques(
 
       const propioTipo = b.lado === "a" ? s.vinculo.origenTipo : s.vinculo.destinoTipo;
       const propioId = b.lado === "a" ? s.vinculo.origenId : s.vinculo.destinoId;
-      const miEntidad = b.lado === "a" ? rel.a.entidad : rel.b.entidad;
-      const filtros: SQL[] = [eq(s.vinculo.relacion, rel.relacion ?? rel.id), eq(propioId, ownerId)];
-      if (miEntidad !== CUALQUIERA) filtros.push(eq(propioTipo, miEntidad));
+      const filtros: SQL[] = [eq(s.vinculo.relacion, rel.relacion ?? rel.id), eq(propioId, ownerId), eq(propioTipo, tipoPropio(rel, b.lado, entidad))];
       const [fila] = await db
         .select({ n: sql<number>`count(*)::int` })
         .from(s.vinculo)
@@ -671,9 +680,7 @@ export async function clonarVinculos(entidad: string, origenId: number, destinoI
 
     const propioTipo = b.lado === "a" ? s.vinculo.origenTipo : s.vinculo.destinoTipo;
     const propioId = b.lado === "a" ? s.vinculo.origenId : s.vinculo.destinoId;
-    const miEntidad = b.lado === "a" ? rel.a.entidad : rel.b.entidad;
-    const filtros: SQL[] = [eq(s.vinculo.relacion, rel.relacion ?? rel.id), eq(propioId, origenId)];
-    if (miEntidad !== CUALQUIERA) filtros.push(eq(propioTipo, miEntidad));
+    const filtros: SQL[] = [eq(s.vinculo.relacion, rel.relacion ?? rel.id), eq(propioId, origenId), eq(propioTipo, tipoPropio(rel, b.lado, entidad))];
 
     const filas = await db.select().from(s.vinculo).where(and(...filtros));
     if (filas.length === 0) continue;

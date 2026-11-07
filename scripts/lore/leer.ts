@@ -216,7 +216,7 @@ async function ficha(entidad: string, arg: string | undefined) {
   // Conexiones: todas las del registro, desde el lado de esta ficha.
   const conexiones: string[] = [];
   for (const b of bloquesDe(entidad)) {
-    const filas = await leerFilas(b.relId, b.lado, id);
+    const filas = await leerFilas(b.relId, b.lado, id, entidad);
     for (const f of filas) {
       const extra = Object.entries(f.campos)
         .filter(([, v]) => v && v !== "false")

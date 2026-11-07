@@ -32,7 +32,7 @@ export async function getBloquesPublicos(entidad: string, ownerId: number): Prom
     candidatos.map(async (b) => {
       // `publico: true` descarta las fichas en borrador, ocultas o en la
       // papelera del otro extremo, sin que el bloque desaparezca por ello.
-      const filas = await leerFilas(b.relId, b.lado, ownerId, { publico: true, limite: 48 });
+      const filas = await leerFilas(b.relId, b.lado, ownerId, entidad, { publico: true, limite: 48 });
       return {
         clave: `${b.relId}:${b.lado}`,
         titulo: b.titulo,
