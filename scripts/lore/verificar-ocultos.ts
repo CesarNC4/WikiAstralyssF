@@ -108,8 +108,12 @@ async function buscarEn(rutas: string[], secreto: string, que: string) {
   }
 }
 
-/** El texto de un secreto no está en el buscador. */
-async function buscarEnIndice(secreto: string, que: string) {
+/**
+ * El texto de un secreto no está en el buscador. En la entrada de su propia ficha no puede salir nunca. En las
+ * demás rige lo mismo que en las páginas generales: un valor corto («Elemental», un título) puede estar ahí por
+ * otra razón, así que se avisa en vez de acusar.
+ */
+async function buscarEnIndice(secreto: string, que: string, propia?: { entidad: string; id: number }) {
   const a = aguja(secreto);
   if (!a) return;
   comprobaciones++;
@@ -117,7 +121,10 @@ async function buscarEnIndice(secreto: string, que: string) {
     .select({ tipo: s.searchIndex.entidadTipo, id: s.searchIndex.entidadId, sub: s.searchIndex.subtitulo, res: s.searchIndex.resumen })
     .from(s.searchIndex);
   for (const f of filas) {
-    if (f.sub?.includes(a) || f.res?.includes(a)) fuga(que, `el buscador (${f.tipo} #${f.id})`, a);
+    if (!f.sub?.includes(a) && !f.res?.includes(a)) continue;
+    const esPropia = propia !== undefined && f.tipo === propia.entidad && Number(f.id) === propia.id;
+    if (esPropia || a.length >= 12) fuga(que, `el buscador (${f.tipo} #${f.id})`, a);
+    else avisos.push(`· ${que}: «${a}» sale en el buscador (${f.tipo} #${f.id}). Es corto y puede ser casualidad: míralo a mano.`);
   }
 }
 
@@ -177,7 +184,7 @@ async function verificarCampos() {
     // valor corto de lista (un género, un tipo) se repite por fuerza en otras fichas.
     const generales = m.valor.length >= 12 ? PAGINAS_GENERALES : [];
     await buscarEn([...(ruta ? [ruta] : []), ...generales], m.valor, que);
-    await buscarEnIndice(m.valor, que);
+    await buscarEnIndice(m.valor, que, { entidad: m.entidad, id: m.id });
     // La vista previa de los enlaces.
     comprobaciones++;
     const og = await getOgFicha(m.entidad, m.id).catch(() => null);
@@ -221,7 +228,7 @@ async function verificarTrozos() {
         n++;
         const que = `Trozo oculto en ${t}.${c}`;
         await buscarEn([...(ruta ? [ruta] : []), ...PAGINAS_GENERALES], m[1], que);
-        await buscarEnIndice(m[1], que);
+        await buscarEnIndice(m[1], que, entidad ? { entidad, id: fila.id as number } : undefined);
       }
     }
   }
