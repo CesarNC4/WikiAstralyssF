@@ -73,7 +73,7 @@ async function leerCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.organizaciones.id, titulo: s.organizaciones.nombre, subtitulo: s.organizaciones.subtitulo, imagenUrl: s.organizaciones.imagenUrl, badge: s.organizaciones.tipo })
         .from(s.organizaciones)
-        .where(eq(s.organizaciones.estadoPublicacion, "publicado"))
+        .where(and(eq(s.organizaciones.estadoPublicacion, "publicado"), isNull(s.organizaciones.eliminadoEn)))
         .orderBy(asc(s.organizaciones.nombre));
       return rows.map((r) => ({ ...r, href: `/organizaciones/${r.id}` }));
     }
@@ -81,7 +81,7 @@ async function leerCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.familias.id, titulo: s.familias.nombre, subtitulo: s.familias.subtitulo, imagenUrl: s.familias.imagenUrl, badge: s.familias.origen })
         .from(s.familias)
-        .where(eq(s.familias.estadoPublicacion, "publicado"))
+        .where(and(eq(s.familias.estadoPublicacion, "publicado"), isNull(s.familias.eliminadoEn)))
         .orderBy(asc(s.familias.nombre));
       return rows.map((r) => ({ ...r, href: `/familias/${r.id}` }));
     }
@@ -160,7 +160,7 @@ async function leerCards(key: EntityKey): Promise<EntityCard[]> {
       const rows = await db
         .select({ id: s.paginasLore.id, slug: s.paginasLore.slug, titulo: s.paginasLore.titulo, subtitulo: s.paginasLore.subtitulo, imagenUrl: s.paginasLore.imagenUrl })
         .from(s.paginasLore)
-        .where(eq(s.paginasLore.estadoPublicacion, "publicado"))
+        .where(and(eq(s.paginasLore.estadoPublicacion, "publicado"), isNull(s.paginasLore.eliminadoEn)))
         .orderBy(asc(s.paginasLore.titulo));
       return rows.map((r) => ({
         id: r.slug,

@@ -268,7 +268,7 @@ export async function getNacionFacciones(nacionId: number) {
       .select({ id: s.organizaciones.id, nombre: s.organizaciones.nombre, imagenUrl: s.organizaciones.imagenUrl, tipo: s.nacionOrganizacion.tipo, oculto: s.nacionOrganizacion.oculto })
       .from(s.nacionOrganizacion)
       .innerJoin(s.organizaciones, eq(s.nacionOrganizacion.organizacionId, s.organizaciones.id))
-      .where(and(eq(s.nacionOrganizacion.nacionId, nacionId), or(eq(s.nacionOrganizacion.oculto, true), eq(s.organizaciones.estadoPublicacion, "publicado")))),
+      .where(and(eq(s.nacionOrganizacion.nacionId, nacionId), or(eq(s.nacionOrganizacion.oculto, true), and(eq(s.organizaciones.estadoPublicacion, "publicado"), isNull(s.organizaciones.eliminadoEn))))),
     db
       .select({ id: s.razas.id, nombre: s.razas.nombre, imagenUrl: s.razas.imagenUrl, tipo: s.nacionRaza.tipo, oculto: s.nacionRaza.oculto })
       .from(s.nacionRaza)
@@ -383,7 +383,7 @@ export async function getSistemaMonetario() {
 
 export async function getPaginaLore(slug: string) {
   return firstVisible(
-    db.select().from(s.paginasLore).where(and(eq(s.paginasLore.slug, slug), eq(s.paginasLore.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.paginasLore).where(and(eq(s.paginasLore.slug, slug), eq(s.paginasLore.estadoPublicacion, "publicado"), isNull(s.paginasLore.eliminadoEn))).limit(1),
     "lore",
   );
 }
@@ -419,7 +419,7 @@ function historialVisible<T extends { id: number; oculto: boolean }>(h: T): T {
 // ── Organización (con jerarquía y facciones) ─────────────
 export async function getOrganizacionFicha(id: number) {
   const org = await firstVisible(
-    db.select().from(s.organizaciones).where(and(eq(s.organizaciones.id, id), eq(s.organizaciones.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.organizaciones).where(and(eq(s.organizaciones.id, id), eq(s.organizaciones.estadoPublicacion, "publicado"), isNull(s.organizaciones.eliminadoEn))).limit(1),
     "organizaciones",
   );
   if (!org) return null;
@@ -484,7 +484,7 @@ export async function getOrganizacionFicha(id: number) {
 // ── Familia (con árbol y jerarquía) ──────────────────────
 export async function getFamiliaFicha(id: number) {
   const familia = await firstVisible(
-    db.select().from(s.familias).where(and(eq(s.familias.id, id), eq(s.familias.estadoPublicacion, "publicado"))).limit(1),
+    db.select().from(s.familias).where(and(eq(s.familias.id, id), eq(s.familias.estadoPublicacion, "publicado"), isNull(s.familias.eliminadoEn))).limit(1),
     "familias",
   );
   if (!familia) return null;
@@ -507,7 +507,7 @@ export async function getFamiliaFicha(id: number) {
       .from(s.familiaArbol)
       .leftJoin(
         s.personajes,
-        and(eq(s.familiaArbol.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado")),
+        and(eq(s.familiaArbol.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado"), isNull(s.personajes.eliminadoEn)),
       )
       .where(eq(s.familiaArbol.familiaId, id))
       .orderBy(asc(s.familiaArbol.generacion)),
@@ -528,7 +528,7 @@ export async function getFamiliaFicha(id: number) {
       .from(s.familiaJerarquia)
       .leftJoin(
         s.personajes,
-        and(eq(s.familiaJerarquia.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado")),
+        and(eq(s.familiaJerarquia.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado"), isNull(s.personajes.eliminadoEn)),
       )
       .leftJoin(s.familiaRangos, eq(s.familiaJerarquia.rangoId, s.familiaRangos.id))
       .where(eq(s.familiaJerarquia.familiaId, id))
@@ -582,7 +582,7 @@ export async function getGremioFicha() {
       .from(s.gremioJerarquia)
       .leftJoin(
         s.personajes,
-        and(eq(s.gremioJerarquia.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado")),
+        and(eq(s.gremioJerarquia.personajeId, s.personajes.id), eq(s.personajes.estadoPublicacion, "publicado"), isNull(s.personajes.eliminadoEn)),
       )
       .leftJoin(s.gremioRangos, eq(s.gremioJerarquia.rangoId, s.gremioRangos.id))
       .where(eq(s.gremioJerarquia.gremioId, gid))
@@ -737,6 +737,6 @@ export async function getLoreSlugs(): Promise<string[]> {
   const rows = await db
     .select({ slug: s.paginasLore.slug })
     .from(s.paginasLore)
-    .where(eq(s.paginasLore.estadoPublicacion, "publicado"));
+    .where(and(eq(s.paginasLore.estadoPublicacion, "publicado"), isNull(s.paginasLore.eliminadoEn)));
   return rows.map((r) => r.slug);
 }
