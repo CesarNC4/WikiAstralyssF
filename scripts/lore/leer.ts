@@ -310,7 +310,7 @@ async function opciones(campos: string[]): Promise<Map<string, string[]>> {
     for (const f of filas) out.set(f.campo, [...(out.get(f.campo) ?? []), f.grupo ? `${f.valor} (${f.grupo})` : f.valor]);
   }
   if (campos.includes("elementos")) {
-    const els = await db.select({ nombre: s.elementos.nombre, familia: s.elementos.familia }).from(s.elementos).orderBy(asc(s.elementos.nombre));
+    const els = await db.select({ nombre: s.elementos.nombre, familia: s.elementos.familia }).from(s.elementos).where(isNull(s.elementos.eliminadoEn)).orderBy(asc(s.elementos.nombre));
     out.set("elementos", els.map((e) => (e.familia ? `${e.nombre} (${e.familia})` : e.nombre)));
   }
   return out;
