@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { censurarTexto } from "@/lib/visibilidad";
 
 /**
  * Renderizador de markdown minimalista (sin dependencias) para la prosa de
  * Astralys. Soporta: encabezados, negrita/cursiva, código, enlaces, listas,
  * citas, separadores, tablas y spoilers ocultables (`||texto||`).
+ *
+ * Cada salto de línea se respeta, como en Discord: las líneas seguidas de un
+ * párrafo o de una cita se separan con un salto, no se juntan en una sola. Una
+ * línea en blanco sigue abriendo un párrafo nuevo.
  */
 export function Markdown({ source, className }: { source: string | null | undefined; className?: string }) {
   if (!source || !source.trim()) return null;
@@ -68,7 +72,7 @@ function renderBlocks(src: string): ReactNode[] {
           key={key++}
           className="my-4 border-l-2 border-primary/60 pl-4 italic text-fg-secondary"
         >
-          {renderInline(quote.join(" "))}
+          {renderLines(quote)}
         </blockquote>,
       );
       continue;
@@ -152,12 +156,22 @@ function renderBlocks(src: string): ReactNode[] {
     }
     blocks.push(
       <p key={key++} className="my-3 leading-relaxed text-fg-secondary">
-        {renderInline(para.join(" "))}
+        {renderLines(para)}
       </p>,
     );
   }
 
   return blocks;
+}
+
+/** Las líneas de un párrafo o una cita, con un salto entre cada una. */
+function renderLines(lines: string[]): ReactNode[] {
+  return lines.map((linea, idx) => (
+    <Fragment key={idx}>
+      {idx > 0 && <br />}
+      {renderInline(linea)}
+    </Fragment>
+  ));
 }
 
 function splitRow(line: string): string[] {
