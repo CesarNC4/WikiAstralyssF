@@ -13,6 +13,7 @@ import type { Calendario, Fecha } from "@/lib/fechas/tipos";
 import { bloquePendiente, estaVacio, reemplazarBloque } from "@/lib/propuestas/archivo";
 import { diferencias } from "@/lib/propuestas/diff";
 import { leerFila, leerPropuesta } from "@/lib/propuestas/formato";
+import { entidadesConMolde, moldeDe, rotuloDe } from "@/lib/propuestas/moldes";
 
 let fallos = 0;
 function igual(nombre: string, obtenido: unknown, esperado: unknown) {
@@ -189,6 +190,32 @@ const raza = leerPropuesta(`## Raza: Prueba · nueva
 - Longevidad: Larga
 `).fichas[0];
 igual("rótulo repetido", raza.datos.map((d) => d.campo), ["statLongevidad", "longevidad"]);
+igual("rótulo repetido: sale con su sección", raza.datos.map((d) => d.rotulo), ["Longevidad (Atributos)", "Longevidad (Datos clave)"]);
+// Con la sección detrás no hay duda, aunque el valor sea `(vaciar)`.
+const mineral = leerPropuesta(`## Mineral #1: Prueba · cambios
+- Rareza (Mercado): (vaciar)
+- Rareza (Identidad): (vaciar)
+- Valor: (vaciar)
+- Valor (cantidad): 3
+`).fichas[0];
+igual(
+  "rótulo con sección",
+  mineral.datos.map((d) => [d.campo, d.vaciar]),
+  [["statRareza", true], ["rareza", true], ["statValor", true], ["valorCantidad", false]],
+);
+// Lo que escribe `lore ficha` se lee igual: cada campo de cada molde vuelve a su columna.
+const extraviados = entidadesConMolde().flatMap((e) => {
+  const m = moldeDe(e)!;
+  return m.campos
+    .filter((c) => c.name !== m.nombre)
+    .filter((c) => {
+      const linea = c.tipo === "largo" ? `### ${rotuloDe(m, c)}\nTexto.` : `- ${rotuloDe(m, c)}: (vaciar)`;
+      const leido = leerPropuesta(`## ${m.singular} #1: Prueba · cambios\n${linea}\n`).fichas[0]?.datos[0];
+      return leido?.campo !== c.name;
+    })
+    .map((c) => `${e}.${c.name}`);
+});
+igual("cada rótulo de lore ficha vuelve a su campo", extraviados, []);
 igual("«Estado» que es un campo", leerPropuesta(`## Organización: X · nueva
 - Estado: Activa
 `).fichas[0].datos[0].campo, "estado");

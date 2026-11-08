@@ -1,4 +1,4 @@
-import { entidadesConMolde, moldeDe, type CampoMolde, type Molde } from "./moldes";
+import { entidadesConMolde, moldeDe, rotuloDe, seccionCorta, type CampoMolde, type Molde } from "./moldes";
 import { TITULO_ESTADISTICAS, listasDe, type ListaDef } from "./listas";
 import { normalizar, type BloqueRaro, type DatoCrudo, type EstadoFicha, type FichaCruda, type PropuestaCruda, type Subcampo, type SueltoCrudo } from "./tipos";
 
@@ -30,12 +30,20 @@ function sinCandado(t: string): [string, boolean] {
 
 /**
  * Busca el campo de un rótulo. Algunos se repiten en una misma ficha ("Longevidad" es
- * un desplegable y un atributo en las razas): decide cómo viene escrito el valor.
+ * un desplegable y un atributo en las razas). Con la sección detrás, «Longevidad
+ * (Atributos)», no hay duda; sin ella, decide cómo viene escrito el valor.
  */
 function campoPorRotulo(molde: Molde, rotulo: string, opts: { encabezado?: boolean; valor?: string } = {}): CampoMolde | undefined {
   const n = normalizar(rotulo);
   const posibles = molde.campos.filter((c) => normalizar(c.label) === n);
-  if (posibles.length <= 1) return posibles[0];
+  if (!posibles.length) {
+    // Un rótulo que ya lleva paréntesis propio («Valor (cantidad)») ha salido arriba.
+    const conSeccion = rotulo.match(/^(.+?)\s*\(([^()]+)\)\s*$/);
+    if (!conSeccion) return undefined;
+    const [base, sec] = [normalizar(conSeccion[1]), normalizar(conSeccion[2])];
+    return molde.campos.find((c) => normalizar(c.label) === base && normalizar(seccionCorta(c.seccion)) === sec);
+  }
+  if (posibles.length === 1) return posibles[0];
   if (opts.encabezado) return posibles.find((c) => c.tipo === "largo") ?? posibles[0];
   const esNumero = /^-?\d+([.,]\d+)?$/.test((opts.valor ?? "").trim());
   return (esNumero ? posibles.find((c) => c.tipo === "numero") : posibles.find((c) => c.tipo !== "numero" && c.tipo !== "largo")) ?? posibles[0];
@@ -126,7 +134,7 @@ function datoDeLinea(molde: Molde, linea: string, seccion: string | null): DatoC
   const valor = conCandado.replace(OPCION_NUEVA, "").trim();
   const campo = campoPorRotulo(molde, m[1], { valor });
   if (!campo) return datoBase("desconocido", linea, seccion, m[1], valor);
-  const d = datoBase("campo", linea, seccion, campo.label, valor);
+  const d = datoBase("campo", linea, seccion, rotuloDe(molde, campo), valor);
   d.campo = campo.name;
   d.oculto = oculto;
   d.opcionNueva = opcionNueva;
@@ -266,7 +274,7 @@ function leerFicha(cabecera: string, lineas: string[], raw: string): FichaCruda 
     const anadir = ANADIR.test(titulo);
     const rotulo = titulo.replace(ANADIR, "").trim();
     const campo = campoPorRotulo(molde, rotulo, { encabezado: true });
-    abierto = datoBase(campo ? "campo" : "desconocido", linea, null, campo?.label ?? rotulo, "");
+    abierto = datoBase(campo ? "campo" : "desconocido", linea, null, campo ? rotuloDe(molde, campo) : rotulo, "");
     abierto.campo = campo?.name;
     abierto.oculto = oculto;
     abierto.anadir = anadir;

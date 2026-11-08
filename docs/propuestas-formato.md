@@ -67,6 +67,10 @@ singular del panel (Personaje, Nación, Hoja de trama…).
 - Los de una línea: `- <Rótulo>: <valor>`.
 - Los de texto largo: un encabezado `### <Rótulo>` y el texto debajo. El texto no puede
   llevar encabezados `##` ni `###`, que marcan dónde acaba: de `####` para abajo sí.
+- Si dos campos de una ficha se llaman igual, el rótulo lleva detrás su sección:
+  `- Rareza (Identidad): Raro` y `- Rareza (Mercado): 36` en un mineral. Así lo
+  escriben `lore ficha` y `lore campos`. Sin la sección, la bandeja elige por el
+  valor (un número va al campo numérico), pero `(vaciar)` necesita la sección.
 - Las opciones de catálogo se escriben tal cual aparecen en el catálogo. Si
   hace falta una opción nueva, se marca: `- Ocupación: Cartógrafo (opción nueva)`.
 - `Estado` (borrador, publicado u oculto) es solo una sugerencia: decide el

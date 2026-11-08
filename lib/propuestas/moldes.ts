@@ -1,5 +1,6 @@
 import { ENTIDADES, type FieldDef } from "@/lib/admin/fields";
 import { RELACIONES } from "@/lib/relaciones/registro";
+import { normalizar } from "./tipos";
 
 /**
  * El molde de cada ficha: sus campos con los rótulos del panel, por secciones
@@ -50,6 +51,22 @@ export interface Molde {
   /** Columna del nombre (nombre | titulo). */
   nombre: string;
   campos: CampoMolde[];
+}
+
+/** La sección sin el rango del final: «Mercado (0-100)» → «Mercado». */
+export function seccionCorta(seccion: string): string {
+  return seccion.replace(/\s*\([^()]*\)\s*$/, "").trim();
+}
+
+/**
+ * El rótulo con que se escribe un campo en una propuesta. Si otro campo de la misma
+ * ficha se llama igual (la Rareza de la identidad y la del mercado de un mineral),
+ * lleva detrás su sección, «Rareza (Mercado)», para que `(vaciar)` sepa cuál es.
+ */
+export function rotuloDe(molde: Molde, campo: CampoMolde): string {
+  const n = normalizar(campo.label);
+  const repetido = molde.campos.some((c) => c !== campo && normalizar(c.label) === n);
+  return repetido ? `${campo.label} (${seccionCorta(campo.seccion)})` : campo.label;
 }
 
 const TIPO: Record<FieldDef["type"], TipoCampo> = {

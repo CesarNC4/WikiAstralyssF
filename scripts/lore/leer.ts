@@ -17,7 +17,7 @@ import { textosFecha } from "@/lib/fechas";
 import { rolesDe } from "@/lib/fechas/roles";
 import { ESTADISTICAS, EXTRAS_JERARQUIA, TITULO_ESTADISTICAS, lineaDeFila, listasDe } from "@/lib/propuestas/listas";
 import { extrasDeMiembros, leerLista } from "@/lib/propuestas/listasDb";
-import { moldeDe, entidadesConMolde, type CampoMolde } from "@/lib/propuestas/moldes";
+import { moldeDe, entidadesConMolde, rotuloDe, type CampoMolde } from "@/lib/propuestas/moldes";
 import { etiquetas, leerFilas } from "@/lib/relaciones/consultas";
 import { bloquesDe } from "@/lib/relaciones/registro";
 import { ENTIDAD_INFO, infoDe } from "@/lib/relaciones/tablas";
@@ -203,15 +203,15 @@ async function ficha(entidad: string, arg: string | undefined) {
   for (const c of campos) {
     const v = fila[c.name];
     if (vacio(v)) {
-      vacios.push(c.label);
+      vacios.push(rotuloDe(molde!, c));
       continue;
     }
     const valor = c.tipo === "ficha" ? await nombreDeRef(c, v) : texto(v);
     const candado = ocultos.has(c.name) ? " 🔒" : "";
     if (c.tipo === "largo") largos.push([c, valor + candado]);
-    else console.log(`- ${c.label}: ${valor}${candado}`);
+    else console.log(`- ${rotuloDe(molde!, c)}: ${valor}${candado}`);
   }
-  for (const [c, valor] of largos) console.log(`\n### ${c.label}\n${valor}`);
+  for (const [c, valor] of largos) console.log(`\n### ${rotuloDe(molde!, c)}\n${valor}`);
 
   // Conexiones: todas las del registro, desde el lado de esta ficha.
   const conexiones: string[] = [];
@@ -336,7 +336,7 @@ async function campos(entidad: string) {
   for (const c of molde.campos) {
     if (c.seccion !== seccion) console.log(`\n### ${(seccion = c.seccion)}`);
     const tipo = c.tipo === "ficha" ? `ficha de ${c.ref}` : c.tipo;
-    console.log(`- ${c.label} [${tipo}]${lista(c)}${c.hint ? `  — ${c.hint}` : ""}`);
+    console.log(`- ${rotuloDe(molde, c)} [${tipo}]${lista(c)}${c.hint ? `  — ${c.hint}` : ""}`);
   }
   if (bloques.length) {
     console.log("\n### Conexiones posibles (título del bloque → con qué)");
