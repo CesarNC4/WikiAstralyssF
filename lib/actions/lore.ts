@@ -110,15 +110,7 @@ export async function guardarLore(
 
   await purgarEnSegundoPlano();
   revalidar(data.slug, savedId);
-  if (notificar) {
-    await notificarNuevaPublicacion({
-      tipo: "lore",
-      idOrSlug: data.slug,
-      nombre: data.titulo,
-      descripcion: data.subtitulo ?? data.introduccion,
-      imagenUrl: data.imagenUrl,
-    });
-  }
+  if (notificar) await notificarNuevaPublicacion("lore", savedId);
   if (created) redirect(`/admin/lore/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -131,14 +123,7 @@ async function slugDe(id: number): Promise<string> {
 export async function cambiarEstadoLore(id: number, estado: "borrador" | "publicado" | "oculto"): Promise<void> {
   await assertAdmin();
   const [existing] = await db
-    .select({
-      ppv: s.paginasLore.publicadoPrimeraVezEn,
-      slug: s.paginasLore.slug,
-      titulo: s.paginasLore.titulo,
-      subtitulo: s.paginasLore.subtitulo,
-      introduccion: s.paginasLore.introduccion,
-      imagenUrl: s.paginasLore.imagenUrl,
-    })
+    .select({ ppv: s.paginasLore.publicadoPrimeraVezEn, slug: s.paginasLore.slug })
     .from(s.paginasLore)
     .where(eq(s.paginasLore.id, id))
     .limit(1);
@@ -146,15 +131,7 @@ export async function cambiarEstadoLore(id: number, estado: "borrador" | "public
   const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
   await db.update(s.paginasLore).set({ estadoPublicacion: estado, publicadoPrimeraVezEn }).where(eq(s.paginasLore.id, id));
   revalidar(existing?.slug ?? (await slugDe(id)), id);
-  if (primeraVez && existing) {
-    await notificarNuevaPublicacion({
-      tipo: "lore",
-      idOrSlug: existing.slug,
-      nombre: existing.titulo ?? "Nueva página de lore",
-      descripcion: existing.subtitulo ?? existing.introduccion,
-      imagenUrl: existing.imagenUrl,
-    });
-  }
+  if (primeraVez && existing) await notificarNuevaPublicacion("lore", id);
 }
 
 export async function moverLoreAPapelera(id: number): Promise<void> {

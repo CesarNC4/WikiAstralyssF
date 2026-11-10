@@ -858,6 +858,9 @@ GitHub Actions se reserva para lo suyo: **CI/CD** (lint, typecheck, build en PR)
 - **No bloquear la respuesta del action:** ejecutar el `fetch` a Discord de forma que un fallo no rompa la publicación (try/catch que loguea a Sentry pero no aborta la mutación). La publicación es la operación crítica; la notificación es best-effort.
 - **Idempotencia/anti-spam:** evitar disparar en cada `save` de borrador (solo en transición a `publicado` y en ediciones de ya-publicados). Un guard simple sobre el cambio de estado lo garantiza. Opcional: debounce de ediciones múltiples seguidas.
 - Webhook URL en variable de entorno (`DISCORD_WEBHOOK_URL`), nunca en cliente.
+- **Solo lo público** (2026-11-09): `notificarNuevaPublicacion(tipo, id)` lee la ficha ya guardada y le aplica
+  la misma regla que las páginas (`ocultarEnLista`): sin trozos `[[oculto]]` y sin campos ocultos. Si no
+  puede leer lo oculto, no avisa. `pnpm verificar-ocultos` revisa también el aviso (`avisoDe`).
 
 ---
 

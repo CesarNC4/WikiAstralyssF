@@ -9,7 +9,7 @@
  * Comprueba:
  *  - Campos ocultos y trozos `[[oculto]]…[[/oculto]]`: su texto no sale en la ficha,
  *    ni en los índices y páginas generales, ni en el buscador, ni en la vista previa
- *    de los enlaces; y la marca `[[oculto` tampoco sale nunca.
+ *    de los enlaces, ni en el aviso de Discord; y la marca `[[oculto` tampoco sale nunca.
  *  - Conexiones ocultas: ninguna de las dos fichas enlaza a la otra, su nota no sale y
  *    no se dibujan en el Atlas.
  *  - Fechas ocultas: su texto no sale en la ficha y no están en la cronología.
@@ -21,6 +21,7 @@ import { and, eq, getTableColumns, getTableName } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
+import { avisoDe } from "@/lib/discord";
 import { textosFecha } from "@/lib/fechas";
 import { ENTITY_LIST } from "@/lib/entities";
 import { getCalendario } from "@/lib/queries/fechas";
@@ -128,6 +129,21 @@ async function buscarEnIndice(secreto: string, que: string, propia?: { entidad: 
   }
 }
 
+/**
+ * El aviso de Discord de la ficha no lleva el secreto. Se mira aunque la ficha no esté
+ * publicada: es lo que saldría el día que se publique.
+ */
+async function buscarEnAviso(entidad: string, id: number, secreto: string, que: string) {
+  const a = aguja(secreto);
+  if (!a) return;
+  comprobaciones++;
+  const aviso = await avisoDe(entidad, id).catch((e: Error) => {
+    avisos.push(`· ${que}: no se pudo preparar el aviso de Discord (${e.message}).`);
+    return null;
+  });
+  if (aviso && JSON.stringify(aviso).includes(a)) fuga(que, "el aviso de Discord", a);
+}
+
 /** La ruta pública de una ficha, si la tiene y es pública. */
 async function rutaPublica(entidad: string, id: number): Promise<string | null> {
   const e = (await etiquetas(entidad, [id])).get(id);
@@ -190,6 +206,7 @@ async function verificarCampos() {
     const og = await getOgFicha(m.entidad, m.id).catch(() => null);
     const a = aguja(m.valor);
     if (og && a && og.subtitulo?.includes(a)) fuga(que, "la vista previa de los enlaces", a);
+    await buscarEnAviso(m.entidad, m.id, m.valor, que);
   }
 }
 
@@ -229,6 +246,7 @@ async function verificarTrozos() {
         const que = `Trozo oculto en ${t}.${c}`;
         await buscarEn([...(ruta ? [ruta] : []), ...PAGINAS_GENERALES], m[1], que);
         await buscarEnIndice(m[1], que, entidad ? { entidad, id: fila.id as number } : undefined);
+        if (entidad) await buscarEnAviso(entidad, fila.id as number, m[1], que);
       }
     }
   }

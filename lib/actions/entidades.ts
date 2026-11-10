@@ -182,15 +182,7 @@ export async function guardarEntidad(
   // aquí se haya escrito otro. Este editor desaparece en la Fase 4.
   if (key === "capitulos") await renumerarCapitulos(db).catch((e) => console.error("[guardarEntidad] renumerar", e));
   revalidar(config.route, savedId);
-  if (notificar) {
-    await notificarNuevaPublicacion({
-      tipo: key,
-      idOrSlug: savedId,
-      nombre: String(data[config.nameField] ?? config.singular),
-      descripcion: (data.subtitulo ?? data.descripcion ?? data.titulo) as string | null | undefined,
-      imagenUrl: data.imagenUrl as string | null | undefined,
-    });
-  }
+  if (notificar) await notificarNuevaPublicacion(key, savedId);
   if (created) {
     // El taller pasa dónde vive su editor; cualquier otra cosa se ignora para
     // no convertir esto en una redirección abierta.
@@ -207,27 +199,13 @@ export async function cambiarEstadoEntidad(
 ): Promise<void> {
   await assertAdmin();
   const { config, table, c } = resolve(key);
-  // Selecciona, además de ppv, las columnas disponibles para el embed de Discord.
-  const sel: Cols = { ppv: c.publicadoPrimeraVezEn, nombre: c[config.nameField] };
-  if (c.subtitulo) sel.subtitulo = c.subtitulo;
-  if (c.descripcion) sel.descripcion = c.descripcion;
-  if (c.titulo) sel.titulo = c.titulo;
-  if (c.imagenUrl) sel.imagenUrl = c.imagenUrl;
-  const [existing] = await db.select(sel).from(table).where(eq(c.id, id)).limit(1);
+  const [existing] = await db.select({ ppv: c.publicadoPrimeraVezEn }).from(table).where(eq(c.id, id)).limit(1);
   const primeraVez = estado === "publicado" && !existing?.ppv;
   const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await db.update(table).set({ estadoPublicacion: estado, publicadoPrimeraVezEn } as any).where(eq(c.id, id));
   revalidar(config.route, id);
-  if (primeraVez && existing) {
-    await notificarNuevaPublicacion({
-      tipo: key,
-      idOrSlug: id,
-      nombre: String(existing.nombre ?? config.singular),
-      descripcion: existing.subtitulo ?? existing.descripcion ?? existing.titulo ?? null,
-      imagenUrl: existing.imagenUrl ?? null,
-    });
-  }
+  if (primeraVez && existing) await notificarNuevaPublicacion(key, id);
 }
 
 /**
@@ -262,12 +240,7 @@ export async function accionEnLoteEntidad(
     return ids.length;
   }
 
-  const sel: Cols = { id: c.id, ppv: c.publicadoPrimeraVezEn, nombre: c[config.nameField] };
-  if (c.subtitulo) sel.subtitulo = c.subtitulo;
-  if (c.descripcion) sel.descripcion = c.descripcion;
-  if (c.titulo) sel.titulo = c.titulo;
-  if (c.imagenUrl) sel.imagenUrl = c.imagenUrl;
-  const filas = await db.select(sel).from(table).where(inArray(c.id, ids));
+  const filas = await db.select({ id: c.id, ppv: c.publicadoPrimeraVezEn }).from(table).where(inArray(c.id, ids));
   const estrenan = accion === "publicado" ? filas.filter((f) => !f.ppv) : [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -281,15 +254,7 @@ export async function accionEnLoteEntidad(
   }
 
   revalidarLote();
-  for (const f of estrenan) {
-    await notificarNuevaPublicacion({
-      tipo: key,
-      idOrSlug: Number(f.id),
-      nombre: String(f.nombre ?? config.singular),
-      descripcion: f.subtitulo ?? f.descripcion ?? f.titulo ?? null,
-      imagenUrl: f.imagenUrl ?? null,
-    });
-  }
+  for (const f of estrenan) await notificarNuevaPublicacion(key, Number(f.id));
   return ids.length;
 }
 

@@ -296,11 +296,8 @@ export async function guardarCapitulo(id: number, cambios: z.input<typeof Capitu
         set.orden = (ultimo ?? -1) + 1;
       }
       // Primera publicación: se apunta la fecha y, al terminar, se avisa a Discord.
-      let aviso: { titulo: string; descripcion: string | null } | null = null;
-      if (d.estadoPublicacion === "publicado" && !antes.publicadoPrimeraVezEn) {
-        set.publicadoPrimeraVezEn = new Date();
-        aviso = { titulo: d.titulo ?? antes.titulo, descripcion: d.descripcion ?? antes.descripcion };
-      }
+      const aviso = d.estadoPublicacion === "publicado" && !antes.publicadoPrimeraVezEn;
+      if (aviso) set.publicadoPrimeraVezEn = new Date();
 
       if (Object.keys(set).length) await tx.update(s.capitulos).set(set).where(eq(s.capitulos.id, id));
       if (libroNuevo !== antes.libro || (d.tipo !== undefined && (d.tipo || null) !== antes.tipo)) await renumerarCapitulos(tx);
@@ -309,7 +306,7 @@ export async function guardarCapitulo(id: number, cambios: z.input<typeof Capitu
   );
   if (!r.ok) return r;
   revalidarNarrativa(id);
-  if (r.data) await notificarNuevaPublicacion({ tipo: "capitulos", idOrSlug: id, nombre: r.data.titulo, descripcion: r.data.descripcion });
+  if (r.data) await notificarNuevaPublicacion("capitulos", id);
   return { ok: true, data: undefined };
 }
 

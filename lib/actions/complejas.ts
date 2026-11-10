@@ -171,15 +171,7 @@ export async function guardarOrganizacion(
 
   await purgarEnSegundoPlano();
   revalidarOrg(savedId);
-  if (notificar) {
-    await notificarNuevaPublicacion({
-      tipo: "organizaciones",
-      idOrSlug: savedId,
-      nombre,
-      descripcion: base.subtitulo ?? base.descripcion,
-      imagenUrl: base.imagenUrl,
-    });
-  }
+  if (notificar) await notificarNuevaPublicacion("organizaciones", savedId);
   if (created) redirect(`/admin/organizaciones/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -329,15 +321,7 @@ export async function guardarFamilia(
 
   await purgarEnSegundoPlano();
   revalidarFamilia(savedId);
-  if (notificar) {
-    await notificarNuevaPublicacion({
-      tipo: "familias",
-      idOrSlug: savedId,
-      nombre,
-      descripcion: base.subtitulo ?? base.descripcion,
-      imagenUrl: base.imagenUrl,
-    });
-  }
+  if (notificar) await notificarNuevaPublicacion("familias", savedId);
   if (created) redirect(`/admin/familias/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -462,13 +446,7 @@ export async function guardarGremio(
 export async function cambiarEstadoOrg(id: number, estado: Estado): Promise<void> {
   await assertAdmin();
   const [ex] = await db
-    .select({
-      ppv: s.organizaciones.publicadoPrimeraVezEn,
-      nombre: s.organizaciones.nombre,
-      subtitulo: s.organizaciones.subtitulo,
-      descripcion: s.organizaciones.descripcion,
-      imagenUrl: s.organizaciones.imagenUrl,
-    })
+    .select({ ppv: s.organizaciones.publicadoPrimeraVezEn })
     .from(s.organizaciones)
     .where(eq(s.organizaciones.id, id))
     .limit(1);
@@ -476,27 +454,13 @@ export async function cambiarEstadoOrg(id: number, estado: Estado): Promise<void
   const ppv = primeraVez ? new Date() : ex?.ppv ?? null;
   await db.update(s.organizaciones).set({ estadoPublicacion: estado, publicadoPrimeraVezEn: ppv }).where(eq(s.organizaciones.id, id));
   revalidarOrg(id);
-  if (primeraVez && ex) {
-    await notificarNuevaPublicacion({
-      tipo: "organizaciones",
-      idOrSlug: id,
-      nombre: ex.nombre,
-      descripcion: ex.subtitulo ?? ex.descripcion,
-      imagenUrl: ex.imagenUrl,
-    });
-  }
+  if (primeraVez && ex) await notificarNuevaPublicacion("organizaciones", id);
 }
 
 export async function cambiarEstadoFamilia(id: number, estado: Estado): Promise<void> {
   await assertAdmin();
   const [ex] = await db
-    .select({
-      ppv: s.familias.publicadoPrimeraVezEn,
-      nombre: s.familias.nombre,
-      subtitulo: s.familias.subtitulo,
-      descripcion: s.familias.descripcion,
-      imagenUrl: s.familias.imagenUrl,
-    })
+    .select({ ppv: s.familias.publicadoPrimeraVezEn })
     .from(s.familias)
     .where(eq(s.familias.id, id))
     .limit(1);
@@ -504,15 +468,7 @@ export async function cambiarEstadoFamilia(id: number, estado: Estado): Promise<
   const ppv = primeraVez ? new Date() : ex?.ppv ?? null;
   await db.update(s.familias).set({ estadoPublicacion: estado, publicadoPrimeraVezEn: ppv }).where(eq(s.familias.id, id));
   revalidarFamilia(id);
-  if (primeraVez && ex) {
-    await notificarNuevaPublicacion({
-      tipo: "familias",
-      idOrSlug: id,
-      nombre: ex.nombre,
-      descripcion: ex.subtitulo ?? ex.descripcion,
-      imagenUrl: ex.imagenUrl,
-    });
-  }
+  if (primeraVez && ex) await notificarNuevaPublicacion("familias", id);
 }
 
 export async function moverOrgAPapelera(id: number): Promise<void> {

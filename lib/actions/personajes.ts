@@ -12,10 +12,6 @@ import { calcularPoderDeCombate } from "@/lib/poderCombate";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 import { escribirFecha } from "@/lib/queries/fechas";
 
-function nombreCompleto(nombre: string, surname?: string | null): string {
-  return [nombre, surname].filter(Boolean).join(" ").trim();
-}
-
 export interface PersonajeFormState {
   ok: boolean;
   id?: number;
@@ -381,15 +377,7 @@ export async function guardarPersonaje(
 
   await purgarEnSegundoPlano();
   revalidarPersonaje(savedId);
-  if (notificar) {
-    await notificarNuevaPublicacion({
-      tipo: "personajes",
-      idOrSlug: savedId,
-      nombre: nombreCompleto(data.nombre, data.surname),
-      descripcion: data.titulo,
-      imagenUrl: data.imagenUrl,
-    });
-  }
+  if (notificar) await notificarNuevaPublicacion("personajes", savedId);
   // redirect() lanza NEXT_REDIRECT; debe ir FUERA del try/catch para no atraparlo.
   if (created) redirect(`/admin/personajes/${savedId}/editar`);
   return { ok: true, id: savedId, created: false };
@@ -402,13 +390,7 @@ export async function cambiarEstadoPersonaje(
 ): Promise<void> {
   await assertAdmin();
   const [existing] = await db
-    .select({
-      ppv: s.personajes.publicadoPrimeraVezEn,
-      nombre: s.personajes.nombre,
-      surname: s.personajes.surname,
-      titulo: s.personajes.titulo,
-      imagenUrl: s.personajes.imagenUrl,
-    })
+    .select({ ppv: s.personajes.publicadoPrimeraVezEn })
     .from(s.personajes)
     .where(eq(s.personajes.id, id))
     .limit(1);
@@ -419,15 +401,7 @@ export async function cambiarEstadoPersonaje(
     .set({ estadoPublicacion: estado, publicadoPrimeraVezEn })
     .where(eq(s.personajes.id, id));
   revalidarPersonaje(id);
-  if (primeraVez && existing) {
-    await notificarNuevaPublicacion({
-      tipo: "personajes",
-      idOrSlug: id,
-      nombre: nombreCompleto(existing.nombre, existing.surname),
-      descripcion: existing.titulo,
-      imagenUrl: existing.imagenUrl,
-    });
-  }
+  if (primeraVez && existing) await notificarNuevaPublicacion("personajes", id);
 }
 
 /** Mueve a la papelera (soft-delete). */
