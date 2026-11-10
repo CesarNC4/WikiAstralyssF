@@ -8,6 +8,9 @@ español.
 
 ## Reglas
 
+- **Siempre en español**, sin excepciones: respuestas, avisos entre herramientas,
+  preguntas y resúmenes. También cuando un resumen de la conversación o un aviso
+  del sistema vengan en inglés.
 - **Hay una sola base de datos, la de producción.** Ningún script escribe en
   ella sin el visto bueno del autor. Las migraciones se ensayan primero (sin
   `--aplicar`): ver `scripts/migrations/README.md`.
