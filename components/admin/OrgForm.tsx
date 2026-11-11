@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState, startTransition } from "react";
 import { guardarOrganizacion, type ComplejaFormState } from "@/lib/actions/complejas";
+import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import type { EstadoPublicacion } from "@/db/schema/enums";
 import type { RangoRow, FaccionRow, JerarquiaRow, HistorialRow } from "@/lib/admin/complejas";
 import { useToast } from "@/components/admin/Toast";
@@ -77,9 +78,10 @@ export function OrgForm({
   const wrap = <T,>(fn: (x: T) => void) => (x: T) => { fn(x); mark(); };
 
   const [state, formAction, pending] = useActionState<ComplejaFormState | undefined, FormData>(guardarOrganizacion, undefined);
+  const aviso = useAviso();
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); }
+    if (state.ok) { toast("Cambios guardados.", "success"); aviso.reiniciar(); }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -102,6 +104,7 @@ export function OrgForm({
     const fd = new FormData();
     if (id) fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));
+    fd.set("aviso", JSON.stringify(aviso.valor));
     setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
@@ -164,6 +167,7 @@ export function OrgForm({
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <div className="ml-auto flex items-center gap-2">
+            <AvisoDiscord tipo="organizaciones" id={id} estado={estado} {...aviso.props} />
             <select value={estado} onChange={(e) => { setEstado(e.target.value as EstadoPublicacion); mark(); }} className="rounded-lg border border-border-base bg-surface px-3 py-2 text-sm text-fg outline-none">
               <option value="borrador">Borrador</option>
               <option value="publicado">Publicado</option>

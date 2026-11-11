@@ -41,6 +41,7 @@ export function AdminShell({
             <NavLink href="/admin/mapa" icon="Map" label="Mapa" />
             <div className="my-2 border-t border-border-base" />
             <NavLink href="/admin/catalogos" icon="List" label="Catálogos" />
+            <NavLink href="/admin/discord" icon="Megaphone" label="Discord" />
             <NavLink href="/" icon="Compass" label="Ver wiki ↗" />
           </nav>
         </aside>

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useMemo, useState, startTransition } from "react";
 import Link from "next/link";
 import { guardarEntidad, type EntidadFormState } from "@/lib/actions/entidades";
+import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import type { EntidadConfig, FieldDef, RefTarget } from "@/lib/admin/fields";
 import type { OpcionRef } from "@/lib/queries/adminEntidades";
 import type { EstadoPublicacion } from "@/db/schema/enums";
@@ -150,11 +151,13 @@ export function EntidadForm({
     guardarEntidad,
     undefined,
   );
+  const aviso = useAviso();
 
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
       toast("Cambios guardados.", "success");
+      aviso.reiniciar();
     } else if (state.error) {
       toast(state.error, "error");
     }
@@ -193,6 +196,7 @@ export function EntidadForm({
     if (id) fd.set("id", String(id));
     if (rutaBase) fd.set("base", rutaBase);
     fd.set("payload", JSON.stringify(payload));
+    fd.set("aviso", JSON.stringify(aviso.valor));
     setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
@@ -297,6 +301,7 @@ export function EntidadForm({
       <div className={`fixed bottom-0 right-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur ${rutaBase ? "left-[220px]" : "left-0"}`}>
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <div className="ml-auto flex items-center gap-2">
+            <AvisoDiscord tipo={config.key} id={id} estado={estado} {...aviso.props} />
             <select
               value={estado}
               onChange={(e) => { setEstado(e.target.value as EstadoPublicacion); mark(); }}

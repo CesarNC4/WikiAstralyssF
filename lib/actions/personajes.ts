@@ -6,7 +6,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionDe, notificarNuevaPublicacion } from "@/lib/discord";
 import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje";
 import { calcularPoderDeCombate } from "@/lib/poderCombate";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
@@ -377,7 +377,9 @@ export async function guardarPersonaje(
 
   await purgarEnSegundoPlano();
   revalidarPersonaje(savedId);
-  if (notificar) await notificarNuevaPublicacion("personajes", savedId);
+  const aviso = eleccionDe(formData);
+  if (notificar) await notificarNuevaPublicacion("personajes", savedId, aviso);
+  else if (data.estadoPublicacion === "publicado") await avisarCambio("personajes", savedId, aviso);
   // redirect() lanza NEXT_REDIRECT; debe ir FUERA del try/catch para no atraparlo.
   if (created) redirect(`/admin/personajes/${savedId}/editar`);
   return { ok: true, id: savedId, created: false };

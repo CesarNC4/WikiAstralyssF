@@ -32,7 +32,9 @@ o recréalo desde el panel de Supabase.
 | `CLOUDINARY_API_KEY` | Firma las subidas y borra los assets huérfanos. | Si usas imágenes |
 | `NEXT_PUBLIC_CLOUDINARY_API_KEY` | El **mismo valor**. El widget la manda en cada subida firmada. | Si usas imágenes |
 | `CLOUDINARY_API_SECRET` | Secreto de firma. **Solo servidor**, nunca `NEXT_PUBLIC_`. | Si usas imágenes |
-| `DISCORD_WEBHOOK_URL` | Aviso al publicar (§14). Vacío = no-op silencioso. | No |
+| `DISCORD_BOT_TOKEN` | Token del bot que avisa al publicar (§14). **Sensitive**, solo en Production. Vacío = no-op silencioso. | No |
+| `DISCORD_SERVIDOR_ID` | El servidor de Discord del bot. No es secreto. | Con el bot |
+| `DISCORD_AVISOS` | `siempre` para que avise también fuera de la web publicada. Sin ella, solo avisa con `VERCEL_ENV=production`. | No |
 
 > Sí, la API key va dos veces y una de ellas es pública. Es correcto: la
 > `api_key` de Cloudinary **no es un secreto** — identifica la cuenta y viaja en

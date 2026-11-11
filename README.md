@@ -186,8 +186,6 @@ aquel roadmap queda por hacer:
 - **Notificaciones push (§15).** La PWA ya es instalable y funciona sin
   conexión; faltan las notificaciones push, que necesitan claves VAPID y un
   endpoint de suscripción.
-- **Webhook de Discord (§14).** El código está listo en `lib/discord.ts`; solo
-  falta configurar `DISCORD_WEBHOOK_URL` (vacío = no-op silencioso).
 - **Visualizaciones con D3 (§10).** React Flow y Leaflet ya están; D3 no se usó.
 
 Ya no está pendiente, aunque el documento de arquitectura lo dé por hacer: el

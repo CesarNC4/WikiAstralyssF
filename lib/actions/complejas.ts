@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionDe, notificarNuevaPublicacion } from "@/lib/discord";
 import type { OrgPayload, FamiliaPayload, GremioPayload, Estado } from "@/lib/admin/complejas";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
@@ -171,7 +171,9 @@ export async function guardarOrganizacion(
 
   await purgarEnSegundoPlano();
   revalidarOrg(savedId);
-  if (notificar) await notificarNuevaPublicacion("organizaciones", savedId);
+  const aviso = eleccionDe(formData);
+  if (notificar) await notificarNuevaPublicacion("organizaciones", savedId, aviso);
+  else if (data.estadoPublicacion === "publicado") await avisarCambio("organizaciones", savedId, aviso);
   if (created) redirect(`/admin/organizaciones/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
@@ -321,7 +323,9 @@ export async function guardarFamilia(
 
   await purgarEnSegundoPlano();
   revalidarFamilia(savedId);
-  if (notificar) await notificarNuevaPublicacion("familias", savedId);
+  const aviso = eleccionDe(formData);
+  if (notificar) await notificarNuevaPublicacion("familias", savedId, aviso);
+  else if (data.estadoPublicacion === "publicado") await avisarCambio("familias", savedId, aviso);
   if (created) redirect(`/admin/familias/${savedId}/editar`);
   return { ok: true, id: savedId };
 }

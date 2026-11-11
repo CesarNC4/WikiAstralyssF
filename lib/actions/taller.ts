@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
 import type { Fecha } from "@/lib/fechas";
 import { escribirFecha } from "@/lib/queries/fechas";
 import { contarFragmentosConFecha, normalizarOrdenActos, recalcularFechaActo, renumerarCapitulos, type Ejecutor } from "@/lib/queries/narrativa";
@@ -272,7 +272,7 @@ const CapituloCambios = z
  * del libro nuevo; cambiar el libro o el tipo renumera. La plantilla tiene su
  * propia acción porque mueve los actos.
  */
-export async function guardarCapitulo(id: number, cambios: z.input<typeof CapituloCambios>): Promise<Resultado> {
+export async function guardarCapitulo(id: number, cambios: z.input<typeof CapituloCambios>, aviso?: unknown): Promise<Resultado> {
   await assertAdmin();
   const p = CapituloCambios.safeParse(cambios);
   if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "Datos inválidos." };
@@ -296,17 +296,20 @@ export async function guardarCapitulo(id: number, cambios: z.input<typeof Capitu
         set.orden = (ultimo ?? -1) + 1;
       }
       // Primera publicación: se apunta la fecha y, al terminar, se avisa a Discord.
-      const aviso = d.estadoPublicacion === "publicado" && !antes.publicadoPrimeraVezEn;
-      if (aviso) set.publicadoPrimeraVezEn = new Date();
+      const estreno = d.estadoPublicacion === "publicado" && !antes.publicadoPrimeraVezEn;
+      if (estreno) set.publicadoPrimeraVezEn = new Date();
+      const publicado = (d.estadoPublicacion ?? antes.estadoPublicacion) === "publicado";
 
       if (Object.keys(set).length) await tx.update(s.capitulos).set(set).where(eq(s.capitulos.id, id));
       if (libroNuevo !== antes.libro || (d.tipo !== undefined && (d.tipo || null) !== antes.tipo)) await renumerarCapitulos(tx);
-      return aviso;
+      return { estreno, publicado };
     }),
   );
   if (!r.ok) return r;
   revalidarNarrativa(id);
-  if (r.data) await notificarNuevaPublicacion("capitulos", id);
+  const eleccion = eleccionValida(aviso);
+  if (r.data.estreno) await notificarNuevaPublicacion("capitulos", id, eleccion);
+  else if (r.data.publicado) await avisarCambio("capitulos", id, eleccion);
   return { ok: true, data: undefined };
 }
 

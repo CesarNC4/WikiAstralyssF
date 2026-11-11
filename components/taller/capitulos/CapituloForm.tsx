@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/admin/Toast";
+import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import { borrarCapitulo, cambiarPlantillaCapitulo, guardarCapitulo } from "@/lib/actions/taller";
 import type { CapituloEditor, OpcionesCapitulo, PlantillaTaller } from "@/lib/queries/taller";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ export function CapituloForm({
     estadoPublicacion: c.estadoPublicacion,
   });
   const [cambios, setCambios] = useState(false);
+  const aviso = useAviso();
   const set = <K extends keyof typeof v>(k: K) => (val: (typeof v)[K]) => {
     setV((prev) => ({ ...prev, [k]: val }));
     setCambios(true);
@@ -61,9 +63,10 @@ export function CapituloForm({
 
   const guardar = () =>
     start(async () => {
-      const r = await guardarCapitulo(c.id, v);
+      const r = await guardarCapitulo(c.id, v, aviso.valor);
       if (!r.ok) return toast(r.error, "error");
       setCambios(false);
+      aviso.reiniciar();
       toast("Capítulo guardado.", "success");
       router.refresh();
     });
@@ -120,6 +123,9 @@ export function CapituloForm({
         </Campo>
         <Campo label="Publicación">
           <SelectEstado value={v.estadoPublicacion} onChange={set("estadoPublicacion")} />
+          <div className="mt-2">
+            <AvisoDiscord tipo="capitulos" id={c.id} estado={v.estadoPublicacion} hacia="abajo" {...aviso.props} />
+          </div>
         </Campo>
       </div>
 

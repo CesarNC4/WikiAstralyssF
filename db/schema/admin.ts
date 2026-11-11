@@ -38,3 +38,26 @@ export const catalogos = pgTable("catalogos", {
    */
   meta: jsonb("meta").$type<Record<string, unknown>>(),
 });
+
+/**
+ * Avisos a Discord (docs/arquitectura.md §14). El canal por defecto de cada tipo
+ * de ficha; sin fila, ese tipo no avisa salvo que se elija un canal al publicar.
+ */
+export const discordCanal = pgTable("discord_canal", {
+  entidadTipo: varchar("entidad_tipo").primaryKey(),
+  canalId: varchar("canal_id").notNull(),
+  actualizadoEn: timestamp("actualizado_en", { mode: "date" }).notNull().defaultNow(),
+});
+
+/** Cada aviso enviado a Discord: el de un cambio va por defecto al canal del estreno. */
+export const discordAviso = pgTable("discord_aviso", {
+  id: serial("id").primaryKey(),
+  entidadTipo: varchar("entidad_tipo").notNull(),
+  entidadId: integer("entidad_id").notNull(),
+  /** 'estreno' | 'cambio' | 'prueba' */
+  clase: varchar("clase").notNull(),
+  canalId: varchar("canal_id").notNull(),
+  mensajeId: varchar("mensaje_id"),
+  nota: text("nota"),
+  enviadoEn: timestamp("enviado_en", { mode: "date" }).notNull().defaultNow(),
+});

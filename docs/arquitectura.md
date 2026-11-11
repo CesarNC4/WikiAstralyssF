@@ -862,6 +862,27 @@ GitHub Actions se reserva para lo suyo: **CI/CD** (lint, typecheck, build en PR)
   la misma regla que las páginas (`ocultarEnLista`): sin trozos `[[oculto]]` y sin campos ocultos. Si no
   puede leer lo oculto, no avisa. `pnpm verificar-ocultos` revisa también el aviso (`avisoDe`).
 
+### 14.3 Un bot y un canal por tipo de ficha (2026-11-10)
+
+Sustituye al webhook único: cada tipo de ficha avisa en su canal.
+
+- **Bot** (`DISCORD_BOT_TOKEN`, `DISCORD_SERVIDOR_ID`): el panel lee los canales reales del servidor y solo
+  ofrece aquellos donde el bot puede ver, escribir e insertar enlaces. No hace falta tenerlo «encendido»:
+  todo va por la API REST.
+- **Canal por defecto** de cada tipo en `discord_canal`, elegido en `/admin/discord` (`lib/discord-tipos.ts`
+  propone los de la categoría WIKI). Un tipo sin canal no avisa; los que no están en la lista (hojas, hilos,
+  actos, el gremio) nunca.
+- **Al publicar** desde el formulario (`components/admin/AvisoDiscord.tsx`, en los editores genérico, de
+  personajes, organizaciones, familias, lore y capítulos) se ve el canal y se puede cambiar o elegir «No
+  avisar». Las tablas y la bandeja usan el de por defecto.
+- **Cambios**: solo si el autor marca «Avisar del cambio» al guardar una ficha ya publicada, con una nota
+  opcional («Qué cambió»). Van por defecto al canal donde se avisó la ficha la última vez.
+- **Registro** en `discord_aviso` (estreno, cambio o prueba, con el id del mensaje). Los últimos salen en el
+  panel.
+- **Solo avisa la web publicada** (`VERCEL_ENV=production`, o `DISCORD_AVISOS=siempre`): probar en local
+  apunta en la consola lo que habría enviado. La prueba de canal del panel sí se envía siempre, porque la
+  pide el autor.
+
 ---
 
 <a name="15-pwa"></a>

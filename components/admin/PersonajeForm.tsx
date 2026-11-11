@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, startTransition, type ReactNode } from "react";
 import { guardarPersonaje, type PersonajeFormState } from "@/lib/actions/personajes";
+import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import type { PersonajeParaEditar, Opcion, OpcionRegion, OpcionLocacion } from "@/lib/queries/adminPersonajes";
 import type { CatalogosPersonaje } from "@/lib/queries/catalogos";
 import type { EstadoPublicacion } from "@/db/schema/enums";
@@ -232,6 +233,7 @@ export function PersonajeForm({
 
   // ── submit ──
   const [state, formAction, pending] = useActionState<PersonajeFormState | undefined, FormData>(guardarPersonaje, undefined);
+  const aviso = useAviso();
 
   // Apertura de secciones (controlada) para el índice lateral y el salto al error.
   const [openMap, setOpenMap] = useState<Record<string, boolean>>({ identidad: true });
@@ -241,6 +243,7 @@ export function PersonajeForm({
     if (!state) return;
     if (state.ok) {
       toast("Cambios guardados.", "success");
+      aviso.reiniciar();
     } else if (state.error) {
       toast(state.error, "error");
     }
@@ -345,6 +348,7 @@ export function PersonajeForm({
     const fd = new FormData();
     if (inicial?.id) fd.set("id", String(inicial.id));
     fd.set("payload", JSON.stringify(payload));
+    fd.set("aviso", JSON.stringify(aviso.valor));
     startTransition(() => formAction(fd));
   };
 
@@ -818,6 +822,7 @@ export function PersonajeForm({
             incompleta.length > 0 && <span className="text-xs text-warning">⚠ {incompleta.join(" · ")}</span>
           )}
           <div className="ml-auto flex items-center gap-2">
+            <AvisoDiscord tipo="personajes" id={inicial?.id ?? null} estado={f.estadoPublicacion} {...aviso.props} />
             <select
               value={f.estadoPublicacion}
               onChange={(e) => patch({ estadoPublicacion: e.target.value as EstadoPublicacion })}

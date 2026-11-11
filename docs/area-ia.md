@@ -189,8 +189,9 @@ Cómo está hecho:
 - Una ficha nueva no hereda los valores por defecto de la base que los admiten vacíos: una
   propuesta no debe traer datos que nadie ha dicho. Lo que hace falta para nacer (el libro
   de un capítulo, el capítulo de un acto, el arco de una hoja) lo pide aunque no venga.
-- **Publicar por primera vez avisa por Discord**, como en el resto del panel. Al probar en
-  local con fichas publicadas, los webhooks de `.env.local` deben apuntar a otro sitio.
+- **Publicar por primera vez avisa por Discord**, como en el resto del panel, en el canal de
+  su tipo de ficha (/admin/discord). Al probar en local no se envía nada: solo avisa la web
+  publicada.
 
 Sin probar con la ventana real del sistema: el selector de carpetas y su permiso se
 sustituyeron por una carpeta privada del navegador (OPFS), que tiene la misma API.

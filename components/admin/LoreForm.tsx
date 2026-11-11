@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, startTransition } from "react";
 import { guardarLore, type LoreFormState } from "@/lib/actions/lore";
+import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import { slugify } from "@/lib/utils";
 import type { EstadoPublicacion } from "@/db/schema/enums";
 import { useToast } from "@/components/admin/Toast";
@@ -76,10 +77,11 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
   const addSec = () => { setSecciones((prev) => [...prev, { titulo: "", contenido: "", tipo: "texto", estado: "publicado" }]); mark(); };
 
   const [state, formAction, pending] = useActionState<LoreFormState | undefined, FormData>(guardarLore, undefined);
+  const aviso = useAviso();
 
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); }
+    if (state.ok) { toast("Cambios guardados.", "success"); aviso.reiniciar(); }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -103,6 +105,7 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
     const fd = new FormData();
     if (id) fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));
+    fd.set("aviso", JSON.stringify(aviso.valor));
     setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
@@ -185,6 +188,7 @@ export function LoreForm({ inicial }: { inicial: LoreInicial | null }) {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <div className="ml-auto flex items-center gap-2">
+            <AvisoDiscord tipo="lore" id={id} estado={estado} {...aviso.props} />
             <select value={estado} onChange={(e) => { setEstado(e.target.value as EstadoPublicacion); mark(); }} className="rounded-lg border border-border-base bg-surface px-3 py-2 text-sm text-fg outline-none">
               <option value="borrador">Borrador</option>
               <option value="publicado">Publicado</option>

@@ -123,7 +123,7 @@ export function FichaPropuesta({
             </Link>
           )}
           {ficha.estado === "publicado" && ficha.estadoActual !== "publicado" && (
-            <p className="w-full text-xs text-fg-muted">La verán los jugadores. Si es su primera publicación, se avisa por Discord.</p>
+            <p className="w-full text-xs text-fg-muted">La verán los jugadores. Si es su primera publicación, se avisa en Discord, en el canal de su tipo de ficha.</p>
           )}
         </div>
 

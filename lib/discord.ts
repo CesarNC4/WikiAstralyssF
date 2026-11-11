@@ -1,32 +1,43 @@
 import "server-only";
 
-import { eq, getTableColumns } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
+import { discordAviso, discordCanal } from "@/db/schema";
+import { ES_TIPO_CON_AVISO } from "@/lib/discord-tipos";
 import { entityByKey } from "@/lib/entities";
 import { ocultarEnLista } from "@/lib/queries/visibilidad";
 import { infoDe } from "@/lib/relaciones/tablas";
 import { MARCA_OCULTO } from "@/lib/visibilidad";
 
 /**
- * Notificación a Discord en la PRIMERA publicación de una entidad (§14).
+ * Avisos a Discord (docs/arquitectura.md §14), con un bot que escribe en el canal
+ * que toca.
  *
- * El admin escribe el lore aquí pero avisa a sus lectores por Discord: cuando
- * una entidad pasa a `publicado` por primera vez (su `publicadoPrimeraVezEn`
- * estaba en NULL), la acción que la publica llama a `notificarNuevaPublicacion`
- * con su tipo y su id.
+ *  - **Estreno:** cuando una ficha pasa a `publicado` por primera vez (su
+ *    `publicadoPrimeraVezEn` estaba en NULL), la acción que la publica llama a
+ *    `notificarNuevaPublicacion`. Va al canal elegido al publicar o, si no se
+ *    eligió, al canal por defecto de su tipo (/admin/discord).
+ *  - **Cambio:** solo si el autor marca «Avisar del cambio» al guardar una ficha
+ *    ya publicada (`avisarCambio`), con una nota opcional. Va por defecto al canal
+ *    donde se estrenó.
  *
  * El aviso lee la ficha ya guardada y envía solo lo que ve el público, con la
  * misma regla que las páginas (`ocultarEnLista`): sin los trozos
  * `[[oculto]]…[[/oculto]]` y sin los campos ocultos (lib/visibilidad.ts).
  *
  * Diseño defensivo:
- *  - **No-op silencioso** si no hay webhook configurado (dev / sin webhook).
+ *  - **No-op silencioso** sin `DISCORD_BOT_TOKEN` y `DISCORD_SERVIDOR_ID`.
+ *  - **Solo envía la web publicada** (`VERCEL_ENV=production`), o quien ponga
+ *    `DISCORD_AVISOS=siempre`: probar en el ordenador no escribe en el Discord de
+ *    los jugadores, solo apunta en la consola lo que habría enviado.
  *  - **Nunca lanza**: un fallo jamás debe romper una publicación. Si no se puede
  *    leer la ficha o lo que tiene oculto, no se avisa: mejor perder un aviso que
  *    contar un secreto.
  *  - Timeout corto para no colgar la respuesta del Server Action.
  */
+
+const API = "https://discord.com/api/v10";
 
 /** Color del embed por grupo temático (hex del design system §7). */
 const COLOR_POR_GRUPO: Record<string, number> = {
@@ -43,27 +54,178 @@ const SIN_FICHA_INDIVIDUAL = new Set(["timeline", "economia", "gremio", "mapa"])
 /** Columnas que describen la ficha en el aviso, por orden de preferencia (la del nombre se salta). */
 const DESCRIBEN = ["subtitulo", "descripcion", "titulo", "introduccion"];
 
+export type ClaseAviso = "estreno" | "cambio";
+
 /**
- * Resuelve a qué canal (webhook) va la notificación de un tipo de entidad.
- * Cada canal de Discord tiene su propio webhook; el enrutado se hace eligiendo
- * el webhook correcto por orden de prioridad:
- *   1. Por entidad exacta:  DISCORD_WEBHOOK_PERSONAJES, DISCORD_WEBHOOK_NACIONES, …
- *   2. Por grupo temático:  DISCORD_WEBHOOK_GRUPO_MUNDO, DISCORD_WEBHOOK_GRUPO_LORE, …
- *   3. Fallback global:     DISCORD_WEBHOOK_URL
- * Devuelve undefined si no hay ninguno configurado (→ no-op silencioso).
+ * Lo que el autor elige al guardar. `canal`: un id de canal, `null` para no avisar
+ * o ausente para el de por defecto. `cambio`: avisar de un cambio en una ficha ya
+ * publicada. `nota`: qué cambió, en sus palabras.
  */
-function resolverWebhook(tipo: string): string | undefined {
-  const porEntidad = process.env[`DISCORD_WEBHOOK_${tipo.toUpperCase()}`]?.trim();
-  if (porEntidad) return porEntidad;
-
-  const grupo = entityByKey(tipo)?.group;
-  if (grupo) {
-    const porGrupo = process.env[`DISCORD_WEBHOOK_GRUPO_${grupo.toUpperCase()}`]?.trim();
-    if (porGrupo) return porGrupo;
-  }
-
-  return process.env.DISCORD_WEBHOOK_URL?.trim();
+export interface EleccionAviso {
+  canal?: string | null;
+  cambio?: boolean;
+  nota?: string;
 }
+
+// ── El bot ───────────────────────────────────────────────────────────────────
+
+function credenciales(): { token: string; servidor: string } | null {
+  const token = process.env.DISCORD_BOT_TOKEN?.trim();
+  const servidor = process.env.DISCORD_SERVIDOR_ID?.trim();
+  return token && servidor ? { token, servidor } : null;
+}
+
+/** ¿Se envía de verdad? Solo desde la web publicada, o si se pide expresamente. */
+function enviaDeVerdad(): boolean {
+  return process.env.VERCEL_ENV === "production" || process.env.DISCORD_AVISOS === "siempre";
+}
+
+async function api<T>(ruta: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  const cred = credenciales();
+  if (!cred) throw new Error("Discord sin configurar.");
+  const res = await fetch(`${API}${ruta}`, {
+    method: init.method ?? "GET",
+    headers: {
+      Authorization: `Bot ${cred.token}`,
+      "User-Agent": "DiscordBot (https://github.com/CesarNC4/WikiAstralyssF, 1.0)",
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: init.body ? JSON.stringify(init.body) : undefined,
+    signal: AbortSignal.timeout(5000),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const detalle = await res.text().catch(() => "");
+    throw new Error(`Discord respondió ${res.status} en ${ruta}: ${detalle.slice(0, 200)}`);
+  }
+  return (await res.json()) as T;
+}
+
+export interface CanalDiscord {
+  id: string;
+  nombre: string;
+  categoria: string | null;
+}
+
+interface CanalApi {
+  id: string;
+  name: string;
+  type: number;
+  position: number;
+  parent_id?: string | null;
+  permission_overwrites?: { id: string; type: number; allow: string; deny: string }[];
+}
+
+const VER = BigInt(1) << BigInt(10);
+const ENVIAR = BigInt(1) << BigInt(11);
+const ENLACES = BigInt(1) << BigInt(14);
+const ADMIN = BigInt(1) << BigInt(3);
+const NECESARIOS = VER | ENVIAR | ENLACES;
+
+let cacheCanales: { cuando: number; canales: CanalDiscord[] } | null = null;
+
+/**
+ * Los canales de texto donde el bot puede avisar (ver, escribir e insertar
+ * enlaces), en el orden del servidor. `null` si Discord no está configurado o no
+ * responde. Se guardan un minuto.
+ */
+export async function canalesDelServidor(): Promise<CanalDiscord[] | null> {
+  const cred = credenciales();
+  if (!cred) return null;
+  if (cacheCanales && Date.now() - cacheCanales.cuando < 60_000) return cacheCanales.canales;
+  try {
+    const [yo, servidor, lista] = await Promise.all([
+      api<{ id: string }>("/users/@me"),
+      api<{ roles: { id: string; permissions: string }[] }>(`/guilds/${cred.servidor}`),
+      api<CanalApi[]>(`/guilds/${cred.servidor}/channels`),
+    ]);
+    const miembro = await api<{ roles: string[] }>(`/guilds/${cred.servidor}/members/${yo.id}`);
+    const permisosRol = new Map(servidor.roles.map((r) => [r.id, BigInt(r.permissions)]));
+    const misRoles = new Set(miembro.roles);
+    let base = permisosRol.get(cred.servidor) ?? BigInt(0);
+    for (const r of misRoles) base |= permisosRol.get(r) ?? BigInt(0);
+
+    // Permisos en un canal: los del servidor, luego @everyone, luego los roles del bot y por último el propio bot.
+    const puedeAvisar = (c: CanalApi): boolean => {
+      if (base & ADMIN) return true;
+      let p = base;
+      const ow = c.permission_overwrites ?? [];
+      const todos = ow.find((o) => o.id === cred.servidor);
+      if (todos) p = (p & ~BigInt(todos.deny)) | BigInt(todos.allow);
+      let quita = BigInt(0);
+      let da = BigInt(0);
+      for (const o of ow) {
+        if (o.type === 0 && misRoles.has(o.id)) {
+          quita |= BigInt(o.deny);
+          da |= BigInt(o.allow);
+        }
+      }
+      p = (p & ~quita) | da;
+      const propio = ow.find((o) => o.type === 1 && o.id === yo.id);
+      if (propio) p = (p & ~BigInt(propio.deny)) | BigInt(propio.allow);
+      return (p & NECESARIOS) === NECESARIOS;
+    };
+
+    const categorias = new Map(lista.filter((c) => c.type === 4).map((c) => [c.id, c]));
+    const orden = (c: CanalApi) => {
+      const cat = c.parent_id ? categorias.get(c.parent_id) : undefined;
+      return [cat ? cat.position + 1 : 0, c.position] as const;
+    };
+    const canales = lista
+      .filter((c) => (c.type === 0 || c.type === 5) && puedeAvisar(c))
+      .sort((a, b) => {
+        const [ca, pa] = orden(a);
+        const [cb, pb] = orden(b);
+        return ca - cb || pa - pb;
+      })
+      .map((c) => ({ id: c.id, nombre: c.name, categoria: c.parent_id ? categorias.get(c.parent_id)?.name ?? null : null }));
+    cacheCanales = { cuando: Date.now(), canales };
+    return canales;
+  } catch (e) {
+    console.error("[discord] no se pudieron leer los canales:", e);
+    return null;
+  }
+}
+
+/** El nombre del servidor, para el panel. */
+export async function nombreDelServidor(): Promise<string | null> {
+  const cred = credenciales();
+  if (!cred) return null;
+  try {
+    return (await api<{ name: string }>(`/guilds/${cred.servidor}`)).name;
+  } catch {
+    return null;
+  }
+}
+
+// ── A qué canal va ───────────────────────────────────────────────────────────
+
+/** El canal por defecto de cada tipo de ficha. */
+export async function canalesPorDefecto(): Promise<Record<string, string>> {
+  const filas = await db.select({ tipo: discordCanal.entidadTipo, canal: discordCanal.canalId }).from(discordCanal);
+  return Object.fromEntries(filas.map((f) => [f.tipo, f.canal]));
+}
+
+/** El canal donde se avisó por última vez de esta ficha (su estreno o su último cambio). */
+async function canalDeLaFicha(tipo: string, id: number): Promise<string | null> {
+  const [f] = await db
+    .select({ canal: discordAviso.canalId })
+    .from(discordAviso)
+    .where(and(eq(discordAviso.entidadTipo, tipo), eq(discordAviso.entidadId, id), inArray(discordAviso.clase, ["estreno", "cambio"])))
+    .orderBy(desc(discordAviso.enviadoEn))
+    .limit(1);
+  return f?.canal ?? null;
+}
+
+/** El canal que se ofrece al publicar: el de la ficha si ya se avisó de ella, si no el de su tipo. */
+export async function canalSugerido(tipo: string, id?: number | null): Promise<string | null> {
+  const propio = id ? await canalDeLaFicha(tipo, id) : null;
+  if (propio) return propio;
+  const [f] = await db.select({ canal: discordCanal.canalId }).from(discordCanal).where(eq(discordCanal.entidadTipo, tipo)).limit(1);
+  return f?.canal ?? null;
+}
+
+// ── El mensaje ───────────────────────────────────────────────────────────────
 
 function absolutizar(base: string, url?: string | null): string | undefined {
   if (!url) return undefined;
@@ -121,7 +283,11 @@ async function leerLoPublico(tipo: string, id: number) {
  * El mensaje del aviso de una ficha, tal y como se enviaría a Discord. Lo usa
  * también `pnpm verificar-ocultos` para comprobar que no lleva nada oculto.
  */
-export async function avisoDe(tipo: string, id: number): Promise<Record<string, unknown> | null> {
+export async function avisoDe(
+  tipo: string,
+  id: number,
+  { clase = "estreno", nota }: { clase?: ClaseAviso; nota?: string } = {},
+): Promise<Record<string, unknown> | null> {
   const ficha = await leerLoPublico(tipo, id);
   if (!ficha) return null;
 
@@ -140,7 +306,8 @@ export async function avisoDe(tipo: string, id: number): Promise<Record<string, 
   const color = COLOR_POR_GRUPO[meta?.group ?? ""] ?? COLOR_DEFECTO;
 
   const embed: Record<string, unknown> = {
-    author: { name: `✨ Nuevo ${singular.toLowerCase()} en Astralys` },
+    // Sin «Nuevo» ni «Actualizado»: no concuerdan con «Nación», «Región», «Página»…
+    author: { name: clase === "cambio" ? `📝 Cambios · ${singular}` : `✨ Nuevo en Astralys · ${singular}` },
     title: ficha.nombre || singular,
     color,
     footer: { text: "Astralys" },
@@ -148,35 +315,102 @@ export async function avisoDe(tipo: string, id: number): Promise<Record<string, 
   };
   if (enlace) embed.url = enlace;
   if (ficha.descripcion) embed.description = ficha.descripcion;
+  const queCambio = clase === "cambio" ? nota?.trim().slice(0, 1000) : undefined;
+  if (queCambio) embed.fields = [{ name: "Qué cambió", value: queCambio }];
   const img = absolutizar(base, ficha.imagen);
   if (img) embed.thumbnail = { url: img };
 
   return {
-    username: "Crónicas de Astralys",
     embeds: [embed],
     // Un nombre o un texto con @everyone no debe llamar a nadie.
     allowed_mentions: { parse: [] },
   };
 }
 
-export async function notificarNuevaPublicacion(tipo: string, id: number): Promise<void> {
-  const webhook = resolverWebhook(tipo);
-  if (!webhook) return;
+// ── Enviar ───────────────────────────────────────────────────────────────────
 
-  try {
-    const body = await avisoDe(tipo, id);
-    if (!body) return;
-    const res = await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) {
-      const detalle = await res.text().catch(() => "");
-      console.error(`[discord] webhook respondió ${res.status}: ${detalle}`);
-    }
-  } catch (e) {
-    console.error("[discord] envío falló:", e);
+async function enviar(canal: string, body: Record<string, unknown>, registro: { tipo: string; id: number; clase: ClaseAviso | "prueba"; nota?: string }) {
+  if (!enviaDeVerdad()) {
+    console.info(`[discord] sin enviar (no es la web publicada): ${registro.clase} de ${registro.tipo} #${registro.id} al canal ${canal}`);
+    return;
   }
+  const msg = await api<{ id: string }>(`/channels/${canal}/messages`, { method: "POST", body });
+  await db.insert(discordAviso).values({
+    entidadTipo: registro.tipo,
+    entidadId: registro.id,
+    clase: registro.clase,
+    canalId: canal,
+    mensajeId: msg.id,
+    nota: registro.nota?.trim() || null,
+  });
+}
+
+async function avisar(tipo: string, id: number, clase: ClaseAviso, eleccion?: EleccionAviso): Promise<void> {
+  // Las hojas e hilos de trama, el gremio o los actos no tienen aviso propio.
+  if (!credenciales() || !ES_TIPO_CON_AVISO.has(tipo)) return;
+  try {
+    // `null` es «no avisar»; sin elegir, el canal que se ofrecería.
+    const canal = eleccion?.canal === null ? null : eleccion?.canal || (await canalSugerido(tipo, id));
+    if (!canal) return;
+    const body = await avisoDe(tipo, id, { clase, nota: eleccion?.nota });
+    if (!body) return;
+    await enviar(canal, body, { tipo, id, clase, nota: clase === "cambio" ? eleccion?.nota : undefined });
+  } catch (e) {
+    console.error("[discord] el aviso falló:", e);
+  }
+}
+
+/** Aviso de estreno: la primera vez que una ficha se publica. */
+export async function notificarNuevaPublicacion(tipo: string, id: number, eleccion?: EleccionAviso): Promise<void> {
+  await avisar(tipo, id, "estreno", eleccion);
+}
+
+/** Aviso de un cambio en una ficha ya publicada, solo si el autor lo pidió al guardar. */
+export async function avisarCambio(tipo: string, id: number, eleccion?: EleccionAviso): Promise<void> {
+  if (!eleccion?.cambio) return;
+  await avisar(tipo, id, "cambio", eleccion);
+}
+
+/**
+ * Lo que eligió el autor al guardar, del campo `aviso` del formulario. Lo que no
+ * tenga la forma esperada se ignora: entonces vale lo de por defecto.
+ */
+export function eleccionDe(formData: FormData): EleccionAviso | undefined {
+  const raw = formData.get("aviso");
+  if (typeof raw !== "string" || !raw) return undefined;
+  try {
+    return eleccionValida(JSON.parse(raw));
+  } catch {
+    return undefined;
+  }
+}
+
+export function eleccionValida(v: unknown): EleccionAviso | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  const e: EleccionAviso = {};
+  if (o.canal === null) e.canal = null;
+  else if (typeof o.canal === "string" && /^\d{5,25}$/.test(o.canal)) e.canal = o.canal;
+  if (o.cambio === true) e.cambio = true;
+  if (typeof o.nota === "string" && o.nota.trim()) e.nota = o.nota.trim().slice(0, 1000);
+  return e;
+}
+
+/** Un mensaje de prueba en un canal, a petición del autor desde /admin/discord. Este sí se envía siempre. */
+export async function enviarPrueba(canal: string): Promise<void> {
+  const body = {
+    embeds: [
+      {
+        author: { name: "🔔 Prueba" },
+        title: "El bot de Astralys ya avisa aquí",
+        description: "Se puede borrar este mensaje.",
+        color: COLOR_DEFECTO,
+        footer: { text: "Astralys" },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+    allowed_mentions: { parse: [] },
+  };
+  const msg = await api<{ id: string }>(`/channels/${canal}/messages`, { method: "POST", body });
+  await db.insert(discordAviso).values({ entidadTipo: "prueba", entidadId: 0, clase: "prueba", canalId: canal, mensajeId: msg.id });
 }

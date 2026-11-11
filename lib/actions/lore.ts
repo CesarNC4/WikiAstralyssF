@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionDe, notificarNuevaPublicacion } from "@/lib/discord";
 import { loreSchema } from "@/lib/validation/lore";
 import { slugify } from "@/lib/utils";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
@@ -110,7 +110,9 @@ export async function guardarLore(
 
   await purgarEnSegundoPlano();
   revalidar(data.slug, savedId);
-  if (notificar) await notificarNuevaPublicacion("lore", savedId);
+  const aviso = eleccionDe(formData);
+  if (notificar) await notificarNuevaPublicacion("lore", savedId, aviso);
+  else if (data.estadoPublicacion === "publicado") await avisarCambio("lore", savedId, aviso);
   if (created) redirect(`/admin/lore/${savedId}/editar`);
   return { ok: true, id: savedId };
 }
