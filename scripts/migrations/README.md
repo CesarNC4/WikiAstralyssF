@@ -34,6 +34,10 @@ no rompe nada, pero tampoco hace falta.
 | `migrate-taller-actos-publicos.ts` | Taller · Fase 5: los actos entran en el buscador ⌘K. Función `search_index_acto` (URL anidada `/capitulos/<c>/actos/<a>`, rótulo "Acto II · Capítulo 3 — Título" y visibilidad compuesta: público solo si el capítulo también lo es), trigger en `actos` y trigger en `capitulos` que reindexa sus actos al cambiar estado, número, título o papelera. **Aplicada el 2026-10-11** (5 actos indexados). |
 | `migrate-discord.ts` | Avisos a Discord con un bot (docs/arquitectura.md §14), **aditiva**: `discord_canal` (el canal por defecto de cada tipo de ficha) y `discord_aviso` (el registro de cada aviso, con su mensaje y la nota del autor). Las dos con RLS y sin acceso para la clave pública. Va antes del despliegue. **Aplicada el 2026-11-10.** |
 | `migrate-estrenos.ts` | Los personajes sin publicar vuelven a «nunca publicados»: la importación les puso `publicado_primera_vez_en = 2026-06-05` y por eso no avisaban en Discord al publicarse. Solo toca los no publicados con esa fecha exacta. **Aplicada el 2026-11-10** (118 personajes ocultos). |
+| `migrate-rls.ts` | Activa RLS, sin políticas, en toda tabla de `public` que no lo tuviera: con la clave pública de Supabase se podían leer por su API 22 tablas, entre ellas `vinculo`, `fecha_lore` y `regiones`, con sus partes ocultas. La web no lo nota (su conexión no pasa por RLS). No cambia datos. **Aplicada el 2026-11-10** (22 tablas; quedan 75 con RLS y ninguna sin). |
+
+> **Toda tabla nueva nace con RLS** (`alter table … enable row level security`), como en
+> `migrate-discord.ts`: si no, la clave pública de Supabase puede leerla.
 
 ## Si necesitas ejecutar una
 
