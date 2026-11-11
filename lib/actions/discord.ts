@@ -6,7 +6,8 @@ import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import { actos, capitulos, discordCanal } from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { canalSugerido, canalesDelServidor, enviarPrueba, type CanalDiscord } from "@/lib/discord";
+import { avisoDe, canalSugerido, canalesDelServidor, enviarPrueba, type CanalDiscord, type ClaseAviso } from "@/lib/discord";
+import { cambiosVisibles } from "@/lib/discord-huella";
 import { ES_TIPO_CON_AVISO } from "@/lib/discord-tipos";
 import { infoDe } from "@/lib/relaciones/tablas";
 
@@ -56,6 +57,50 @@ export async function opcionesAviso(tipo: string, id?: number | null): Promise<O
     // Un canal que ya no existe o donde el bot no puede escribir no se ofrece.
     sugerido: sugerido && canales?.some((c) => c.id === sugerido) ? sugerido : null,
     yaPublicada,
+  };
+}
+
+/** El aviso tal y como saldría en Discord, para la vista previa del formulario. */
+export interface VistaAviso {
+  autor: string;
+  titulo: string;
+  enlace: string | null;
+  /** El texto de la ficha (solo en un estreno). */
+  descripcion: string | null;
+  imagen: string | null;
+  color: number;
+  /**
+   * Solo en un cambio: los campos visibles que ya cambiaron desde el último aviso,
+   * con lo guardado. `null`: aún no hay un aviso anterior con que comparar.
+   */
+  cambios: string[] | null;
+}
+
+interface EmbedAviso {
+  author?: { name?: string };
+  title?: string;
+  url?: string;
+  description?: string;
+  thumbnail?: { url?: string };
+  color?: number;
+}
+
+/** La vista previa del aviso de una ficha guardada (un estreno o un cambio). */
+export async function vistaAviso(tipo: string, id: number | null, clase: ClaseAviso): Promise<VistaAviso | null> {
+  await assertAdmin();
+  if (!id || !ES_TIPO_CON_AVISO.has(tipo)) return null;
+  const visto = clase === "cambio" ? await cambiosVisibles(tipo, id) : null;
+  const body = await avisoDe(tipo, id, { clase, cambios: visto?.cambios });
+  const e = (body?.embeds as EmbedAviso[] | undefined)?.[0];
+  if (!e) return null;
+  return {
+    autor: e.author?.name ?? "",
+    titulo: e.title ?? "",
+    enlace: e.url ?? null,
+    descripcion: clase === "estreno" ? (e.description ?? null) : null,
+    imagen: e.thumbnail?.url ?? null,
+    color: e.color ?? 0,
+    cambios: visto?.cambios ?? null,
   };
 }
 

@@ -32,7 +32,7 @@ import { camposOcultos } from "@/lib/queries/visibilidad";
 import { etiquetas } from "@/lib/relaciones/consultas";
 import { RELACIONES } from "@/lib/relaciones/registro";
 import { ENTIDAD_INFO, infoDe, tablaDe } from "@/lib/relaciones/tablas";
-import { OCULTOS_POR_DEFECTO } from "@/lib/visibilidad";
+import { OCULTOS_POR_DEFECTO, censurarTexto } from "@/lib/visibilidad";
 
 const BASE = (process.argv[2] ?? "http://localhost:3000").replace(/\/$/, "");
 
@@ -233,6 +233,7 @@ async function verificarTrozos() {
        and c.table_name not like 'respaldo%'`)) as { t: string; c: string }[];
   const entidadDe = new Map(Object.entries(ENTIDAD_INFO).map(([k, v]) => [getTableName(v.tabla), k]));
   let n = 0;
+  let repetidos = 0;
   for (const { t, c } of columnas) {
     const filas = await pg.unsafe(`select to_jsonb(x) as fila, "${c}" as v from "${t}" x where "${c}" ilike '%[[oculto]]%'`);
     for (const f of filas) {
@@ -241,8 +242,17 @@ async function verificarTrozos() {
       let ruta: string | null = null;
       if (entidad) ruta = await rutaPublica(entidad, fila.id as number);
       for (const [col, dueno] of DUENO) if (!ruta && fila[col]) ruta = await rutaPublica(dueno, fila[col] as number);
+      // Lo que el mismo campo deja a la vista. Si un trozo oculto dice exactamente algo que
+      // también se ve (un texto que enseña una lista de nombres entera pero oculta a quién
+      // corresponde cada uno), encontrar ese texto fuera no demuestra ninguna fuga.
+      const aLaVista = censurarTexto(String(f.v));
       for (const m of String(f.v).matchAll(TROZO)) {
         n++;
+        const a = aguja(m[1]);
+        if (a && aLaVista.includes(a)) {
+          repetidos++;
+          continue;
+        }
         const que = `Trozo oculto en ${t}.${c}`;
         await buscarEn([...(ruta ? [ruta] : []), ...PAGINAS_GENERALES], m[1], que);
         await buscarEnIndice(m[1], que, entidad ? { entidad, id: fila.id as number } : undefined);
@@ -250,7 +260,7 @@ async function verificarTrozos() {
       }
     }
   }
-  console.log(`Trozos ocultos: ${n}`);
+  console.log(`Trozos ocultos: ${n}${repetidos ? ` (${repetidos} dicen algo que el mismo campo ya deja a la vista: no se buscan)` : ""}`);
 }
 
 // ── 3. Conexiones ocultas ────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import { and, desc, eq, getTableColumns, inArray, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import { capitulos, discordAviso, discordCanal } from "@/db/schema";
+import { asegurarHuella, cambiosVisibles, guardarHuella } from "@/lib/discord-huella";
 import { ES_TIPO_CON_AVISO } from "@/lib/discord-tipos";
 import { entityByKey } from "@/lib/entities";
 import { ocultarEnLista } from "@/lib/queries/visibilidad";
@@ -322,13 +323,23 @@ async function nombreDeCapitulo(id: number | null): Promise<string | null> {
 }
 
 /**
+ * Lo que dice el aviso de un cambio: qué campos cambiaron (sin su contenido: el
+ * detalle se lee en la wiki) y la nota del autor, si la escribió.
+ */
+export function textoDeCambio(cambios: string[] | null | undefined, nota?: string): string {
+  const partes = [cambios?.length ? `**Cambió:** ${cambios.join(" · ")}` : null, nota?.trim().slice(0, 1000) || null];
+  return partes.filter(Boolean).join("\n\n") || "Se actualizó la ficha.";
+}
+
+/**
  * El mensaje del aviso de una ficha, tal y como se enviaría a Discord. Lo usa
  * también `pnpm verificar-ocultos` para comprobar que no lleva nada oculto.
+ * El de un cambio no lleva el texto de la ficha, sino `textoDeCambio`.
  */
 export async function avisoDe(
   tipo: string,
   id: number,
-  { clase = "estreno", nota }: { clase?: ClaseAviso; nota?: string } = {},
+  { clase = "estreno", nota, cambios }: { clase?: ClaseAviso; nota?: string; cambios?: string[] | null } = {},
 ): Promise<Record<string, unknown> | null> {
   const ficha = await leerLoPublico(tipo, id);
   if (!ficha) return null;
@@ -363,9 +374,8 @@ export async function avisoDe(
     timestamp: new Date().toISOString(),
   };
   if (enlace) embed.url = enlace;
-  if (ficha.descripcion) embed.description = ficha.descripcion;
-  const queCambio = clase === "cambio" ? nota?.trim().slice(0, 1000) : undefined;
-  if (queCambio) embed.fields = [{ name: "Qué cambió", value: queCambio }];
+  if (clase === "cambio") embed.description = textoDeCambio(cambios, nota);
+  else if (ficha.descripcion) embed.description = ficha.descripcion;
   const img = absolutizar(base, ficha.imagen);
   if (img) embed.thumbnail = { url: img };
 
@@ -378,10 +388,15 @@ export async function avisoDe(
 
 // ── Enviar ───────────────────────────────────────────────────────────────────
 
-async function enviar(canal: string, body: Record<string, unknown>, registro: { tipo: string; id: number; clase: ClaseAviso | "prueba"; nota?: string }) {
+/** Envía el mensaje y lo apunta en el registro. `false` si no se envió (fuera de la web publicada). */
+async function enviar(
+  canal: string,
+  body: Record<string, unknown>,
+  registro: { tipo: string; id: number; clase: ClaseAviso | "prueba"; nota?: string },
+): Promise<boolean> {
   if (!enviaDeVerdad()) {
     console.info(`[discord] sin enviar (no es la web publicada): ${registro.clase} de ${registro.tipo} #${registro.id} al canal ${canal}`);
-    return;
+    return false;
   }
   const msg = await api<{ id: string }>(`/channels/${canal}/messages`, { method: "POST", body });
   await db.insert(discordAviso).values({
@@ -392,6 +407,7 @@ async function enviar(canal: string, body: Record<string, unknown>, registro: { 
     mensajeId: msg.id,
     nota: registro.nota?.trim() || null,
   });
+  return true;
 }
 
 async function avisar(tipo: string, id: number, clase: ClaseAviso, eleccion?: EleccionAviso): Promise<void> {
@@ -403,23 +419,42 @@ async function avisar(tipo: string, id: number, clase: ClaseAviso, eleccion?: El
     if (!canal) return;
     // Lo que los jugadores no ven no se anuncia: un acto de un capítulo aún sin publicar.
     if (!(await esPublica(tipo, id))) return;
-    const body = await avisoDe(tipo, id, { clase, nota: eleccion?.nota });
+    // Un cambio dice qué campos visibles cambiaron desde el último aviso.
+    const visto = clase === "cambio" ? await cambiosVisibles(tipo, id) : null;
+    const nota = clase === "cambio" ? eleccion?.nota?.trim() || undefined : undefined;
+    if (visto?.cambios?.length === 0 && !nota) {
+      console.info(`[discord] sin aviso: en ${tipo} #${id} no cambió nada que se vea y no hay nota`);
+      return;
+    }
+    const body = await avisoDe(tipo, id, { clase, nota, cambios: visto?.cambios });
     if (!body) return;
-    await enviar(canal, body, { tipo, id, clase, nota: clase === "cambio" ? eleccion?.nota : undefined });
+    const enviado = await enviar(canal, body, { tipo, id, clase, nota });
+    // Lo avisado pasa a ser lo último que vieron los jugadores.
+    if (enviado && visto) await guardarHuella(tipo, id, visto.ahora);
   } catch (e) {
     console.error("[discord] el aviso falló:", e);
   }
 }
 
-/** Aviso de estreno: la primera vez que una ficha se publica. */
+/**
+ * Aviso de estreno: la primera vez que una ficha se publica. Con aviso o sin él,
+ * lo que se ve desde ahora es el punto de partida de sus avisos de cambios.
+ */
 export async function notificarNuevaPublicacion(tipo: string, id: number, eleccion?: EleccionAviso): Promise<void> {
   await avisar(tipo, id, "estreno", eleccion);
+  if (!ES_TIPO_CON_AVISO.has(tipo)) return;
+  await guardarHuella(tipo, id).catch((e) => console.error("[discord] no se guardó la huella:", e));
 }
 
-/** Aviso de un cambio en una ficha ya publicada, solo si el autor lo pidió al guardar. */
+/**
+ * Tras guardar una ficha ya publicada: el aviso del cambio, solo si el autor lo
+ * pidió. Si no lo pidió y la ficha aún no tiene huella (se publicó antes de que
+ * existieran), la de ahora queda como punto de partida.
+ */
 export async function avisarCambio(tipo: string, id: number, eleccion?: EleccionAviso): Promise<void> {
-  if (!eleccion?.cambio) return;
-  await avisar(tipo, id, "cambio", eleccion);
+  if (eleccion?.cambio) return avisar(tipo, id, "cambio", eleccion);
+  if (!ES_TIPO_CON_AVISO.has(tipo)) return;
+  await asegurarHuella(tipo, id).catch((e) => console.error("[discord] no se guardó la huella:", e));
 }
 
 /**

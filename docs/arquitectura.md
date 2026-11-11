@@ -881,13 +881,33 @@ Sustituye al webhook único: cada tipo de ficha avisa en su canal.
   el canal y se puede cambiar o elegir «No avisar». Las tablas, la lista de la cronología y el editor del mapa
   usan el de por defecto.
 - **Cambios**: solo si el autor marca «Avisar del cambio» al guardar una ficha ya publicada (en su formulario
-  o en su tarjeta de la bandeja), con una nota opcional («Qué cambió»). Van por defecto al canal donde se
-  avisó la ficha la última vez.
+  o en su tarjeta de la bandeja), con una nota opcional. Van por defecto al canal donde se avisó la ficha la
+  última vez. Dicen qué campos cambiaron, no su contenido (§14.4).
 - **Registro** en `discord_aviso` (estreno, cambio o prueba, con el id del mensaje). Los últimos salen en el
   panel.
 - **Solo avisa la web publicada** (`VERCEL_ENV=production`, o `DISCORD_AVISOS=siempre`): probar en local
   apunta en la consola lo que habría enviado. La prueba de canal del panel sí se envía siempre, porque la
   pide el autor.
+- **Enlaces**: siempre a la web publicada (`urlPublicada()` en `lib/sitio.ts`), también si el aviso sale del
+  equipo del autor. El 2026-11-11 salían a `localhost:3000` porque Vercel tenía la dirección de `.env.local`.
+
+### 14.4 Qué cambió (2026-11-11)
+
+El autor no quiere el contenido en el aviso de un cambio: sus amigos leen el detalle en la wiki. El aviso
+dice **qué campos cambiaron**, por el nombre que tienen en el formulario: «Cambió: Título · Imagen», y debajo
+la nota del autor si la escribió.
+
+- **La huella** (`lib/discord-huella.ts`): un hash corto por campo de lo que ve el público. Incluye los campos
+  de la ficha, su imagen, las conexiones (una clave por bloque), las fechas, las listas propias (habilidades,
+  secciones, fragmentos…), las estadísticas y la galería. Lo oculto pesa como lo vacío, y las conexiones,
+  fechas y filas ocultas no entran: el aviso nunca delata que algo oculto cambió.
+- **`discord_huella`** guarda la de cada ficha al estrenarse (con aviso o sin él) y tras cada aviso de un
+  cambio. El aviso compara con ella: cuenta todo lo cambiado desde la última vez que se avisó, aunque se
+  guardara varias veces sin avisar. Las fichas publicadas antes recibieron la suya con `sembrar-huellas.ts`;
+  si aun así falta, la toma el primer guardado sin aviso.
+- Si no cambió nada visible y no hay nota, **no se envía** (por ejemplo, si solo se añadió texto oculto).
+- **Vista previa** en el panel del aviso: el mensaje tal y como saldrá, con lo guardado; en un cambio, los
+  campos que ya cambiaron, más lo que se cambie al guardar.
 
 ---
 

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, serial, integer, varchar, text, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 /** Dominio Admin: notas privadas del autor. */
 export const notaPrivada = pgTable("nota_privada", {
@@ -61,3 +61,19 @@ export const discordAviso = pgTable("discord_aviso", {
   nota: text("nota"),
   enviadoEn: timestamp("enviado_en", { mode: "date" }).notNull().defaultNow(),
 });
+
+/**
+ * Lo que los jugadores vieron de cada ficha en su último aviso (o al estrenarse):
+ * una huella corta por campo de lo visible. El aviso de un cambio la compara con
+ * la ficha de ahora para decir qué campos cambiaron (lib/discord-huella.ts).
+ */
+export const discordHuella = pgTable(
+  "discord_huella",
+  {
+    entidadTipo: varchar("entidad_tipo").notNull(),
+    entidadId: integer("entidad_id").notNull(),
+    huella: jsonb("huella").$type<Record<string, string>>().notNull(),
+    actualizadoEn: timestamp("actualizado_en", { mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.entidadTipo, t.entidadId] })],
+);

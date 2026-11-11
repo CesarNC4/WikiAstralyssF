@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { opcionesAviso, type OpcionesAviso } from "@/lib/actions/discord";
+import { opcionesAviso, vistaAviso, type OpcionesAviso, type VistaAviso } from "@/lib/actions/discord";
 import { ES_TIPO_CON_AVISO } from "@/lib/discord-tipos";
 import { OpcionesCanal } from "@/components/admin/CanalesDiscord";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,7 @@ export function AvisoDiscord({
                   <>
                     <SelectCanal op={op} canal={canal} onChange={(c) => onChange({ ...valor, canal: c })} />
                     <label className="block">
-                      <span className="mb-1 block text-xs text-fg-muted">Qué cambió (opcional, lo verán los jugadores)</span>
+                      <span className="mb-1 block text-xs text-fg-muted">Nota (opcional, la verán los jugadores)</span>
                       <textarea
                         value={valor.nota ?? ""}
                         onChange={(e) => onChange({ ...valor, nota: e.target.value })}
@@ -146,10 +146,103 @@ export function AvisoDiscord({
                 <SelectCanal op={op} canal={canal} onChange={(c) => onChange({ ...valor, canal: c })} />
               </>
             )}
+            {(cambio ? valor.cambio : nombre) && (
+              <VistaPrevia
+                key={`${cambio ? "cambio" : "estreno"}-${version}`}
+                tipo={tipo}
+                id={id ?? null}
+                clase={cambio ? "cambio" : "estreno"}
+                nota={valor.nota}
+                canal={nombre ?? null}
+              />
+            )}
             <p className="text-xs text-fg-muted">El aviso solo lleva lo que ven los jugadores: nada de lo oculto.</p>
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * El aviso como saldrá en Discord, con lo guardado de la ficha. En un cambio, los
+ * campos que ya cambiaron desde el último aviso; lo que se cambie ahora se suma al
+ * guardar. Se monta al abrir el panel (y con cada guardado, por su `key`).
+ */
+function VistaPrevia({
+  tipo,
+  id,
+  clase,
+  nota,
+  canal,
+}: {
+  tipo: string;
+  id: number | null;
+  clase: "estreno" | "cambio";
+  nota?: string;
+  canal: string | null;
+}) {
+  const [vista, setVista] = useState<VistaAviso | null | undefined>(id ? undefined : null);
+
+  useEffect(() => {
+    if (!id) return;
+    let vivo = true;
+    vistaAviso(tipo, id, clase)
+      .then((v) => vivo && setVista(v))
+      .catch(() => vivo && setVista(null));
+    return () => {
+      vivo = false;
+    };
+  }, [tipo, id, clase]);
+
+  if (!id) return <p className="text-xs text-fg-muted">La vista previa sale cuando la ficha esté guardada.</p>;
+  if (vista === undefined) return <p className="text-xs text-fg-muted">Preparando la vista previa…</p>;
+  if (!vista) return null;
+
+  const notaLimpia = nota?.trim();
+  const sinMarcas = (t: string) => t.replace(/\*\*/g, "");
+  return (
+    <div>
+      <p className="mb-1 text-xs text-fg-muted">Vista previa{canal ? ` en #${canal}` : ""}</p>
+      <div
+        className="flex gap-3 rounded-md border border-l-4 border-border-base bg-surface p-3"
+        style={{ borderLeftColor: `#${vista.color.toString(16).padStart(6, "0")}` }}
+      >
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="text-xs font-semibold text-fg">{vista.autor}</p>
+          <p className="text-sm font-semibold text-accent">{vista.titulo}</p>
+          {clase === "cambio" ? (
+            <>
+              {vista.cambios?.length ? (
+                <p className="text-sm text-fg">
+                  <span className="font-semibold">Cambió:</span> {vista.cambios.join(" · ")}
+                  <span className="text-fg-muted"> + lo que cambies ahora</span>
+                </p>
+              ) : vista.cambios ? (
+                <p className="text-sm text-fg">
+                  <span className="font-semibold">Cambió:</span> <span className="text-fg-muted">lo que cambies ahora</span>
+                </p>
+              ) : null}
+              {notaLimpia ? <p className="whitespace-pre-line break-words text-sm text-fg">{notaLimpia}</p> : null}
+              {!vista.cambios && !notaLimpia ? <p className="text-sm text-fg">Se actualizó la ficha.</p> : null}
+            </>
+          ) : vista.descripcion ? (
+            <p className="break-words text-sm text-fg">{sinMarcas(vista.descripcion)}</p>
+          ) : null}
+          <p className="text-[11px] text-fg-muted">Astralys</p>
+        </div>
+        {vista.imagen ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={vista.imagen} alt="" className="h-14 w-14 shrink-0 rounded object-cover" />
+        ) : null}
+      </div>
+      {clase === "cambio" ? (
+        <p className="mt-1 text-xs text-fg-muted">
+          {vista.cambios
+            ? "Lo que cambió se detecta al guardar. Si no cambia nada que se vea y no hay nota, no se envía."
+            : "Esta ficha aún no tiene un aviso anterior con que comparar: saldrá tu nota."}
+        </p>
+      ) : null}
     </div>
   );
 }
