@@ -66,14 +66,18 @@ export function CanalesDiscord({
   const toast = useToast();
   const router = useRouter();
   const [pending, start] = useTransition();
-  // La primera vez, sin nada guardado, se propone el canal que se llama como el de la lista.
-  const propuesta = Object.keys(porDefecto).length === 0;
+  // Los tipos sin nada guardado (todos la primera vez, o los que se añadan luego) llevan
+  // propuesto el canal que se llama como el de la lista. «No avisar» también se guarda.
+  const sinGuardar = tipos.filter((t) => !(t.tipo in porDefecto)).map((t) => t.tipo);
+  const propuesta = sinGuardar.length > 0;
+  const primeraVez = sinGuardar.length === tipos.length;
   const [valores, setValores] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      tipos.map((t) => [t.tipo, porDefecto[t.tipo] ?? (propuesta && canales ? canalPropuesto(canales, t.canal)?.id ?? NINGUNO : NINGUNO)]),
+      tipos.map((t) => [t.tipo, porDefecto[t.tipo] ?? (canales ? canalPropuesto(canales, t.canal)?.id ?? NINGUNO : NINGUNO)]),
     ),
   );
   const [cambios, setCambios] = useState(propuesta);
+  const etiquetaDe = new Map(tipos.map((t) => [t.tipo, t.etiqueta]));
   const [prueba, setPrueba] = useState<string>(() => canales?.[0]?.id ?? NINGUNO);
 
   if (!canales) {
@@ -126,7 +130,10 @@ export function CanalesDiscord({
         <h2 className="mb-3 font-display text-lg text-accent">Canal de cada tipo de ficha</h2>
         {propuesta && (
           <p className="mb-3 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-fg">
-            Aún no hay nada guardado: te propongo los canales que se llaman como los de la categoría WIKI. Revísalos y pulsa Guardar.
+            {primeraVez
+              ? "Aún no hay nada guardado: te propongo los canales que se llaman como los de la categoría WIKI."
+              : `Sin guardar todavía: ${sinGuardar.map((t) => etiquetaDe.get(t) ?? t).join(", ")}. Te propongo su canal.`}{" "}
+            Mientras no lo guardes, {primeraVez ? "ninguna ficha avisa" : "esos tipos no avisan"}. Revísalo y pulsa Guardar.
           </p>
         )}
         <div className="divide-y divide-border-base rounded-lg border border-border-base">

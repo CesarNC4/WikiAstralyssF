@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState, startTransition } from "react";
 import { guardarGremio, type ComplejaFormState } from "@/lib/actions/complejas";
+import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import type { RangoRow, FaccionRow, JerarquiaRow, HistorialRow } from "@/lib/admin/complejas";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
@@ -70,9 +71,10 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
   const wrap = <T,>(fn: (x: T) => void) => (x: T) => { fn(x); mark(); };
 
   const [state, formAction, pending] = useActionState<ComplejaFormState | undefined, FormData>(guardarGremio, undefined);
+  const aviso = useAviso();
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); }
+    if (state.ok) { toast("Cambios guardados.", "success"); aviso.reiniciar(); }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -88,6 +90,7 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
     const fd = new FormData();
     fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));
+    fd.set("aviso", JSON.stringify(aviso.valor));
     setDirty(false); // optimista: guardar = persistir el estado actual
     startTransition(() => formAction(fd));
   };
@@ -148,7 +151,10 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-base bg-deep/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <span className="text-xs text-fg-muted">Registro único · siempre activo</span>
-          <button type="button" disabled={pending} onClick={submit} className="ml-auto rounded-lg bg-primary px-5 py-2 text-sm font-medium text-void transition-transform hover:scale-[1.02] disabled:opacity-60">
+          <div className="ml-auto">
+            <AvisoDiscord tipo="gremio" id={id} estado="publicado" {...aviso.props} />
+          </div>
+          <button type="button" disabled={pending} onClick={submit} className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-void transition-transform hover:scale-[1.02] disabled:opacity-60">
             {pending ? "Guardando…" : "Guardar"}
           </button>
         </div>

@@ -11,6 +11,7 @@ import { analizarPropuestas, aplicarFichaPropuesta, aplicarTextoSuelto } from "@
 import { bloquePendiente, estaVacio, reemplazarBloque } from "@/lib/propuestas/archivo";
 import { faltaEn, hashTexto, type Analisis, type DatoAnalizado, type EstadoFicha, type FichaAnalizada, type SueltoAnalizado } from "@/lib/propuestas/tipos";
 import { cn } from "@/lib/utils";
+import type { ValorAviso } from "@/components/admin/AvisoDiscord";
 import {
   borrarArchivo,
   carpetaRecordada,
@@ -62,6 +63,8 @@ export function Bandeja() {
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [estados, setEstados] = useState<Record<string, EstadoFicha | null>>({});
   const [destinos, setDestinos] = useState<Record<string, number | "crear">>({});
+  // El aviso a Discord de cada tarjeta; sin tocar, el de por defecto.
+  const [avisos, setAvisos] = useState<Record<string, ValorAviso>>({});
   const [fallos, setFallos] = useState<Record<string, Record<string, string>>>({});
   const [ocupadas, setOcupadas] = useState<Set<string>>(new Set());
   const [cargando, setCargando] = useState(false);
@@ -212,11 +215,18 @@ export function Bandeja() {
           nombre,
           estado: estadoDe(f) ?? null,
           datos,
+          aviso: avisos[f.clave],
         });
         if (!r.ok || r.id == null) {
           toast(r.error ?? "No se pudo aplicar.", "error");
           return false;
         }
+        // Ya está aplicada: si vuelve a salir (datos pendientes), su aviso empieza de cero.
+        setAvisos((a) => {
+          const n = { ...a };
+          delete n[f.clave];
+          return n;
+        });
         const aplicados = new Set(r.aplicados);
         // Lo que se deja para luego, y lo que falló, se queda en el archivo.
         const pendientes = datos.filter((d) => d.raw && (!aplicados.has(d.clave) || r.fallidos[d.clave]));
@@ -243,7 +253,7 @@ export function Bandeja() {
         });
       }
     },
-    [datosDe, destinos, estadoDe, nombreDe, reescribir, toast],
+    [avisos, datosDe, destinos, estadoDe, nombreDe, reescribir, toast],
   );
 
   const aplicarYReanalizar = async (f: FichaAnalizada) => {
@@ -392,6 +402,8 @@ export function Bandeja() {
                   onDestino={(d) => void cambiarDestino(f, d)}
                   onAplicar={() => void aplicarYReanalizar(f)}
                   onDescartar={() => void descartarFicha(f)}
+                  aviso={avisos[f.clave] ?? {}}
+                  onAviso={(v) => setAvisos((a) => ({ ...a, [f.clave]: v }))}
                 />
               ))}
               {sueltos.map((s) => (

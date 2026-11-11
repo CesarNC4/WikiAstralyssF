@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import { naciones } from "@/db/schema/mundo";
 import { regiones, locaciones } from "@/db/schema/mapa";
 import { assertAdmin } from "@/lib/actions/auth";
+import { notificarNuevaPublicacion } from "@/lib/discord";
 import type { EstadoPublicacion } from "@/db/schema/enums";
 import { contenedorDePoligono, contenedorDePunto, type Contenedor } from "@/lib/mapa";
 
@@ -185,10 +186,12 @@ export async function guardarRegion(input: RegionInput): Promise<number> {
     const [prev] = await db.select({ ppv: regiones.publicadoPrimeraVezEn }).from(regiones).where(eq(regiones.id, input.id)).limit(1);
     await db.update(regiones).set({ ...base, publicadoPrimeraVezEn: primeraVez(estado, prev?.ppv ?? null) }).where(eq(regiones.id, input.id));
     revalidarMapa(`/regiones/${input.id}`);
+    if (estado === "publicado" && prev && !prev.ppv) await notificarNuevaPublicacion("regiones", input.id);
     return input.id;
   }
   const [row] = await db.insert(regiones).values({ ...base, publicadoPrimeraVezEn: primeraVez(estado, null) }).returning({ id: regiones.id });
   revalidarMapa(`/regiones/${row.id}`);
+  if (estado === "publicado") await notificarNuevaPublicacion("regiones", row.id);
   return row.id;
 }
 
@@ -245,10 +248,12 @@ export async function guardarLocacion(input: LocacionInput): Promise<number> {
     const [prev] = await db.select({ ppv: locaciones.publicadoPrimeraVezEn }).from(locaciones).where(eq(locaciones.id, input.id)).limit(1);
     await db.update(locaciones).set({ ...base, publicadoPrimeraVezEn: primeraVez(estado, prev?.ppv ?? null) }).where(eq(locaciones.id, input.id));
     revalidarMapa(`/locaciones/${input.id}`);
+    if (estado === "publicado" && prev && !prev.ppv) await notificarNuevaPublicacion("locaciones", input.id);
     return input.id;
   }
   const [row] = await db.insert(locaciones).values({ ...base, publicadoPrimeraVezEn: primeraVez(estado, null) }).returning({ id: locaciones.id });
   revalidarMapa(`/locaciones/${row.id}`);
+  if (estado === "publicado") await notificarNuevaPublicacion("locaciones", row.id);
   return row.id;
 }
 

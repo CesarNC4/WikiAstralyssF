@@ -870,13 +870,19 @@ Sustituye al webhook único: cada tipo de ficha avisa en su canal.
   ofrece aquellos donde el bot puede ver, escribir e insertar enlaces. No hace falta tenerlo «encendido»:
   todo va por la API REST.
 - **Canal por defecto** de cada tipo en `discord_canal`, elegido en `/admin/discord` (`lib/discord-tipos.ts`
-  propone los de la categoría WIKI). Un tipo sin canal no avisa; los que no están en la lista (hojas, hilos,
-  actos, el gremio) nunca.
+  propone los de la categoría WIKI). «No avisar» se guarda como `""`, para distinguirlo de un tipo aún sin
+  configurar (que sale propuesto). Un tipo sin canal no avisa; los que no están en la lista (hojas e hilos de
+  trama, plantillas, elementos) nunca.
+- **Solo lo que se ve**: antes de enviar se comprueba que la ficha es pública. Un acto solo avisa si su
+  capítulo también está publicado (`estadoSql`); si se publica antes que su capítulo, lo cubre el aviso del
+  capítulo. El gremio no tiene estado: solo avisa de cambios.
 - **Al publicar** desde el formulario (`components/admin/AvisoDiscord.tsx`, en los editores genérico, de
-  personajes, organizaciones, familias, lore y capítulos) se ve el canal y se puede cambiar o elegir «No
-  avisar». Las tablas y la bandeja usan el de por defecto.
-- **Cambios**: solo si el autor marca «Avisar del cambio» al guardar una ficha ya publicada, con una nota
-  opcional («Qué cambió»). Van por defecto al canal donde se avisó la ficha la última vez.
+  personajes, organizaciones, familias, lore, gremio, capítulos y actos) y en cada tarjeta de la bandeja se ve
+  el canal y se puede cambiar o elegir «No avisar». Las tablas, la lista de la cronología y el editor del mapa
+  usan el de por defecto.
+- **Cambios**: solo si el autor marca «Avisar del cambio» al guardar una ficha ya publicada (en su formulario
+  o en su tarjeta de la bandeja), con una nota opcional («Qué cambió»). Van por defecto al canal donde se
+  avisó la ficha la última vez.
 - **Registro** en `discord_aviso` (estreno, cambio o prueba, con el id del mensaje). Los últimos salen en el
   panel.
 - **Solo avisa la web publicada** (`VERCEL_ENV=production`, o `DISCORD_AVISOS=siempre`): probar en local

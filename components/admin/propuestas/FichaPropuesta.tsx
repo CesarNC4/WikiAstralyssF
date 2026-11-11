@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { subInp } from "@/components/admin/blocks/shared";
 import { AccordionSection } from "@/components/admin/ui";
+import { AvisoDiscord, type ValorAviso } from "@/components/admin/AvisoDiscord";
 import { faltaEn, type Analisis, type DatoAnalizado, type EstadoFicha, type FichaAnalizada } from "@/lib/propuestas/tipos";
 import { cn } from "@/lib/utils";
 import { DatoFila } from "./DatoFila";
@@ -31,7 +32,12 @@ export function FichaPropuesta({
   onDestino,
   onAplicar,
   onDescartar,
+  aviso,
+  onAviso,
 }: {
+  /** El aviso a Discord elegido en la tarjeta. */
+  aviso: ValorAviso;
+  onAviso: (v: ValorAviso) => void;
   ficha: FichaAnalizada;
   /** Los datos con lo que el autor haya cambiado. */
   datos: DatoAnalizado[];
@@ -53,6 +59,9 @@ export function FichaPropuesta({
   const bloqueada = Boolean(ficha.error) || ficha.ambigua;
   const lista = porResolver === 0 && !bloqueada;
   const nueva = ficha.id == null;
+  // Sobre qué ficha cae y en qué estado queda: de eso depende el aviso (estreno o cambio).
+  const idDestino = destino === "crear" ? null : typeof destino === "number" ? destino : ficha.id;
+  const estadoFinal = ficha.conEstado ? ficha.estado ?? (nueva ? "borrador" : ficha.estadoActual ?? "borrador") : "publicado";
 
   const insignia = bloqueada ? (
     <span className="rounded-full border border-error/40 px-2 py-0.5 text-[11px] text-error">Revisar</span>
@@ -122,8 +131,9 @@ export function FichaPropuesta({
               Abrir la ficha <Icon name="ExternalLink" size={11} />
             </Link>
           )}
+          <AvisoDiscord tipo={ficha.entidad} id={idDestino} estado={estadoFinal} valor={aviso} onChange={onAviso} hacia="abajo" />
           {ficha.estado === "publicado" && ficha.estadoActual !== "publicado" && (
-            <p className="w-full text-xs text-fg-muted">La verán los jugadores. Si es su primera publicación, se avisa en Discord, en el canal de su tipo de ficha.</p>
+            <p className="w-full text-xs text-fg-muted">La verán los jugadores. Si es su primera publicación, se avisa en Discord en el canal que ves.</p>
           )}
         </div>
 

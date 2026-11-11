@@ -5,6 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
+import { notificarNuevaPublicacion } from "@/lib/discord";
 
 function revalidar() {
   revalidatePath("/admin/timeline");
@@ -26,16 +27,22 @@ export async function actualizarEventoInline(
     set.capituloId = patch.capituloId;
     set.actoId = null;
   }
+  let estreno = false;
   if (patch.estado !== undefined) {
     set.estadoPublicacion = patch.estado;
     if (patch.estado === "publicado") {
       const [ex] = await db.select({ ppv: s.timelineEventos.publicadoPrimeraVezEn }).from(s.timelineEventos).where(eq(s.timelineEventos.id, id)).limit(1);
-      if (!ex?.ppv) set.publicadoPrimeraVezEn = new Date();
+      if (ex && !ex.ppv) {
+        set.publicadoPrimeraVezEn = new Date();
+        estreno = true;
+      }
     }
   }
   if (Object.keys(set).length === 0) return;
   await db.update(s.timelineEventos).set(set).where(eq(s.timelineEventos.id, id));
   revalidar();
+  // Como desde la tabla: el estreno avisa en el canal de la cronología.
+  if (estreno) await notificarNuevaPublicacion("timeline", id);
 }
 
 /** Crea un evento en blanco y devuelve su id. La fecha se le pone en su editor. */

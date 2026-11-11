@@ -70,6 +70,13 @@ export function AvisoDiscord({
   }, [avisa, tipo, id, version]);
 
   if (!avisa || !op?.activo || estado !== "publicado") return null;
+  if (op.noSeVe) {
+    return (
+      <span title={op.noSeVe} className="inline-block max-w-[22rem] truncate rounded-lg border border-border-base px-3 py-2 text-sm text-fg-muted">
+        🔕 Sin aviso: no se ve todavía
+      </span>
+    );
+  }
 
   const canal = valor.canal === undefined ? op.sugerido : valor.canal;
   const nombre = op.canales.find((c) => c.id === canal)?.nombre;

@@ -241,6 +241,8 @@ export interface EntradaFicha {
   nombre: string;
   estado: EstadoFicha | null;
   datos: DatoAnalizado[];
+  /** El aviso a Discord elegido en la tarjeta (canal, «No avisar» o el de un cambio). */
+  aviso?: { canal?: string | null; cambio?: boolean; nota?: string };
 }
 
 export interface ResultadoFicha {

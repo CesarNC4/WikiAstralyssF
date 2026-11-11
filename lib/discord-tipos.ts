@@ -13,6 +13,8 @@ export const TIPOS_CON_AVISO: { tipo: EntityKey; canal: string }[] = [
   { tipo: "locaciones", canal: "naciones-y-lugares" },
   { tipo: "organizaciones", canal: "organizaciones" },
   { tipo: "familias", canal: "organizaciones" },
+  // Siempre publicado: solo avisa de cambios, si se marca al guardar.
+  { tipo: "gremio", canal: "organizaciones" },
   { tipo: "razas", canal: "razas-y-criaturas" },
   { tipo: "bestias", canal: "razas-y-criaturas" },
   { tipo: "demonios", canal: "razas-y-criaturas" },
@@ -24,6 +26,8 @@ export const TIPOS_CON_AVISO: { tipo: EntityKey; canal: string }[] = [
   { tipo: "economia", canal: "objetos" },
   { tipo: "timeline", canal: "historia" },
   { tipo: "capitulos", canal: "capitulos" },
+  // Solo avisa si su capítulo también está publicado: si no, el acto no se ve.
+  { tipo: "actos", canal: "capitulos" },
   { tipo: "arcos", canal: "capitulos" },
   { tipo: "misiones", canal: "capitulos" },
   { tipo: "canciones", canal: "musica" },

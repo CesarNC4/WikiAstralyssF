@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { avisarCambio, eleccionDe, notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionDe, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
 import type { OrgPayload, FamiliaPayload, GremioPayload, Estado } from "@/lib/admin/complejas";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 
@@ -443,11 +443,13 @@ export async function guardarGremio(
 
   await purgarEnSegundoPlano();
   revalidatePath("/admin/gremio");
+  // Siempre está publicado: solo hay aviso de cambios, si se marcó al guardar.
+  await avisarCambio("gremio", gid, eleccionDe(formData));
   return { ok: true, id: gid };
 }
 
 // ── Estado / papelera (org y familia) ───────────────────────────────────────
-export async function cambiarEstadoOrg(id: number, estado: Estado): Promise<void> {
+export async function cambiarEstadoOrg(id: number, estado: Estado, aviso?: unknown): Promise<void> {
   await assertAdmin();
   const [ex] = await db
     .select({ ppv: s.organizaciones.publicadoPrimeraVezEn })
@@ -458,10 +460,10 @@ export async function cambiarEstadoOrg(id: number, estado: Estado): Promise<void
   const ppv = primeraVez ? new Date() : ex?.ppv ?? null;
   await db.update(s.organizaciones).set({ estadoPublicacion: estado, publicadoPrimeraVezEn: ppv }).where(eq(s.organizaciones.id, id));
   revalidarOrg(id);
-  if (primeraVez && ex) await notificarNuevaPublicacion("organizaciones", id);
+  if (primeraVez && ex) await notificarNuevaPublicacion("organizaciones", id, eleccionValida(aviso));
 }
 
-export async function cambiarEstadoFamilia(id: number, estado: Estado): Promise<void> {
+export async function cambiarEstadoFamilia(id: number, estado: Estado, aviso?: unknown): Promise<void> {
   await assertAdmin();
   const [ex] = await db
     .select({ ppv: s.familias.publicadoPrimeraVezEn })
@@ -472,7 +474,7 @@ export async function cambiarEstadoFamilia(id: number, estado: Estado): Promise<
   const ppv = primeraVez ? new Date() : ex?.ppv ?? null;
   await db.update(s.familias).set({ estadoPublicacion: estado, publicadoPrimeraVezEn: ppv }).where(eq(s.familias.id, id));
   revalidarFamilia(id);
-  if (primeraVez && ex) await notificarNuevaPublicacion("familias", id);
+  if (primeraVez && ex) await notificarNuevaPublicacion("familias", id, eleccionValida(aviso));
 }
 
 export async function moverOrgAPapelera(id: number): Promise<void> {

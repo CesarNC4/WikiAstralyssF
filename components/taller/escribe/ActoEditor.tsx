@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { useToast } from "@/components/admin/Toast";
+import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import { FechaInput } from "@/components/admin/FechaInput";
 import { CandadoFecha } from "@/components/admin/candados";
 import { VisibilidadCampos } from "@/components/admin/VisibilidadCampos";
@@ -62,6 +63,7 @@ export function ActoEditor({
   const [fecha, setFecha] = useState<Fecha | null>(datos.fecha);
   const [importante, setImportante] = useState(datos.importante);
   const [cambios, setCambios] = useState(false);
+  const aviso = useAviso();
   // Fragmentos con fecha: con alguno, la fecha del acto se calcula de ellos.
   const [conFecha, setConFecha] = useState(datos.fragmentos.conFecha);
   // Sube cuando un fragmento añade su POV al acto, para que el bloque POV se recargue.
@@ -107,9 +109,10 @@ export function ActoEditor({
         estadoPublicacion: publicacion,
         fecha,
         importante,
-      });
+      }, aviso.valor);
       if (!r.ok) return toast(r.error, "error");
       setCambios(false);
+      aviso.reiniciar();
       toast("Acto guardado.", "success");
       router.refresh();
     });
@@ -181,6 +184,9 @@ export function ActoEditor({
         </Campo>
         <Campo label="Publicación">
           <SelectEstado value={publicacion} onChange={marcar(setPublicacion)} />
+          <div className="mt-2">
+            <AvisoDiscord tipo="actos" id={a.id} estado={publicacion} hacia="abajo" {...aviso.props} />
+          </div>
         </Campo>
       </div>
 

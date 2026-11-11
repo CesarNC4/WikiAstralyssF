@@ -431,11 +431,13 @@ const ActoCambios = z
  * personajes, lugares, arcos, canciones) van por el motor del registro
  * (`lib/actions/vinculos.ts`), como en el resto de fichas.
  */
-export async function guardarActo(id: number, cambios: z.input<typeof ActoCambios>): Promise<Resultado> {
+export async function guardarActo(id: number, cambios: z.input<typeof ActoCambios>, aviso?: unknown): Promise<Resultado> {
   await assertAdmin();
   const p = ActoCambios.safeParse(cambios);
   if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "Datos inválidos." };
   const { fecha, importante, ...d } = p.data;
+  let estreno = false;
+  let publicado = false;
 
   const r = await intentar("guardarActo", () =>
     db.transaction(async (tx) => {
@@ -444,7 +446,10 @@ export async function guardarActo(id: number, cambios: z.input<typeof ActoCambio
 
       const set: Partial<typeof s.actos.$inferInsert> = {};
       for (const [k, v] of Object.entries(d)) (set as Record<string, unknown>)[k] = v === "" ? null : v;
-      if (d.estadoPublicacion === "publicado" && !antes.publicadoPrimeraVezEn) set.publicadoPrimeraVezEn = new Date();
+      // Primera publicación: se apunta la fecha y, al terminar, se avisa a Discord.
+      estreno = d.estadoPublicacion === "publicado" && !antes.publicadoPrimeraVezEn;
+      if (estreno) set.publicadoPrimeraVezEn = new Date();
+      publicado = (d.estadoPublicacion ?? antes.estadoPublicacion) === "publicado";
       if (Object.keys(set).length) await tx.update(s.actos).set(set).where(eq(s.actos.id, id));
 
       // Con fragmentos fechados la fecha del acto se calcula de ellos: la del
@@ -463,6 +468,12 @@ export async function guardarActo(id: number, cambios: z.input<typeof ActoCambio
     }),
   );
   if (r.ok && r.data != null) revalidatePath(`/capitulos/${r.data}/actos/${id}`);
+  if (r.ok) {
+    // El aviso comprueba que el acto se vea: si su capítulo no está publicado, no sale.
+    const eleccion = eleccionValida(aviso);
+    if (estreno) await notificarNuevaPublicacion("actos", id, eleccion);
+    else if (publicado) await avisarCambio("actos", id, eleccion);
+  }
   return conCapitulo(r);
 }
 

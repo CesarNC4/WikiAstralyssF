@@ -1,14 +1,14 @@
 import "server-only";
 
-import { and, desc, eq, getTableColumns, inArray } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
-import { discordAviso, discordCanal } from "@/db/schema";
+import { capitulos, discordAviso, discordCanal } from "@/db/schema";
 import { ES_TIPO_CON_AVISO } from "@/lib/discord-tipos";
 import { entityByKey } from "@/lib/entities";
 import { ocultarEnLista } from "@/lib/queries/visibilidad";
 import { infoDe } from "@/lib/relaciones/tablas";
-import { MARCA_OCULTO } from "@/lib/visibilidad";
+import { MARCA_OCULTO, censurarTexto } from "@/lib/visibilidad";
 
 /**
  * Avisos a Discord (docs/arquitectura.md §14), con un bot que escribe en el canal
@@ -122,17 +122,29 @@ const ENLACES = BigInt(1) << BigInt(14);
 const ADMIN = BigInt(1) << BigInt(3);
 const NECESARIOS = VER | ENVIAR | ENLACES;
 
-let cacheCanales: { cuando: number; canales: CanalDiscord[] } | null = null;
+let cacheCanales: { cuando: number; canales: Promise<CanalDiscord[] | null> } | null = null;
 
 /**
  * Los canales de texto donde el bot puede avisar (ver, escribir e insertar
  * enlaces), en el orden del servidor. `null` si Discord no está configurado o no
- * responde. Se guardan un minuto.
+ * responde. Se guardan un minuto, y las peticiones que llegan a la vez (las
+ * tarjetas de la bandeja) comparten una sola consulta a Discord.
  */
-export async function canalesDelServidor(): Promise<CanalDiscord[] | null> {
+export function canalesDelServidor(): Promise<CanalDiscord[] | null> {
+  if (!credenciales()) return Promise.resolve(null);
+  if (cacheCanales && Date.now() - cacheCanales.cuando < 60_000) return cacheCanales.canales;
+  const canales = leerCanales();
+  cacheCanales = { cuando: Date.now(), canales };
+  // Un fallo no se guarda: el siguiente intento vuelve a preguntar.
+  void canales.then((c) => {
+    if (!c && cacheCanales?.canales === canales) cacheCanales = null;
+  });
+  return canales;
+}
+
+async function leerCanales(): Promise<CanalDiscord[] | null> {
   const cred = credenciales();
   if (!cred) return null;
-  if (cacheCanales && Date.now() - cacheCanales.cuando < 60_000) return cacheCanales.canales;
   try {
     const [yo, servidor, lista] = await Promise.all([
       api<{ id: string }>("/users/@me"),
@@ -179,7 +191,6 @@ export async function canalesDelServidor(): Promise<CanalDiscord[] | null> {
         return ca - cb || pa - pb;
       })
       .map((c) => ({ id: c.id, nombre: c.name, categoria: c.parent_id ? categorias.get(c.parent_id)?.name ?? null : null }));
-    cacheCanales = { cuando: Date.now(), canales };
     return canales;
   } catch (e) {
     console.error("[discord] no se pudieron leer los canales:", e);
@@ -200,7 +211,7 @@ export async function nombreDelServidor(): Promise<string | null> {
 
 // ── A qué canal va ───────────────────────────────────────────────────────────
 
-/** El canal por defecto de cada tipo de ficha. */
+/** El canal por defecto de cada tipo de ficha. `""` = ese tipo no avisa (elegido así en el panel). */
 export async function canalesPorDefecto(): Promise<Record<string, string>> {
   const filas = await db.select({ tipo: discordCanal.entidadTipo, canal: discordCanal.canalId }).from(discordCanal);
   return Object.fromEntries(filas.map((f) => [f.tipo, f.canal]));
@@ -222,7 +233,25 @@ export async function canalSugerido(tipo: string, id?: number | null): Promise<s
   const propio = id ? await canalDeLaFicha(tipo, id) : null;
   if (propio) return propio;
   const [f] = await db.select({ canal: discordCanal.canalId }).from(discordCanal).where(eq(discordCanal.entidadTipo, tipo)).limit(1);
-  return f?.canal ?? null;
+  return f?.canal || null;
+}
+
+/**
+ * ¿La ven los jugadores ahora mismo? Publicada y fuera de la papelera; un acto,
+ * además, solo si su capítulo también lo está (`estadoSql`). Lo que no tiene
+ * estado (el gremio) siempre es público.
+ */
+async function esPublica(tipo: string, id: number): Promise<boolean> {
+  const info = infoDe(tipo);
+  if (!info) return false;
+  const c = getTableColumns(info.tabla) as unknown as Record<string, PgColumn>;
+  const sel: Record<string, PgColumn | SQL> = { id: c.id };
+  if (info.estadoSql) sel.estado = info.estadoSql;
+  else if (c.estadoPublicacion) sel.estado = c.estadoPublicacion;
+  if (c.eliminadoEn) sel.eliminado = c.eliminadoEn;
+  const [f] = (await db.select(sel).from(info.tabla).where(eq(c.id, id)).limit(1)) as { estado?: string; eliminado?: Date | null }[];
+  if (!f || f.eliminado) return false;
+  return f.estado === undefined || f.estado === "publicado";
 }
 
 // ── El mensaje ───────────────────────────────────────────────────────────────
@@ -264,9 +293,13 @@ async function leerLoPublico(tipo: string, id: number) {
   if (!info) return null;
   const c = getTableColumns(info.tabla) as unknown as Record<string, PgColumn>;
   const sel: Record<string, PgColumn> = {};
-  for (const k of ["id", info.label, "surname", ...DESCRIBEN, info.imagen ?? "imagenUrl", "slug"]) if (c[k]) sel[k] = c[k];
+  const anidada = info.rutaAnidada;
+  for (const k of ["id", info.label, "surname", ...DESCRIBEN, info.imagen ?? "imagenUrl", "slug", anidada?.col ?? ""]) if (c[k]) sel[k] = c[k];
   const [fila] = (await db.select(sel).from(info.tabla).where(eq(c.id, id)).limit(1)) as Record<string, unknown>[];
   if (!fila) return null;
+  // La ruta de una ficha anidada (el acto, dentro de su capítulo) sale de la fila tal cual.
+  const rutaPropia = anidada ? anidada.hacer(id, fila[anidada.col]) : null;
+  const padre = anidada ? Number(fila[anidada.col]) || null : null;
   const [p] = await ocultarEnLista(tipo, [fila]);
 
   const texto = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -276,7 +309,16 @@ async function leerLoPublico(tipo: string, id: number) {
     .map((k) => textoDeAviso(p[k]))
     .find(Boolean);
   const imagen = texto(p[info.imagen ?? "imagenUrl"]);
-  return { nombre, descripcion, imagen, slug: texto(p.slug) };
+  return { nombre, descripcion, imagen, slug: texto(p.slug), rutaPropia, padre };
+}
+
+/** «Capítulo 3: Título», para decir de qué capítulo es un acto. */
+async function nombreDeCapitulo(id: number | null): Promise<string | null> {
+  if (!id) return null;
+  const [f] = await db.select({ numero: capitulos.numero, titulo: capitulos.titulo }).from(capitulos).where(eq(capitulos.id, id)).limit(1);
+  if (!f) return null;
+  const titulo = censurarTexto(f.titulo);
+  return /^\d+$/.test(f.numero.trim()) ? `Capítulo ${f.numero.trim()}: ${titulo}` : `${f.numero}: ${titulo}`;
 }
 
 /**
@@ -295,19 +337,27 @@ export async function avisoDe(
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
   const ruta = meta?.route ?? "";
   const clave = tipo === "lore" ? ficha.slug : id;
-  const enlace =
-    base && ruta && clave != null
-      ? SIN_FICHA_INDIVIDUAL.has(tipo)
-        ? `${base}${ruta}`
-        : `${base}${ruta}/${clave}`
-      : undefined;
+  const enlace = !base
+    ? undefined
+    : infoDe(tipo)?.rutaAnidada
+      ? ficha.rutaPropia
+        ? `${base}${ficha.rutaPropia}`
+        : undefined
+      : ruta && clave != null
+        ? SIN_FICHA_INDIVIDUAL.has(tipo)
+          ? `${base}${ruta}`
+          : `${base}${ruta}/${clave}`
+        : undefined;
 
   const singular = meta?.singular ?? "Entrada";
   const color = COLOR_POR_GRUPO[meta?.group ?? ""] ?? COLOR_DEFECTO;
+  // Un acto dice de qué capítulo es.
+  const de = tipo === "actos" ? await nombreDeCapitulo(ficha.padre) : null;
+  const que = de ? `${singular} · ${de}` : singular;
 
   const embed: Record<string, unknown> = {
     // Sin «Nuevo» ni «Actualizado»: no concuerdan con «Nación», «Región», «Página»…
-    author: { name: clase === "cambio" ? `📝 Cambios · ${singular}` : `✨ Nuevo en Astralys · ${singular}` },
+    author: { name: (clase === "cambio" ? `📝 Cambios · ${que}` : `✨ Nuevo en Astralys · ${que}`).slice(0, 256) },
     title: ficha.nombre || singular,
     color,
     footer: { text: "Astralys" },
@@ -346,12 +396,14 @@ async function enviar(canal: string, body: Record<string, unknown>, registro: { 
 }
 
 async function avisar(tipo: string, id: number, clase: ClaseAviso, eleccion?: EleccionAviso): Promise<void> {
-  // Las hojas e hilos de trama, el gremio o los actos no tienen aviso propio.
+  // Las hojas e hilos de trama, las plantillas o los elementos no tienen aviso.
   if (!credenciales() || !ES_TIPO_CON_AVISO.has(tipo)) return;
   try {
     // `null` es «no avisar»; sin elegir, el canal que se ofrecería.
     const canal = eleccion?.canal === null ? null : eleccion?.canal || (await canalSugerido(tipo, id));
     if (!canal) return;
+    // Lo que los jugadores no ven no se anuncia: un acto de un capítulo aún sin publicar.
+    if (!(await esPublica(tipo, id))) return;
     const body = await avisoDe(tipo, id, { clase, nota: eleccion?.nota });
     if (!body) return;
     await enviar(canal, body, { tipo, id, clase, nota: clase === "cambio" ? eleccion?.nota : undefined });

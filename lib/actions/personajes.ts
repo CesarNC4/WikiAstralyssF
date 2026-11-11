@@ -6,7 +6,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { avisarCambio, eleccionDe, notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionDe, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
 import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje";
 import { calcularPoderDeCombate } from "@/lib/poderCombate";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
@@ -389,6 +389,8 @@ export async function guardarPersonaje(
 export async function cambiarEstadoPersonaje(
   id: number,
   estado: "borrador" | "publicado" | "oculto",
+  /** El canal elegido al publicar (la bandeja); sin él, el de personajes. */
+  aviso?: unknown,
 ): Promise<void> {
   await assertAdmin();
   const [existing] = await db
@@ -403,7 +405,7 @@ export async function cambiarEstadoPersonaje(
     .set({ estadoPublicacion: estado, publicadoPrimeraVezEn })
     .where(eq(s.personajes.id, id));
   revalidarPersonaje(id);
-  if (primeraVez && existing) await notificarNuevaPublicacion("personajes", id);
+  if (primeraVez && existing) await notificarNuevaPublicacion("personajes", id, eleccionValida(aviso));
 }
 
 /** Mueve a la papelera (soft-delete). */

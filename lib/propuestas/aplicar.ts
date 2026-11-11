@@ -13,6 +13,7 @@ import { guardarNota, leerNota } from "@/lib/actions/notas";
 import { cambiarEstadoPersonaje } from "@/lib/actions/personajes";
 import { crearActo, crearCapitulo, crearFragmento, guardarActo, guardarCapitulo, guardarFragmento, borrarFragmento } from "@/lib/actions/taller";
 import { crearBorradorRapido } from "@/lib/actions/vinculos";
+import { avisarCambio, eleccionValida, type EleccionAviso } from "@/lib/discord";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { revalidarFicha } from "@/lib/admin/revalidarFicha";
 import { leerFecha } from "@/lib/fechas/leer";
@@ -628,18 +629,20 @@ async function aplicarEstadisticas(id: number, d: DatoAnalizado) {
 
 // ── Estado ─────────────────────────────────────────────────────────────────
 
-async function fijarEstado(entidad: string, id: number, estado: EstadoFicha) {
-  if (entidad === "personajes") await cambiarEstadoPersonaje(id, estado);
-  else if (entidad === "organizaciones") await cambiarEstadoOrg(id, estado);
-  else if (entidad === "familias") await cambiarEstadoFamilia(id, estado);
-  else if (entidad === "lore") await cambiarEstadoLore(id, estado);
+/** Cambia el estado; si es un estreno, avisa a Discord en el canal elegido en la tarjeta (o el del tipo). */
+async function fijarEstado(entidad: string, id: number, estado: EstadoFicha, aviso?: EleccionAviso) {
+  if (entidad === "personajes") await cambiarEstadoPersonaje(id, estado, aviso);
+  else if (entidad === "organizaciones") await cambiarEstadoOrg(id, estado, aviso);
+  else if (entidad === "familias") await cambiarEstadoFamilia(id, estado, aviso);
+  else if (entidad === "lore") await cambiarEstadoLore(id, estado, aviso);
   else if (entidad === "capitulos") {
-    const r = await guardarCapitulo(id, { estadoPublicacion: estado });
+    // Sin «cambio»: el aviso de un cambio lo decide `aplicarPropuesta` al final.
+    const r = await guardarCapitulo(id, { estadoPublicacion: estado }, { ...aviso, cambio: false });
     if (!r.ok) throw new Rechazo(r.error);
   } else if (entidad === "actos") {
-    const r = await guardarActo(id, { estadoPublicacion: estado });
+    const r = await guardarActo(id, { estadoPublicacion: estado }, { ...aviso, cambio: false });
     if (!r.ok) throw new Rechazo(r.error);
-  } else await cambiarEstadoEntidad(entidad, id, estado);
+  } else await cambiarEstadoEntidad(entidad, id, estado, aviso);
 }
 
 function motivo(e: unknown): string {
@@ -796,16 +799,22 @@ export async function aplicarPropuesta(entrada: EntradaFicha): Promise<Resultado
   aplicados.push(...hechos);
 
   // Al final: publicar por primera vez sella la fecha y avisa a Discord.
+  const aviso = eleccionValida(entrada.aviso);
+  let estreno = false;
   if (entrada.estado && c.estadoPublicacion) {
     const estadoAhora = fila?.estadoPublicacion ?? "borrador";
     if (estadoAhora !== entrada.estado) {
+      estreno = entrada.estado === "publicado" && !fila?.publicadoPrimeraVezEn;
       try {
-        await fijarEstado(entidad, fichaId, entrada.estado);
+        await fijarEstado(entidad, fichaId, entrada.estado, aviso);
       } catch (e) {
         return { ok: true, id: fichaId, error: `Se aplicó, pero no se pudo cambiar el estado: ${motivo(e)}`, fallidos, aplicados };
       }
     }
   }
+  // El aviso de un cambio, si se marcó en la tarjeta: solo si la ficha ya estaba
+  // publicada antes y sigue a la vista (lo comprueba `avisarCambio`).
+  if (aviso?.cambio && !estreno) await avisarCambio(entidad, fichaId, aviso);
 
   revalidarFicha(entidad, fichaId);
   revalidatePath("/");

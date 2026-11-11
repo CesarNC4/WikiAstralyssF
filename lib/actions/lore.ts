@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
-import { avisarCambio, eleccionDe, notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionDe, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
 import { loreSchema } from "@/lib/validation/lore";
 import { slugify } from "@/lib/utils";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
@@ -122,7 +122,7 @@ async function slugDe(id: number): Promise<string> {
   return r?.slug ?? "";
 }
 
-export async function cambiarEstadoLore(id: number, estado: "borrador" | "publicado" | "oculto"): Promise<void> {
+export async function cambiarEstadoLore(id: number, estado: "borrador" | "publicado" | "oculto", aviso?: unknown): Promise<void> {
   await assertAdmin();
   const [existing] = await db
     .select({ ppv: s.paginasLore.publicadoPrimeraVezEn, slug: s.paginasLore.slug })
@@ -133,7 +133,7 @@ export async function cambiarEstadoLore(id: number, estado: "borrador" | "public
   const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
   await db.update(s.paginasLore).set({ estadoPublicacion: estado, publicadoPrimeraVezEn }).where(eq(s.paginasLore.id, id));
   revalidar(existing?.slug ?? (await slugDe(id)), id);
-  if (primeraVez && existing) await notificarNuevaPublicacion("lore", id);
+  if (primeraVez && existing) await notificarNuevaPublicacion("lore", id, eleccionValida(aviso));
 }
 
 export async function moverLoreAPapelera(id: number): Promise<void> {

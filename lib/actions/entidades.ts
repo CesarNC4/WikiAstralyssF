@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { and, eq, getTableColumns, getTableName, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assertAdmin } from "@/lib/actions/auth";
-import { avisarCambio, eleccionDe, notificarNuevaPublicacion } from "@/lib/discord";
+import { avisarCambio, eleccionDe, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
 import { renumerarCapitulos } from "@/lib/queries/narrativa";
 import { getEntidadConfig } from "@/lib/admin/fields";
 import { getEntidadTable } from "@/lib/admin/tables";
@@ -198,6 +198,8 @@ export async function cambiarEstadoEntidad(
   key: string,
   id: number,
   estado: "borrador" | "publicado" | "oculto",
+  /** El canal elegido al publicar (la bandeja); sin él, el de su tipo. */
+  aviso?: unknown,
 ): Promise<void> {
   await assertAdmin();
   const { config, table, c } = resolve(key);
@@ -207,7 +209,7 @@ export async function cambiarEstadoEntidad(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await db.update(table).set({ estadoPublicacion: estado, publicadoPrimeraVezEn } as any).where(eq(c.id, id));
   revalidar(config.route, id);
-  if (primeraVez && existing) await notificarNuevaPublicacion(key, id);
+  if (primeraVez && existing) await notificarNuevaPublicacion(key, id, eleccionValida(aviso));
 }
 
 /**
