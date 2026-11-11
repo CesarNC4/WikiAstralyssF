@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { RegistrarSW } from "@/components/pwa/RegistrarSW";
+import { urlDelSitio } from "@/lib/sitio";
 import { Cinzel, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -30,7 +31,7 @@ const SITE_DESC =
   "Wiki del mundo de Astralys — personajes, naciones, lore, magia y las estrellas que lo unen todo.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(urlDelSitio()),
   title: {
     default: `${SITE_NAME} — Wiki de fantasía`,
     template: `%s · ${SITE_NAME}`,

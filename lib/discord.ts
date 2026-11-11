@@ -8,6 +8,7 @@ import { ES_TIPO_CON_AVISO } from "@/lib/discord-tipos";
 import { entityByKey } from "@/lib/entities";
 import { ocultarEnLista } from "@/lib/queries/visibilidad";
 import { infoDe } from "@/lib/relaciones/tablas";
+import { urlPublicada } from "@/lib/sitio";
 import { MARCA_OCULTO, censurarTexto } from "@/lib/visibilidad";
 
 /**
@@ -259,7 +260,6 @@ async function esPublica(tipo: string, id: number): Promise<boolean> {
 function absolutizar(base: string, url?: string | null): string | undefined {
   if (!url) return undefined;
   if (/^https?:\/\//i.test(url)) return url; // Cloudinary y externas ya son absolutas
-  if (!base) return undefined; // Discord exige URL absoluta; sin base, se omite
   return `${base}/${url.replace(/^\//, "")}`;
 }
 
@@ -334,20 +334,19 @@ export async function avisoDe(
   if (!ficha) return null;
 
   const meta = entityByKey(tipo);
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  // Siempre la web publicada, también si se envía desde el equipo del autor.
+  const base = urlPublicada();
   const ruta = meta?.route ?? "";
   const clave = tipo === "lore" ? ficha.slug : id;
-  const enlace = !base
-    ? undefined
-    : infoDe(tipo)?.rutaAnidada
-      ? ficha.rutaPropia
-        ? `${base}${ficha.rutaPropia}`
-        : undefined
-      : ruta && clave != null
-        ? SIN_FICHA_INDIVIDUAL.has(tipo)
-          ? `${base}${ruta}`
-          : `${base}${ruta}/${clave}`
-        : undefined;
+  const enlace = infoDe(tipo)?.rutaAnidada
+    ? ficha.rutaPropia
+      ? `${base}${ficha.rutaPropia}`
+      : undefined
+    : ruta && clave != null
+      ? SIN_FICHA_INDIVIDUAL.has(tipo)
+        ? `${base}${ruta}`
+        : `${base}${ruta}/${clave}`
+      : undefined;
 
   const singular = meta?.singular ?? "Entrada";
   const color = COLOR_POR_GRUPO[meta?.group ?? ""] ?? COLOR_DEFECTO;

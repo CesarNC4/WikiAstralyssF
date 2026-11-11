@@ -1,7 +1,8 @@
 import { getPublicacionesRecientes } from "@/lib/queries/feed";
 import { ENTITIES, type EntityKey } from "@/lib/entities";
+import { urlDelSitio } from "@/lib/sitio";
 
-const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const base = urlDelSitio();
 
 /** Escapa lo que va dentro de un nodo XML. */
 function esc(s: string): string {

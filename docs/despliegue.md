@@ -25,7 +25,7 @@ o recréalo desde el panel de Supabase.
 | `DIRECT_URL` | Pooler puerto **5432** (session). Lo necesita drizzle-kit para DDL. | Para `db:*` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Cliente de Supabase. | Sí |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave publicable (`sb_publishable_…`). | Sí |
-| `NEXT_PUBLIC_SITE_URL` | Metadata, SEO y OG images. En producción, el dominio real. | Sí |
+| `NEXT_PUBLIC_SITE_URL` | Enlaces absolutos: avisos a Discord, RSS y metadatos para compartir. En producción, el dominio real. Si falta o es `localhost`, en Vercel se usa su dominio de producción (`lib/sitio.ts`). | Recomendable |
 | `ADMIN_EMAIL` | Restringe el panel a ese correo (§12.1). | Recomendable |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Cuenta de Cloudinary. | Si usas imágenes |
 | `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Preset del widget, en modo **Signed**. | Si usas imágenes |
@@ -129,7 +129,8 @@ el siguiente barrido lo reintenta.
 ## 7. Desplegar
 
 1. Configura en el hosting **todas** las variables del paso 2. Cuidado con
-   `NEXT_PUBLIC_SITE_URL`: debe ser el dominio real, no `localhost:3000`.
+   `NEXT_PUBLIC_SITE_URL`: debe ser el dominio real, no `localhost:3000` (si
+   se copia de `.env.local`, `lib/sitio.ts` lo ignora en Vercel).
 2. Vercel detecta pnpm solo, por el `pnpm-lock.yaml`.
 3. Despliega.
 
