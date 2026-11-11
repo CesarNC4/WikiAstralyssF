@@ -37,6 +37,9 @@ bloques en `lore/propuestas/<área>.md`, en el formato de
 - Marca con 🔒 lo que la guía de estilo pone oculto por defecto; si es solo una
   parte de un texto, envuélvela en `[[oculto]]…[[/oculto]]`. Si dudas de si algo
   es secreto, pregúntalo. Decide el autor.
+- Nunca escribas `- Estado: publicado`: publica el autor desde el formulario de
+  la ficha, después de revisarla. Sin `Estado`, una ficha nueva llega en borrador
+  y una que existe no cambia; `oculto` sí se puede proponer.
 - Conecta: si el material dice que A pertenece a B, eso es una conexión, no
   solo una frase en la historia.
 - Añade los bloques **al final** del archivo del área, tras una línea

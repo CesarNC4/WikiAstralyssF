@@ -73,8 +73,11 @@ singular del panel (Personaje, Nación, Hoja de trama…).
   valor (un número va al campo numérico), pero `(vaciar)` necesita la sección.
 - Las opciones de catálogo se escriben tal cual aparecen en el catálogo. Si
   hace falta una opción nueva, se marca: `- Ocupación: Cartógrafo (opción nueva)`.
-- `Estado` (borrador, publicado u oculto) es solo una sugerencia: decide el
-  autor al aplicar.
+- `Estado` (borrador u oculto) es solo una sugerencia: decide el autor al
+  aplicar. **Nunca se propone `publicado`** (decisión del autor, 2026-11-11):
+  las fichas llegan sin publicar, el autor las revisa en el panel y las publica
+  desde su formulario, donde elige el canal del aviso a Discord. Sin `Estado`,
+  una ficha nueva se crea en borrador y una que ya existe se queda como está.
 
 **🔒 al final** de un campo, una conexión o una fecha (o de su encabezado
 `###`) propone **aplicarlo oculto al público**: queda en la ficha, pero solo lo
