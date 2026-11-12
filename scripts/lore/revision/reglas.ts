@@ -154,9 +154,13 @@ function secretosBuscables(ix: Indice) {
       if (t.privado) continue;
       const valor = t.texto.trim();
       if (t.oculto && !t.largo && vale(valor)) out.push({ ficha: f, rotulo: t.rotulo, campo: t.campo, valor });
+      // Un trozo que el mismo campo ya dice a la vista no es un secreto por sí mismo: lo oculto
+      // es a qué va unido (una lista con el dato tapado en unas filas y a la vista en otras).
+      // Mismo criterio que verificar-ocultos.
+      const aLaVista = censurarTexto(t.texto);
       for (const m of t.texto.matchAll(REGEX_TROZO)) {
         const trozo = m[1].trim();
-        if (vale(trozo)) out.push({ ficha: f, rotulo: `${t.rotulo} (trozo oculto)`, campo: t.campo, valor: trozo });
+        if (vale(trozo) && !contieneLiteral(aLaVista, trozo)) out.push({ ficha: f, rotulo: `${t.rotulo} (trozo oculto)`, campo: t.campo, valor: trozo });
       }
     }
   }

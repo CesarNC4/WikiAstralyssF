@@ -306,6 +306,11 @@ igual(
   ["dato-en-texto"],
 );
 igual(
+  "trozo oculto que el mismo campo dice a la vista: nada",
+  clavesSecreto(foto({ fichas: [ficha("razas", 1, "ALFA", { texto: { descripcion: "Uno lleva la Furia Roja. Otro lleva [[oculto]]la Furia Roja[[/oculto]]." } }), cronica("Llegó la Furia Roja.")] })),
+  [],
+);
+igual(
   "conexión oculta contada en público",
   clavesSecreto(
     foto({

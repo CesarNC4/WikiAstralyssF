@@ -97,7 +97,9 @@ export const RELACIONES: RelacionDef[] = [
     a: { entidad: "personajes", titulo: "Relaciones", icon: "Heart", orden: 35 },
     b: { entidad: "personajes", titulo: "Relaciones", icon: "Heart", orden: 35 },
     campos: [
-      { name: "tipoRelacion", label: "Relación", tipo: "text", destacado: true },
+      // Desplegable del catálogo, como en el formulario del personaje: así la bandeja avisa de
+      // un tipo que no está en él y el lector de lore enseña los válidos.
+      { name: "tipoRelacion", label: "Relación", tipo: "select", catalogo: "tipo_relacion", destacado: true },
       { name: "subtipoRelacion", label: "Matiz", tipo: "text" },
       { name: "descripcion", label: "Descripción", tipo: "text" },
     ],

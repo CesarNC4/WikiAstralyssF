@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 /** Universo › Mapa de relaciones (spec §11): el mapa 2D editable del taller. */
 export default async function MapaPage() {
   await assertAdmin();
-  // Catálogos de los campos de lista de las relaciones, más los tipos de relación entre personajes.
-  const nombres = [...new Set(["tipo_relacion", ...RELACIONES.flatMap((r) => r.campos.map((c) => c.catalogo).filter((x): x is string => !!x))])];
+  // Catálogos de los campos de lista de las relaciones (entre ellos, los tipos de relación entre personajes).
+  const nombres = [...new Set(RELACIONES.flatMap((r) => r.campos.map((c) => c.catalogo).filter((x): x is string => !!x)))];
   const [mapa, filas] = await Promise.all([
     getMapaRelaciones(),
     db

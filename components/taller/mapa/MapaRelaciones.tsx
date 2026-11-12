@@ -413,9 +413,8 @@ function FichaElegida({ n, grado, onSoltar }: { n: NodoMapa; grado: number; onSo
 
 const inp = "w-full rounded-lg border border-border-base bg-surface px-2 py-1.5 text-sm text-fg outline-none focus:border-border-glow";
 
-/** Las opciones de un campo de lista. `tipoRelacion` sale del catálogo `tipo_relacion`. */
-function opcionesDe(campo: CampoVinculo, relId: string, catalogos: Record<string, string[]>): string[] | null {
-  if (relId === "relaciones" && campo.name === "tipoRelacion") return catalogos.tipo_relacion ?? [];
+/** Las opciones de un campo de lista (el tipo de relación entre personajes sale de `tipo_relacion`). */
+function opcionesDe(campo: CampoVinculo, catalogos: Record<string, string[]>): string[] | null {
   if (campo.tipo !== "select") return null;
   return campo.catalogo ? catalogos[campo.catalogo] ?? [] : campo.opciones ?? [];
 }
@@ -435,7 +434,7 @@ function Campos({
   return (
     <div className="space-y-2">
       {rel.campos.map((c) => {
-        const opciones = opcionesDe(c, rel.id, catalogos);
+        const opciones = opcionesDe(c, catalogos);
         return (
           <label key={c.name} className="block">
             <span className="mb-0.5 block text-[11px] uppercase tracking-wider text-fg-muted">{c.label}</span>
