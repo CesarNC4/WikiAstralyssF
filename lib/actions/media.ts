@@ -1,12 +1,45 @@
 "use server";
 
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { mediaAssets } from "@/db/schema/media";
 import { assertAdmin } from "@/lib/actions/auth";
+import { usosDeImagenes } from "@/lib/media/usos";
 
 export interface AssetRegistrado {
   id: number;
   url: string;
+}
+
+/** Una imagen ya subida que se puede reutilizar, con las fichas que la usan. */
+export interface ImagenSubida {
+  id: number;
+  url: string;
+  ancho: number | null;
+  alto: number | null;
+  usos: string[];
+}
+
+/**
+ * Las imágenes ya subidas, de la más nueva a la más vieja, para elegir una en
+ * vez de subir otra copia. Compartirla entre fichas es seguro: la purga solo
+ * borra una imagen cuando ya no la usa ninguna.
+ *
+ * Solo salen las que alguna ficha usa. Una sin usar es una subida a medias (aún
+ * sin guardar) o una que la próxima purga va a borrar: elegirla dejaría la ficha
+ * apuntando a una imagen que puede desaparecer.
+ */
+export async function listarImagenesSubidas(): Promise<ImagenSubida[]> {
+  await assertAdmin();
+  const [assets, usos] = await Promise.all([
+    db
+      .select({ id: mediaAssets.id, url: mediaAssets.urlPublica, ancho: mediaAssets.ancho, alto: mediaAssets.alto })
+      .from(mediaAssets)
+      .where(eq(mediaAssets.tipo, "imagen"))
+      .orderBy(desc(mediaAssets.id)),
+    usosDeImagenes(),
+  ]);
+  return assets.filter((a) => usos.has(a.id)).map((a) => ({ ...a, usos: usos.get(a.id)! }));
 }
 
 /**

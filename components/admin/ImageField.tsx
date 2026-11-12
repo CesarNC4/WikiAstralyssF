@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { registrarAsset } from "@/lib/actions/media";
 import { carpetaDe, faltaConfigSubida, RUTA_FIRMA } from "@/lib/media/carpetas";
 import { useToast } from "@/components/admin/Toast";
+import { ElegirImagen } from "@/components/admin/ElegirImagen";
 
 // Carga diferida: el bundle de next-cloudinary solo se descarga al usar el editor.
 const CldUploadWidget = dynamic(
@@ -25,6 +26,8 @@ export interface ImageValue {
  * La subida va firmada desde el servidor (`RUTA_FIRMA`), no con el preset a
  * pelo: el preset viaja en el bundle y sin firma cualquiera podría subir a la
  * cuenta. `entidad` decide la carpeta de destino.
+ *
+ * «Elegir una ya subida» reutiliza una imagen de otra ficha sin subir otra copia.
  */
 export function ImageField({
   label,
@@ -44,6 +47,7 @@ export function ImageField({
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [eligiendo, setEligiendo] = useState(false);
   const falta = faltaConfigSubida();
 
   return (
@@ -101,6 +105,14 @@ export function ImageField({
               )}
             </CldUploadWidget>
           )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setEligiendo(true)}
+            className="whitespace-nowrap rounded-lg border border-border-base px-3 py-1.5 text-sm text-fg-secondary hover:border-border-glow hover:text-fg disabled:opacity-50"
+          >
+            Elegir una ya subida
+          </button>
           {value.url && (
             <button
               type="button"
@@ -112,6 +124,19 @@ export function ImageField({
           )}
         </div>
       </div>
+      {eligiendo && (
+        <ElegirImagen
+          actual={value.assetId}
+          banner={aspect === "aspect-video"}
+          onCerrar={() => setEligiendo(false)}
+          onElegir={(img) => {
+            setEligiendo(false);
+            if (img.id === value.assetId) return;
+            onChange({ assetId: img.id, url: img.url });
+            toast(`${label}: imagen elegida. Guarda la ficha para aplicarla.`, "success");
+          }}
+        />
+      )}
     </div>
   );
 }

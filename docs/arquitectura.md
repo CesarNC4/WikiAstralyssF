@@ -157,6 +157,8 @@ media_assets
 
 Así obtengo lo mejor de ambos: las rutas calientes (card, hero de ficha, og:image) son joins simples y tipados; lo extensible (galerías) vive en la tabla polimórfica donde la flexibilidad importa más que la FK estricta. La migración desde los `varchar` actuales: por cada `imagen_url` no nula, crear un `media_asset` y poblar `imagen_asset_id`.
 
+**Una imagen, varias fichas (2026-11-12).** Los campos Imagen y Banner del panel tienen «Elegir una ya subida» (`components/admin/ElegirImagen.tsx`): la ficha apunta al mismo asset en vez de subir otra copia (el mismo banner en varios personajes). Es seguro porque la purga (`lib/media/purga.ts`) solo borra un asset cuando no lo usa nadie. La lista (`listarImagenesSubidas`, con `lib/media/usos.ts`) dice qué fichas usa cada una y deja fuera las que no usa ninguna: o son subidas aún sin guardar o la próxima purga las borra. La galería no lo tiene (decisión del autor): su pie de foto es el `alt` del asset, que es el nombre de la ficha donde se subió, y al reutilizarla en otra ficha podría delatar una oculta.
+
 ### Problema adicional — `visible bool` ¿suficiente?
 
 **Diagnóstico.** Un booleano colapsa estados que el flujo de autoría sí distingue: **borrador** (en construcción, nunca mostrar), **publicado** (visible al lector), **oculto/spoiler** (existe y está terminado, pero se esconde temporalmente para no spoilear). Con un bool no puedes diferenciar "borrador a medias" de "terminado pero guardado para más tarde", y eso afecta a notificaciones Discord (§14: el webhook debe dispararse en la *primera* publicación) y a previews (§13).
@@ -898,8 +900,9 @@ dice **qué campos cambiaron**, por el nombre que tienen en el formulario: «Cam
 la nota del autor si la escribió.
 
 - **La huella** (`lib/discord-huella.ts`): un hash corto por campo de lo que ve el público. Incluye los campos
-  de la ficha, su imagen, las conexiones (una clave por bloque), las fechas, las listas propias (habilidades,
-  secciones, fragmentos…), las estadísticas y la galería. Lo oculto pesa como lo vacío, y las conexiones,
+  de la ficha, su imagen y su banner (este desde el 2026-11-12: en las huellas anteriores no está, y no cuenta
+  como cambiado hasta el siguiente aviso), las conexiones (una clave por bloque), las fechas, las listas
+  propias (habilidades, secciones, fragmentos…), las estadísticas y la galería. Lo oculto pesa como lo vacío, y las conexiones,
   fechas y filas ocultas no entran: el aviso nunca delata que algo oculto cambió.
 - **`discord_huella`** guarda la de cada ficha al estrenarse (con aviso o sin él) y tras cada aviso de un
   cambio. El aviso compara con ella: cuenta todo lo cambiado desde la última vez que se avisó, aunque se

@@ -80,6 +80,9 @@ export async function leerHuella(tipo: string, id: number): Promise<LecturaHuell
   for (const campo of molde?.campos ?? []) if (campo.name in p) poner(`c:${campo.name}`, rotuloDe(molde!, campo), p[campo.name]);
   const imagen = info.imagen ?? "imagenUrl";
   if (imagen in p && !huella[`c:${imagen}`]) poner(`c:${imagen}`, "Imagen", p[imagen]);
+  // El banner (2026-11-12). Las huellas guardadas antes no lo traen y el diff solo
+  // compara claves presentes en las dos: no sale como cambiado hasta el siguiente aviso.
+  if ("bannerUrl" in p && !huella["c:bannerUrl"]) poner("c:bannerUrl", "Banner", p.bannerUrl);
 
   // Conexiones, una clave por bloque: solo las que se ven enteras (las ocultas salen como «???»).
   for (const b of bloquesDe(tipo)) {
