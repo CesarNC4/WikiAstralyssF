@@ -138,6 +138,19 @@ el siguiente barrido lo reintenta.
 > deploy.** Si despliegas primero, el código nuevo escribirá en columnas que
 > todavía no existen y las escrituras fallarán.
 
+**Relanzar un despliegue** (Redeploy en Vercel): hazlo sobre el último, el
+marcado como *Current*. Relanzar uno anterior publica ese commit viejo y deshace
+lo que vino después. Cambiar o borrar una variable de entorno solo necesita
+redeploy si el código la usa.
+
+**Si la compilación falla en las fuentes** (`next/font/google queries have
+exactly one entry`, `Can't resolve '@vercel/turbopack-next/internal/font/google/font'`):
+Google Fonts respondió con direcciones `/l/font?kit=…&skey=…` y Next anterior a
+16.4.3 no las entiende ([vercel/next.js#99114](https://github.com/vercel/next.js/issues/99114)).
+Desde el 2026-11-12 la wiki usa Next 16.4.5, que ya las acepta. Para comprobarlo
+sin depender de Google, `NEXT_FONT_GOOGLE_MOCKED_RESPONSES` acepta un `.cjs`
+con el CSS de cada fuente escrito dentro (no puede leer otros archivos).
+
 ## 8. Pendiente
 
 El roadmap vivo está en el README (*Pendiente*) y detallado en

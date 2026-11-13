@@ -603,7 +603,7 @@ Referencia: **Genshin Impact (fantasy isekai, colores vivos, dorados) + cosmos/n
 | **UI / Body** | **Inter** | Navegación, labels, botones, prosa, todo el body. Legibilidad móvil impecable. |
 | **Mono** | **JetBrains Mono** | Stats, números, valores de juego (`essentia`, `zenithra`), códigos. |
 
-Cargadas con **`next/font/google`** (self-hosted automático, sin request a Google, sin layout shift, con `subset` latino y `display: swap`). Tres familias es el límite razonable de peso para móvil; se cargan solo los pesos usados (Cinzel 600/700, Inter 400/500/600, JetBrains 400/500).
+Cargadas con **`next/font/google`** (self-hosted automático, sin request a Google, sin layout shift, con `subset` latino y `display: swap`). Tres familias es el límite razonable de peso para móvil; se cargan solo los pesos usados (Cinzel 600/700/800, Inter 400/500/600/700, JetBrains 400/500/700). Next las descarga de Google al compilar: si la compilación falla en las fuentes, ver `docs/despliegue.md` §7.
 
 ### 7.3 Tokens de Tailwind y variables CSS
 

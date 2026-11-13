@@ -149,6 +149,8 @@ async function rutaPublica(entidad: string, id: number): Promise<string | null> 
   const e = (await etiquetas(entidad, [id])).get(id);
   if (!e || (e.estado !== null && e.estado !== "publicado")) return null;
   if (entidad === "gremio") return "/gremio";
+  // Un evento no tiene página propia: sale en la cronología.
+  if (entidad === "timeline") return "/timeline";
   if (entidad === "lore") {
     const [f] = await db.select({ slug: s.paginasLore.slug }).from(s.paginasLore).where(eq(s.paginasLore.id, id)).limit(1);
     return f ? `/lore/${f.slug}` : null;
