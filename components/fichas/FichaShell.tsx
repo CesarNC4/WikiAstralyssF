@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EntityImage } from "@/components/media/EntityImage";
+import { ImagenAmpliable } from "@/components/media/ImagenAmpliable";
 import { Icon } from "@/components/Icon";
 import { FadeIn } from "@/components/motion/Motion";
 import { Markdown } from "@/components/markdown/Markdown";
@@ -56,9 +57,13 @@ export async function FichaShell({
           él, al acabar la animación de entrada el banner tapaba la mitad del título. */}
       <div className="relative mx-auto max-w-5xl px-4">
         <div className="-mt-16 flex flex-col items-start gap-4 md:-mt-20 md:flex-row md:items-end">
-          <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border-2 border-border-glow shadow-xl md:h-40 md:w-40">
+          <ImagenAmpliable
+            src={imagen}
+            alt={titulo}
+            className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border-2 border-border-glow shadow-xl md:h-40 md:w-40"
+          >
             <EntityImage src={imagen} alt={titulo} name={nombre ?? titulo} sizes="160px" priority />
-          </div>
+          </ImagenAmpliable>
           <FadeIn className="pb-2">
             <h1 className="font-display text-3xl text-fg md:text-5xl">{titulo}</h1>
             {subtitulo && <p className="mt-1 text-fg-secondary">{subtitulo}</p>}

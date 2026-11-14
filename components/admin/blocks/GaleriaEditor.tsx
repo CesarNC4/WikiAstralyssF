@@ -9,6 +9,7 @@ import { useToast } from "@/components/admin/Toast";
 import { AccordionSection } from "@/components/admin/ui";
 import { cldOptimize } from "@/lib/utils";
 import { carpetaDe, faltaConfigSubida, RUTA_FIRMA } from "@/lib/media/carpetas";
+import { estaEnGaleria, type PerfilEnGaleria } from "@/lib/media/perfilEnGaleria";
 
 const CldUploadWidget = dynamic(() => import("next-cloudinary").then((m) => m.CldUploadWidget), { ssr: false });
 const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
@@ -23,17 +24,22 @@ export function GaleriaEditor({
   entidadId,
   revalidar,
   alt,
+  perfil,
 }: {
   entidadTipo: string;
   entidadId: number;
   revalidar?: string;
   alt?: string | null;
+  /** La imagen de perfil de la ficha: en la web sale la primera de la galería (`conPerfil`). */
+  perfil?: PerfilEnGaleria | null;
 }) {
   const toast = useToast();
   const [items, setItems] = useState<GaleriaItem[]>([]);
   const [busy, setBusy] = useState(false);
   const falta = faltaConfigSubida();
   const [, startTransition] = useTransition();
+  // Se enseña como en la web: la primera, salvo que ya esté subida a la galería.
+  const perfilPrimero = !!perfil?.url && !estaEnGaleria(items, perfil);
 
   useEffect(() => {
     let activo = true;
@@ -74,6 +80,18 @@ export function GaleriaEditor({
   return (
     <AccordionSection title={`Galería${items.length ? ` (${items.length})` : ""}`}>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+        {perfilPrimero && perfil?.url && (
+          <div
+            className="relative aspect-square overflow-hidden rounded-xl border border-border-glow bg-deep"
+            title="La imagen de perfil sale siempre la primera. Se cambia en «Imágenes»."
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cldOptimize(perfil.url) ?? perfil.url} alt={perfil.alt ?? ""} className="h-full w-full object-cover" />
+            <span className="absolute left-1.5 top-1.5 rounded bg-deep/85 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary-glow">
+              Perfil
+            </span>
+          </div>
+        )}
         {items.map((img, i) => (
           <div key={img.id} className="group relative aspect-square overflow-hidden rounded-xl border border-border-base bg-deep">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -132,7 +150,10 @@ export function GaleriaEditor({
           <p className="col-span-full text-xs text-error">Falta {falta} en .env.local.</p>
         )}
       </div>
-      <p className="mt-2 text-xs text-fg-muted">La galería se guarda al instante (no depende del botón Guardar).</p>
+      <p className="mt-2 text-xs text-fg-muted">
+        La galería se guarda al instante (no depende del botón Guardar).
+        {perfilPrimero && " La imagen de perfil sale la primera sin guardarse aparte: se cambia en «Imágenes»."}
+      </p>
     </AccordionSection>
   );
 }

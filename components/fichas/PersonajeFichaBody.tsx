@@ -5,6 +5,7 @@ import { AbilityList } from "@/components/entity/AbilityList";
 import { SongList } from "@/components/fichas/SongList";
 import { Badge } from "@/components/entity/Badge";
 import { EntityImage } from "@/components/media/EntityImage";
+import { ImagenAmpliable } from "@/components/media/ImagenAmpliable";
 import { Icon } from "@/components/Icon";
 import { FadeIn } from "@/components/motion/Motion";
 import { Galeria } from "@/components/fichas/Galeria";
@@ -12,6 +13,7 @@ import { StatRadar } from "@/components/fichas/personaje/StatRadar";
 import { RelacionesGraph, type RelNode } from "@/components/fichas/personaje/RelacionesGraph";
 import { PerfilMagico } from "@/components/fichas/personaje/PerfilMagico";
 import { getGaleriaPublica } from "@/lib/queries/galeria";
+import { bannerHeredado } from "@/lib/queries/bannerHeredado";
 import { resolveMagiaLinks } from "@/lib/queries/magia";
 import { getFamiliasDePersonaje, getMisionesDePersonaje, getCapitulosDePersonaje, type PersonajeFicha } from "@/lib/queries/fichas";
 import { calcularPoderDeCombate, PRIMARY_MAX, COMBAT_MAX } from "@/lib/poderCombate";
@@ -29,8 +31,11 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
   const nombre = [p.nombre, p.surname].filter(Boolean).join(" ");
   const stats = p.estadisticas?.[0];
 
-  const [galeria, magiaLinksMap, familias, misiones, capitulos, fechasEventos, canciones] = await Promise.all([
-    getGaleriaPublica("personajes", p.id).catch(() => []),
+  const [galeria, bannerDeGrupo, magiaLinksMap, familias, misiones, capitulos, fechasEventos, canciones] = await Promise.all([
+    // La imagen de perfil sale la primera en la galería (p ya llega enmascarado: oculta, no entra).
+    getGaleriaPublica("personajes", p.id, { url: p.imagenUrl, assetId: p.imagenAssetId, alt: nombre }).catch(() => []),
+    // Sin banner propio, el de su grupo (organización, familia, gremio o nación).
+    p.bannerUrl ? null : bannerHeredado(p.id).catch(() => null),
     resolveMagiaLinks([p.tipoMagiaPrincipal, p.magiaSecundaria]).catch(() => new Map<string, number>()),
     getFamiliasDePersonaje(p.id).catch(() => []),
     getMisionesDePersonaje(p.id).catch(() => []),
@@ -142,7 +147,8 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
       {/* Hero cinematográfico */}
       <div className="relative">
         <div className="relative h-60 w-full overflow-hidden md:h-80">
-          <EntityImage src={p.bannerUrl ?? p.imagenUrl} alt={nombre} name={p.nombre} sizes="100vw" priority />
+          {/* `||` y no `??`: muchas fichas guardan "" en vez de nada, y eso no es un banner. */}
+          <EntityImage src={p.bannerUrl || bannerDeGrupo?.url || p.imagenUrl} alt={nombre} name={p.nombre} sizes="100vw" priority />
           <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 to-void/20" />
           <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_120%,rgba(139,123,255,0.25),transparent)]" />
           <div className="absolute left-4 top-4">
@@ -158,9 +164,13 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         {/* `relative`: por encima del banner, o tapa el título que va sobre el nombre. */}
         <div className="relative mx-auto max-w-5xl px-4">
           <div className="-mt-20 flex flex-col items-start gap-5 md:-mt-24 md:flex-row md:items-end">
-            <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-3xl border-2 border-border-glow shadow-[var(--shadow-glow-primary)] md:h-44 md:w-44">
+            <ImagenAmpliable
+              src={p.imagenUrl}
+              alt={nombre}
+              className="relative h-36 w-36 shrink-0 overflow-hidden rounded-3xl border-2 border-border-glow shadow-[var(--shadow-glow-primary)] md:h-44 md:w-44"
+            >
               <EntityImage src={p.imagenUrl} alt={nombre} name={p.nombre} sizes="176px" priority />
-            </div>
+            </ImagenAmpliable>
             <FadeIn className="pb-2">
               {p.titulo && <p className="font-display text-sm uppercase tracking-[0.2em] text-primary-glow">{p.titulo}</p>}
               <h1 className="font-display text-4xl text-fg md:text-6xl">{nombre}</h1>

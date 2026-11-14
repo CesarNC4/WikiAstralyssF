@@ -6,6 +6,7 @@ import { PersonajeForm } from "@/components/admin/PersonajeForm";
 import { getCalendario } from "@/lib/queries/fechas";
 import { FechasFicha } from "@/components/admin/FechasFicha";
 import { getCatalogosPersonaje } from "@/lib/queries/catalogos";
+import { bannerHeredado } from "@/lib/queries/bannerHeredado";
 import {
   getPersonajeParaEditar,
   listPersonajesOpciones,
@@ -48,6 +49,7 @@ export default async function EditarPersonajePage({
   const regionesOpts = await listRegionesOpciones();
   const locacionesOpts = await listLocacionesOpciones();
   const cal = await getCalendario().catch(() => null);
+  const bannerDeGrupo = await bannerHeredado(pid).catch(() => null);
 
   const nombre = [inicial.nombre, inicial.surname].filter(Boolean).join(" ");
 
@@ -81,6 +83,7 @@ export default async function EditarPersonajePage({
         regionesOpts={regionesOpts}
         locacionesOpts={locacionesOpts}
         cal={cal}
+        bannerDeGrupo={bannerDeGrupo}
       />
     </AdminShell>
   );

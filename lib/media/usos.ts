@@ -11,7 +11,7 @@ function filas<T>(res: unknown): T[] {
   return (Array.isArray(res) ? res : ((res as { rows?: unknown[] }).rows ?? [])) as T[];
 }
 
-const ROL: Record<string, string> = { imagen_asset_id: "Imagen", banner_asset_id: "Banner" };
+const ROL: Record<string, string> = { imagen_asset_id: "Imagen", banner_asset_id: "Banner", imagen_url: "Imagen", banner_url: "Banner" };
 
 /**
  * Qué fichas usan cada imagen de `media_assets`, con su nombre. Lo usa el panel
@@ -19,7 +19,8 @@ const ROL: Record<string, string> = { imagen_asset_id: "Imagen", banner_asset_id
  *
  * Las columnas se buscan en `information_schema`, igual que la purga
  * (`lib/media/purga.ts`): varias tablas las tienen en la base sin declararlas en
- * Drizzle. Así, lo que aquí sale «en uso» es exactamente lo que la purga respeta.
+ * Drizzle. Cuenta también la dirección guardada sin id (`imagen_url`, `banner_url`),
+ * como la purga. Así, lo que aquí sale «en uso» es exactamente lo que la purga respeta.
  * Solo para el admin: incluye fichas ocultas y en borrador.
  */
 export async function usosDeImagenes(): Promise<UsosDeImagen> {
@@ -27,7 +28,8 @@ export async function usosDeImagenes(): Promise<UsosDeImagen> {
     await db.execute(sql`
       select table_name, column_name
       from information_schema.columns
-      where table_schema = 'public' and column_name in ('imagen_asset_id', 'banner_asset_id')
+      where table_schema = 'public' and column_name in ('imagen_asset_id', 'banner_asset_id', 'imagen_url', 'banner_url')
+        and table_name <> 'search_index'
       order by table_name, column_name
     `),
   );
@@ -43,10 +45,14 @@ export async function usosDeImagenes(): Promise<UsosDeImagen> {
   for (const c of columnas) {
     const col = sql.identifier(c.column_name);
     const etiqueta = etiquetaDe.get(c.table_name);
-    const nombre = etiqueta ? sql`${sql.identifier(etiqueta)}::text` : sql`'#' || id::text`;
+    const nombre = etiqueta ? sql`x.${sql.identifier(etiqueta)}::text` : sql`'#' || x.id::text`;
+    const tabla = sql.identifier(c.table_name);
     partes.push(
-      sql`select ${col} as asset, ${ROL[c.column_name]}::text as rol, ${nombre} as nombre
-          from ${sql.identifier(c.table_name)} where ${col} is not null`,
+      c.column_name.endsWith("_asset_id")
+        ? sql`select x.${col} as asset, ${ROL[c.column_name]}::text as rol, ${nombre} as nombre
+              from ${tabla} x where x.${col} is not null`
+        : sql`select m.id as asset, ${ROL[c.column_name]}::text as rol, ${nombre} as nombre
+              from ${tabla} x join media_assets m on m.url_publica = x.${col}`,
     );
   }
 

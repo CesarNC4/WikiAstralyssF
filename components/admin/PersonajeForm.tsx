@@ -5,6 +5,7 @@ import { guardarPersonaje, type PersonajeFormState } from "@/lib/actions/persona
 import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import type { PersonajeParaEditar, Opcion, OpcionRegion, OpcionLocacion } from "@/lib/queries/adminPersonajes";
 import type { CatalogosPersonaje } from "@/lib/queries/catalogos";
+import type { BannerHeredado } from "@/lib/queries/bannerHeredado";
 import type { EstadoPublicacion } from "@/db/schema/enums";
 import { CATALOGOS, MAGIA_FAMILIA_ELEMENTAL, etiquetaInversa } from "@/lib/catalogos";
 import { crearOpcion } from "@/lib/actions/catalogos";
@@ -123,9 +124,12 @@ export function PersonajeForm({
   regionesOpts,
   locacionesOpts,
   cal,
+  bannerDeGrupo = null,
 }: {
   /** Para fechar los eventos nuevos. Null si no se pudo cargar. */
   cal: Calendario | null;
+  /** El banner que toma la ficha si no tiene uno propio: el de su grupo, con lo que tiene guardado. */
+  bannerDeGrupo?: BannerHeredado | null;
   inicial: PersonajeParaEditar | null;
   catalogos: CatalogosPersonaje;
   personajesOpts: Opcion[];
@@ -785,13 +789,29 @@ export function PersonajeForm({
       <AccordionSection {...sec("imagenes")} title="Imágenes">
         <div className="flex flex-wrap gap-8">
           <ImageField label="Avatar" entidad="personajes" value={imagen} onChange={wrapSetter(setImagen)} alt={f.nombre} />
-          <ImageField label="Banner" entidad="personajes" value={banner} onChange={wrapSetter(setBanner)} alt={f.nombre} aspect="aspect-video" />
+          <div>
+            <ImageField label="Banner" entidad="personajes" value={banner} onChange={wrapSetter(setBanner)} alt={f.nombre} aspect="aspect-video" />
+            {/* Sin banner propio, la ficha toma el de su grupo (lib/queries/bannerHeredado.ts). */}
+            {!banner.url && inicial?.id && (
+              <p className="mt-2 max-w-xs text-xs text-fg-muted">
+                {bannerDeGrupo
+                  ? `Sin banner propio: la ficha usa el de ${bannerDeGrupo.de} (${bannerDeGrupo.tipo}).`
+                  : "Sin banner propio ni de un grupo: la ficha usa la imagen de perfil de fondo."}
+              </p>
+            )}
+          </div>
         </div>
       </AccordionSection>
 
       {/* Galería (solo al editar) */}
       {inicial?.id && (
-        <GaleriaEditor entidadTipo="personajes" entidadId={inicial.id} revalidar={`/personajes/${inicial.id}`} alt={f.nombre} />
+        <GaleriaEditor
+          entidadTipo="personajes"
+          entidadId={inicial.id}
+          revalidar={`/personajes/${inicial.id}`}
+          alt={f.nombre}
+          perfil={{ url: imagen.url, assetId: imagen.assetId, alt: f.nombre }}
+        />
       )}
 
       </div>

@@ -25,6 +25,13 @@ function filas<T>(res: unknown): T[] {
  * la base pero no las declaran en Drizzle (se escriben con SQL crudo desde
  * `guardarEntidad`), así que fiarse del schema borraría imágenes en uso.
  *
+ * También cuenta si su dirección está en alguna columna `imagen_url` / `banner_url`,
+ * aunque falte el id: organizaciones, familias, gremio, páginas de lore y otras
+ * guardan solo la dirección (familias y gremio ni tienen la columna del id). Sin
+ * esto, una imagen subida o elegida en esas fichas se daba por huérfana y se
+ * borraba de Cloudinary en el siguiente guardado (le pasó al banner de CHAOS,
+ * 2026-11-14).
+ *
  * No es `"use server"` a propósito: lo llaman las acciones de guardado, que ya
  * han comprobado que quien pide es el admin. Exportarlo como Server Action
  * añadiría un endpoint de red y una segunda consulta de sesión por guardado.
@@ -37,19 +44,24 @@ export async function purgarMediosHuerfanos(): Promise<number> {
       select table_name, column_name
       from information_schema.columns
       where table_schema = 'public'
-        and column_name in ('imagen_asset_id', 'banner_asset_id', 'audio_asset_id')
+        and column_name in ('imagen_asset_id', 'banner_asset_id', 'audio_asset_id', 'imagen_url', 'banner_url')
+        -- El buscador copia las direcciones: una fila vieja suya no debe mantener viva una imagen.
+        and table_name <> 'search_index'
     `),
   );
 
   // Si no aparece ninguna, la introspección ha fallado. Abortamos: sin esas
   // columnas daríamos por huérfana la imagen principal de todas las fichas.
-  if (columnas.length === 0) return 0;
+  if (!columnas.some((c) => c.column_name.endsWith("_asset_id"))) return 0;
 
   const fuentes = [sql`select asset_id as id from entidad_media where asset_id is not null`];
   for (const c of columnas) {
     const col = sql.identifier(c.column_name);
+    const tabla = sql.identifier(c.table_name);
     fuentes.push(
-      sql`select ${col} as id from ${sql.identifier(c.table_name)} where ${col} is not null`,
+      c.column_name.endsWith("_asset_id")
+        ? sql`select ${col} as id from ${tabla} where ${col} is not null`
+        : sql`select m.id from media_assets m join ${tabla} x on x.${col} = m.url_publica`,
     );
   }
 

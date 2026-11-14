@@ -10,8 +10,8 @@
  *  - Campos ocultos y trozos `[[oculto]]…[[/oculto]]`: su texto no sale en la ficha,
  *    ni en los índices y páginas generales, ni en el buscador, ni en la vista previa
  *    de los enlaces, ni en el aviso de Discord; y la marca `[[oculto` tampoco sale nunca.
- *  - Conexiones ocultas: ninguna de las dos fichas enlaza a la otra, su nota no sale y
- *    no se dibujan en el Atlas.
+ *  - Conexiones ocultas: ninguna de las dos fichas enlaza a la otra, su nota no sale,
+ *    no se dibujan en el Atlas y el grupo no presta su banner al personaje.
  *  - Fechas ocultas: su texto no sale en la ficha y no están en la cronología.
  *
  * Sale con código 1 si algo se escapa. Con el servidor de desarrollo tarda: compila
@@ -350,7 +350,35 @@ async function verificarConexiones() {
       const html = await pagina(ruta).catch(() => "");
       if (html.includes(`href="${otra}"`)) fuga(que, ruta, `enlace a ${otra}`);
     }
+    if (!visible) await verificarBannerPrestado(x, que, x.a.entidad === "personajes" ? ra : rb);
   }
+}
+
+/** Los grupos que prestan su banner a sus miembros sin banner propio (lib/queries/bannerHeredado.ts). */
+const PRESTAN_BANNER = new Set(["organizaciones", "familias", "gremio", "naciones"]);
+
+/**
+ * Por una pertenencia oculta, el grupo no presta su banner: lo delataría. Se busca el nombre del
+ * archivo, que sigue ahí en la dirección que arma next/image. Si el personaje usa esa misma imagen
+ * como suya, encontrarla no prueba nada.
+ */
+async function verificarBannerPrestado(x: Oculta, que: string, rutaPersonaje: string | null) {
+  const [pj, grupo] = x.a.entidad === "personajes" ? [x.a, x.b] : [x.b, x.a];
+  if (pj.entidad !== "personajes" || !PRESTAN_BANNER.has(grupo.entidad) || !rutaPersonaje) return;
+  const info = infoDe(grupo.entidad);
+  if (!info) return;
+  const [g] = (await db.select().from(info.tabla).where(eq(cols(info.tabla).id, grupo.id)).limit(1)) as Fila[];
+  const archivo = typeof g?.bannerUrl === "string" ? g.bannerUrl.split(/[?#]/)[0].split("/").pop() : null;
+  if (!archivo || archivo.length < 6) return;
+  const [propio] = await db
+    .select({ imagen: s.personajes.imagenUrl, banner: s.personajes.bannerUrl })
+    .from(s.personajes)
+    .where(eq(s.personajes.id, pj.id))
+    .limit(1);
+  if (propio?.imagen?.includes(archivo) || propio?.banner?.includes(archivo)) return;
+  comprobaciones++;
+  const html = await pagina(rutaPersonaje).catch(() => "");
+  if (html.includes(archivo)) fuga(que, rutaPersonaje, `el banner de ${grupo.entidad} #${grupo.id}`);
 }
 
 // ── 4. Fechas ocultas ────────────────────────────────────────────────────────
