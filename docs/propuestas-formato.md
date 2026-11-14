@@ -73,6 +73,10 @@ singular del panel (Personaje, Nación, Hoja de trama…).
   valor (un número va al campo numérico), pero `(vaciar)` necesita la sección.
 - Las opciones de catálogo se escriben tal cual aparecen en el catálogo. Si
   hace falta una opción nueva, se marca: `- Ocupación: Cartógrafo (opción nueva)`.
+  Algunos catálogos agrupan sus opciones, y `lore campos` las enseña así:
+  `Poder → Político · Militar`. El grupo no se escribe: `- Categoría: Militar`,
+  y `Elemento: Geo`, no `Geo (Elementales)`. Un paréntesis que forma parte del
+  valor, como `C (Despierto)` en el nivel de consciencia, sí se escribe.
 - `Estado` (borrador u oculto) es solo una sugerencia: decide el autor al
   aplicar. **Nunca se propone `publicado`** (decisión del autor, 2026-11-11):
   las fichas llegan sin publicar, el autor las revisa en el panel y las publica
@@ -93,7 +97,9 @@ lectores y `Nombre real` el verdadero, que va oculto hasta que el autor lo revel
 **Conexiones.** `- <Título del bloque>: <Nombre de la otra ficha> (<Campo>: <valor>; …)`.
 El título es el del bloque en el panel desde ESTA ficha (los lista
 `pnpm --silent lore campos <tipo>`). La otra ficha puede existir o ser nueva en la
-misma propuesta. Si el nombre es ambiguo, se añade su id: `Lloyd #45`.
+misma propuesta. Si el nombre es ambiguo, se añade su id: `Lloyd #45`. Un valor
+puede llevar `;` (`Descripción: Se conocieron de niños; él la salvó`): lo que sigue
+al `;` y no empieza por `Rótulo:` (corto y en mayúscula) es parte del dato anterior.
 
 **Fechas.** `- <Fecha>: <valor>` con el rótulo del panel (Nacimiento, Fundación…)
 y el valor como lo escribe la wiki, por eras: `Año 1013 de la Era Post-Ishkoria`,

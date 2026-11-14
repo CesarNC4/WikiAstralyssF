@@ -49,7 +49,14 @@ function campoPorRotulo(molde: Molde, rotulo: string, opts: { encabezado?: boole
   return (esNumero ? posibles.find((c) => c.tipo === "numero") : posibles.find((c) => c.tipo !== "numero" && c.tipo !== "largo")) ?? posibles[0];
 }
 
-/** El paréntesis de datos de una fila: "Rol: X; Rango: Y", o "sin ficha". */
+/** «Relación», «Título o apodo»: el rótulo de un dato empieza en mayúscula y es corto. */
+const ROTULO_SUBCAMPO = /^\p{Lu}[^:]*$/u;
+const esRotulo = (s: string) => ROTULO_SUBCAMPO.test(s) && s.split(/\s+/).length <= 4;
+
+/**
+ * El paréntesis de datos de una fila: "Rol: X; Rango: Y", o "sin ficha". Un trozo que no
+ * empieza por «Rótulo:» sigue al dato anterior: así una descripción puede llevar «;».
+ */
 function leerSubcampos(interior: string): { subcampos: Subcampo[]; sinFicha: boolean } | null {
   const subcampos: Subcampo[] = [];
   let sinFicha = false;
@@ -61,8 +68,14 @@ function leerSubcampos(interior: string): { subcampos: Subcampo[]; sinFicha: boo
       continue;
     }
     const i = t.indexOf(":");
-    if (i <= 0) return null;
-    subcampos.push({ label: t.slice(0, i).trim(), valor: t.slice(i + 1).replace(OPCION_NUEVA, "").trim() });
+    const rotulo = i > 0 ? t.slice(0, i).trim() : "";
+    if (!esRotulo(rotulo)) {
+      const previo = subcampos.at(-1);
+      if (!previo) return null;
+      previo.valor = `${previo.valor}; ${t}`;
+      continue;
+    }
+    subcampos.push({ label: rotulo, valor: t.slice(i + 1).replace(OPCION_NUEVA, "").trim() });
   }
   return subcampos.length || sinFicha ? { subcampos, sinFicha } : null;
 }

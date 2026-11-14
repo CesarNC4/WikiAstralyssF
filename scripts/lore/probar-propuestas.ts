@@ -183,6 +183,13 @@ igual("fragmento sin título", [frag[1].nombre, frag[1].subcampos], ["", [{ labe
 
 igual("fila con paréntesis en el nombre", leerFila("Kael (el joven) (Rol: X)").nombre, "Kael (el joven)");
 igual("fila con estado detrás", leerFila("Kael (Rol: X) [borrador]").nombre, "Kael");
+// Un «;» dentro de un valor no rompe el paréntesis: lo que no empieza por «Rótulo:» sigue al dato anterior.
+const conPuntoYComa = leerFila("Alhaitham (Relación: Rival; Descripción: Se conocieron de niños; él ganó: siempre; Matiz: Viejo)");
+igual("punto y coma dentro de un valor", [conPuntoYComa.nombre, conPuntoYComa.subcampos], [
+  "Alhaitham",
+  [{ label: "Relación", valor: "Rival" }, { label: "Descripción", valor: "Se conocieron de niños; él ganó: siempre" }, { label: "Matiz", valor: "Viejo" }],
+]);
+igual("paréntesis sin datos en el nombre", leerFila("Kael (el joven; de la orden) (Rol: X)").nombre, "Kael (el joven; de la orden)");
 
 // Los rótulos repetidos en una ficha se distinguen por cómo viene el valor.
 const raza = leerPropuesta(`## Raza: Prueba · nueva

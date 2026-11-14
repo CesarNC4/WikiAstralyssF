@@ -645,9 +645,18 @@ async function fijarEstado(entidad: string, id: number, estado: EstadoFicha, avi
   } else await cambiarEstadoEntidad(entidad, id, estado, aviso);
 }
 
+/** El código de error de Postgres, venga suelto o envuelto por Drizzle (`cause`). */
+function codigoPg(e: unknown): string | undefined {
+  const err = e as { code?: unknown; cause?: { code?: unknown } } | null;
+  const codigo = err?.code ?? err?.cause?.code;
+  return typeof codigo === "string" ? codigo : undefined;
+}
+
 function motivo(e: unknown): string {
   if (e instanceof Rechazo) return e.message;
   console.error("[aplicarPropuesta]", e);
+  // Los datos de la ficha se guardan juntos: un texto que no cabe hace fallar a todos.
+  if (codigoPg(e) === "22001") return "Un texto de esta ficha es más largo de lo que admite su campo en la base (255 caracteres): acórtalo, o hay que ampliar ese campo.";
   return "No se pudo guardar este dato. Inténtalo de nuevo.";
 }
 

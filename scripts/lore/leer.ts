@@ -297,9 +297,14 @@ async function menciones(q: string) {
   if (!total) console.log(`  "${q}" no aparece en ningún texto.`);
 }
 
+interface Opcion {
+  valor: string;
+  grupo: string | null;
+}
+
 /** Opciones de varios catálogos de golpe (y los elementos, que tienen tabla propia). */
-async function opciones(campos: string[]): Promise<Map<string, string[]>> {
-  const out = new Map<string, string[]>();
+async function opciones(campos: string[]): Promise<Map<string, Opcion[]>> {
+  const out = new Map<string, Opcion[]>();
   const normales = campos.filter((c) => c !== "elementos");
   if (normales.length) {
     const filas = await db
@@ -307,13 +312,25 @@ async function opciones(campos: string[]): Promise<Map<string, string[]>> {
       .from(s.catalogos)
       .where(inArray(s.catalogos.campo, normales))
       .orderBy(asc(s.catalogos.orden), asc(s.catalogos.valor));
-    for (const f of filas) out.set(f.campo, [...(out.get(f.campo) ?? []), f.grupo ? `${f.valor} (${f.grupo})` : f.valor]);
+    for (const f of filas) out.set(f.campo, [...(out.get(f.campo) ?? []), { valor: f.valor, grupo: f.grupo }]);
   }
   if (campos.includes("elementos")) {
     const els = await db.select({ nombre: s.elementos.nombre, familia: s.elementos.familia }).from(s.elementos).where(isNull(s.elementos.eliminadoEn)).orderBy(asc(s.elementos.nombre));
-    out.set("elementos", els.map((e) => (e.familia ? `${e.nombre} (${e.familia})` : e.nombre)));
+    out.set("elementos", els.map((e) => ({ valor: e.nombre, grupo: e.familia })));
   }
   return out;
+}
+
+/**
+ * Las opciones en una línea. Las que tienen grupo salen agrupadas («Poder → Militar ·
+ * Político»): el grupo no forma parte del valor, y así no se confunde con un valor que
+ * lleva paréntesis de verdad, como «C (Despierto)».
+ */
+function opcionesEnLinea(ops: Opcion[]): string {
+  if (!ops.some((o) => o.grupo)) return ops.map((o) => o.valor).join(" · ");
+  const grupos = new Map<string, string[]>();
+  for (const o of ops) grupos.set(o.grupo ?? "", [...(grupos.get(o.grupo ?? "") ?? []), o.valor]);
+  return [...grupos].map(([g, vs]) => (g ? `${g} → ${vs.join(" · ")}` : vs.join(" · "))).join(" | ");
 }
 
 async function campos(entidad: string) {
@@ -327,8 +344,8 @@ async function campos(entidad: string) {
   ].filter(Boolean) as string[];
   const ops = await opciones([...new Set(cats)]);
   const lista = (c: { catalogo?: string; opciones?: string[] }) => {
-    const v = c.catalogo ? ops.get(c.catalogo) : c.opciones;
-    return v?.length ? `: ${v.join(" · ")}` : c.catalogo ? " (catálogo vacío)" : "";
+    const v = c.catalogo ? ops.get(c.catalogo) : c.opciones?.map((valor) => ({ valor, grupo: null }));
+    return v?.length ? `: ${opcionesEnLinea(v)}` : c.catalogo ? " (catálogo vacío)" : "";
   };
 
   console.log(`## Molde: ${molde.singular} (${entidad})`);
@@ -369,7 +386,7 @@ async function catalogo(campo: string) {
     return;
   }
   const v = (await opciones([campo])).get(campo);
-  console.log(v?.length ? v.map((x) => `  ${x}`).join("\n") : `El catálogo "${campo}" no existe o está vacío.`);
+  console.log(v?.length ? v.map((x) => `  ${x.valor}${x.grupo ? `   — grupo: ${x.grupo}` : ""}`).join("\n") : `El catálogo "${campo}" no existe o está vacío.`);
 }
 
 // ── Entrada ────────────────────────────────────────────────────────────────
