@@ -35,7 +35,7 @@ export function FichaHero({
   return (
     <div className="relative">
       <div className="relative h-56 w-full overflow-hidden md:h-72">
-        <EntityImage src={banner ?? imagen} alt={titulo} name={titulo} sizes="100vw" priority />
+        <EntityImage src={banner || imagen} alt={titulo} name={titulo} sizes="100vw" priority />
         <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 to-void/20" />
         <div className="absolute inset-0" style={{ background: `radial-gradient(80% 60% at 50% 120%, ${accent}, transparent)` }} />
         <nav className="absolute left-4 top-4 flex flex-wrap items-center gap-1 text-xs text-fg-secondary">

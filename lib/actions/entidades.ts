@@ -17,6 +17,7 @@ import { resolverEnlaceSuno } from "@/lib/media/suno";
 import { actos } from "@/db/schema/narrativa";
 import { buildEntidadSchema } from "@/lib/validation/entidad";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
+import { revalidarMiembros } from "@/lib/admin/revalidarFicha";
 
 export interface EntidadFormState {
   ok: boolean;
@@ -35,7 +36,7 @@ function resolve(key: string) {
   return { config, table, c: getTableColumns(table) as Cols };
 }
 
-function revalidar(route: string, id?: number) {
+function revalidar(key: string, route: string, id?: number) {
   revalidatePath(route);
   if (id) revalidatePath(`${route}/${id}`);
   revalidatePath("/");
@@ -44,6 +45,8 @@ function revalidar(route: string, id?: number) {
   // …y su nombre, su estado o sus medidas, en el Atlas y el comparador.
   revalidatePath("/atlas");
   revalidatePath("/alturas");
+  // Una nación presta su banner a sus personajes.
+  revalidarMiembros(key);
 }
 
 /**
@@ -181,7 +184,7 @@ export async function guardarEntidad(
   // El número de capítulo lo pone el taller (spec §3): se recalcula aunque
   // aquí se haya escrito otro. Este editor desaparece en la Fase 4.
   if (key === "capitulos") await renumerarCapitulos(db).catch((e) => console.error("[guardarEntidad] renumerar", e));
-  revalidar(config.route, savedId);
+  revalidar(key, config.route, savedId);
   const aviso = eleccionDe(formData);
   if (notificar) await notificarNuevaPublicacion(key, savedId, aviso);
   else if (data.estadoPublicacion === "publicado") await avisarCambio(key, savedId, aviso);
@@ -208,7 +211,7 @@ export async function cambiarEstadoEntidad(
   const publicadoPrimeraVezEn = primeraVez ? new Date() : existing?.ppv ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await db.update(table).set({ estadoPublicacion: estado, publicadoPrimeraVezEn } as any).where(eq(c.id, id));
-  revalidar(config.route, id);
+  revalidar(key, config.route, id);
   if (primeraVez && existing) await notificarNuevaPublicacion(key, id, eleccionValida(aviso));
 }
 
@@ -233,7 +236,7 @@ export async function accionEnLoteEntidad(
   const { config, table, c } = resolve(key);
 
   const revalidarLote = () => {
-    revalidar(config.route);
+    revalidar(key, config.route);
     for (const id of ids) revalidatePath(`${config.route}/${id}`);
   };
 
@@ -323,7 +326,7 @@ export async function duplicarEntidad(key: string, id: number): Promise<number> 
   // justo el trabajo que el sistema de relaciones existe para ahorrar.
   await clonarVinculos(key, id, nuevoId);
 
-  revalidar(config.route);
+  revalidar(key, config.route);
   return nuevoId;
 }
 
@@ -332,7 +335,7 @@ export async function moverEntidadAPapelera(key: string, id: number): Promise<vo
   const { config, table, c } = resolve(key);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await db.update(table).set({ eliminadoEn: new Date() } as any).where(eq(c.id, id));
-  revalidar(config.route, id);
+  revalidar(key, config.route, id);
 }
 
 export async function restaurarEntidad(key: string, id: number): Promise<void> {
@@ -340,7 +343,7 @@ export async function restaurarEntidad(key: string, id: number): Promise<void> {
   const { config, table, c } = resolve(key);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await db.update(table).set({ eliminadoEn: null } as any).where(eq(c.id, id));
-  revalidar(config.route, id);
+  revalidar(key, config.route, id);
 }
 
 export async function eliminarEntidadDefinitivo(key: string, id: number): Promise<void> {
@@ -350,4 +353,5 @@ export async function eliminarEntidadDefinitivo(key: string, id: number): Promis
   await purgarEnSegundoPlano();
   revalidatePath(`/admin/${key}/papelera`);
   revalidatePath(config.route);
+  revalidarMiembros(key);
 }

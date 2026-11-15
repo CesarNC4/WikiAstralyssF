@@ -41,7 +41,7 @@ export async function FichaShell({
     <div>
       {/* Banner */}
       <div className="relative h-48 w-full overflow-hidden md:h-72">
-        <EntityImage src={banner ?? imagen} alt={titulo} name={nombre ?? titulo} sizes="100vw" priority />
+        <EntityImage src={banner || imagen} alt={titulo} name={nombre ?? titulo} sizes="100vw" priority />
         <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-void/10" />
         <div className="absolute left-4 top-4">
           <Link

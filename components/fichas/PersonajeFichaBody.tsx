@@ -307,7 +307,8 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
             {relacionesView.length > 0 && (
               <>
                 {vinculos.length > 0 && <RelacionesGraph centro={nombre} vinculos={vinculos} />}
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {/* `grid-cols-1`: sin él, en el móvil una descripción larga (que no se parte) ensanchaba la tarjeta y la página. */}
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {relacionesView.map((r) => (
                     <div key={r.key} className="flex items-center gap-3 rounded-xl border border-border-base bg-surface/40 p-3">
                       {r.otro ? (
@@ -405,7 +406,7 @@ export async function PersonajeFichaBody({ p }: { p: PersonajeFicha }) {
         {/* Misiones encargadas (reverso) */}
         {misiones.length > 0 && (
           <Section icon="Swords" title="Misiones">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {misiones.map((m, n) => {
                 const dentro = (
                   <>

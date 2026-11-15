@@ -41,7 +41,7 @@ export async function MineralFichaBody({ mineral }: { mineral: MineralRow }) {
   return (
     <div>
       <FichaHero
-        banner={mineral.bannerUrl ?? mineral.imagenUrl}
+        banner={mineral.bannerUrl || mineral.imagenUrl}
         imagen={mineral.imagenUrl}
         titulo={mineral.nombre}
         subtitulo={mineral.tipo}

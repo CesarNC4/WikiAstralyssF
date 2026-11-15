@@ -9,6 +9,7 @@ import { assertAdmin } from "@/lib/actions/auth";
 import { avisarCambio, eleccionDe, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
 import type { OrgPayload, FamiliaPayload, GremioPayload, Estado } from "@/lib/admin/complejas";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
+import { revalidarMiembros } from "@/lib/admin/revalidarFicha";
 
 export interface ComplejaFormState {
   ok: boolean;
@@ -183,6 +184,7 @@ function revalidarOrg(id: number) {
   revalidatePath(`/organizaciones/${id}`);
   revalidatePath("/");
   revalidatePath(`/admin/organizaciones/${id}/editar`);
+  revalidarMiembros("organizaciones");
 }
 
 // ── Familia ─────────────────────────────────────────────────────────────────
@@ -335,6 +337,7 @@ function revalidarFamilia(id: number) {
   revalidatePath(`/familias/${id}`);
   revalidatePath("/");
   revalidatePath(`/admin/familias/${id}/editar`);
+  revalidarMiembros("familias");
 }
 
 // ── Gremio (singleton) ──────────────────────────────────────────────────────
@@ -443,6 +446,9 @@ export async function guardarGremio(
 
   await purgarEnSegundoPlano();
   revalidatePath("/admin/gremio");
+  // La página pública también: sin esto, seguía con lo de antes hasta una hora.
+  revalidatePath("/gremio");
+  revalidarMiembros("gremio");
   // Siempre está publicado: solo hay aviso de cambios, si se marcó al guardar.
   await avisarCambio("gremio", gid, eleccionDe(formData));
   return { ok: true, id: gid };
@@ -510,6 +516,7 @@ export async function eliminarOrgDefinitivo(id: number): Promise<void> {
   await purgarEnSegundoPlano();
   revalidatePath("/admin/organizaciones/papelera");
   revalidatePath("/organizaciones");
+  revalidarMiembros("organizaciones");
 }
 
 export async function eliminarFamiliaDefinitivo(id: number): Promise<void> {
@@ -524,4 +531,5 @@ export async function eliminarFamiliaDefinitivo(id: number): Promise<void> {
   await purgarEnSegundoPlano();
   revalidatePath("/admin/familias/papelera");
   revalidatePath("/familias");
+  revalidarMiembros("familias");
 }
