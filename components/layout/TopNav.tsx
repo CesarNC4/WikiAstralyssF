@@ -1,15 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/Icon";
 import { useSearch } from "@/components/search/SearchProvider";
 import { NAV_GROUPS, ENTITIES } from "@/lib/entities";
 
+const sinSuscripcion = () => () => {};
+
 export function TopNav() {
   const { open } = useSearch();
   const [drawer, setDrawer] = useState(false);
+  // El panel va en un portal, y `document` solo existe en el navegador.
+  const montado = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   return (
@@ -83,52 +88,58 @@ export function TopNav() {
         </div>
       </div>
 
-      {/* Drawer móvil */}
-      <AnimatePresence>
-        {drawer && (
-          <motion.div
-            className="fixed inset-0 z-[60] md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="absolute inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm" onClick={() => setDrawer(false)} />
-            <motion.aside
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "tween", duration: 0.25 }}
-              className="absolute right-0 top-0 h-full w-72 overflow-y-auto border-l border-border-glow bg-deep p-4"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <span className="font-display text-lg text-gradient-cosmic">Astralys</span>
-                <button onClick={() => setDrawer(false)} aria-label="Cerrar">
-                  <Icon name="X" size={20} className="text-fg-muted" />
-                </button>
-              </div>
-              {NAV_GROUPS.map((g) => (
-                <div key={g.id} className="mb-4">
-                  <p className="mb-1 px-2 text-xs uppercase tracking-wider text-fg-muted">{g.label}</p>
-                  {g.keys.map((k) => {
-                    const e = ENTITIES[k];
-                    return (
-                      <Link
-                        key={k}
-                        href={e.route}
-                        onClick={() => setDrawer(false)}
-                        className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-fg-secondary hover:bg-surface hover:text-fg"
-                      >
-                        <Icon name={e.icon} size={16} className={e.accent} />
-                        {e.plural}
-                      </Link>
-                    );
-                  })}
-                </div>
-              ))}
-            </motion.aside>
-          </motion.div>
+      {/* Drawer móvil. Va en un portal al `body`: dentro de la cabecera, su `backdrop-blur` hacía
+          que el `fixed` se midiera contra ella y no contra la pantalla, y el panel se abría con
+          los 56 px de alto de la cabecera, con todas las secciones escondidas. */}
+      {montado &&
+        createPortal(
+          <AnimatePresence>
+            {drawer && (
+              <motion.div
+                className="fixed inset-0 z-[60] md:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="absolute inset-0 bg-[var(--bg-overlay)] backdrop-blur-sm" onClick={() => setDrawer(false)} />
+                <motion.aside
+                  initial={{ x: "100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "100%" }}
+                  transition={{ type: "tween", duration: 0.25 }}
+                  className="absolute right-0 top-0 h-full w-72 overflow-y-auto border-l border-border-glow bg-deep p-4"
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="font-display text-lg text-gradient-cosmic">Astralys</span>
+                    <button onClick={() => setDrawer(false)} aria-label="Cerrar">
+                      <Icon name="X" size={20} className="text-fg-muted" />
+                    </button>
+                  </div>
+                  {NAV_GROUPS.map((g) => (
+                    <div key={g.id} className="mb-4">
+                      <p className="mb-1 px-2 text-xs uppercase tracking-wider text-fg-muted">{g.label}</p>
+                      {g.keys.map((k) => {
+                        const e = ENTITIES[k];
+                        return (
+                          <Link
+                            key={k}
+                            href={e.route}
+                            onClick={() => setDrawer(false)}
+                            className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-fg-secondary hover:bg-surface hover:text-fg"
+                          >
+                            <Icon name={e.icon} size={16} className={e.accent} />
+                            {e.plural}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </motion.aside>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
         )}
-      </AnimatePresence>
     </header>
   );
 }

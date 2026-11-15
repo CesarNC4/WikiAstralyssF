@@ -7,6 +7,7 @@ import { Markdown } from "@/components/markdown/Markdown";
 import { Galeria } from "@/components/fichas/Galeria";
 import { getGaleriaPublica } from "@/lib/queries/galeria";
 import type { FichaField } from "@/lib/types";
+import { columnasSm, estirarUltima } from "@/lib/rejilla";
 
 /** Cabecera común de ficha (§5.2): banner + avatar + título + badges. */
 export async function FichaShell({
@@ -101,9 +102,9 @@ export function FieldGrid({ fields }: { fields: { label: string; value: React.Re
   const visibles = fields.filter((f) => f.value);
   if (visibles.length === 0) return null;
   return (
-    <dl className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border-base bg-border-base sm:grid-cols-3">
-      {visibles.map((f) => (
-        <div key={f.label} className="bg-surface px-4 py-3">
+    <dl className={`mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border-base bg-border-base ${columnasSm(visibles.length)}`}>
+      {visibles.map((f, i) => (
+        <div key={f.label} className={`bg-surface px-4 py-3 ${estirarUltima(i, visibles.length, 2)}`}>
           <dt className="text-[11px] uppercase tracking-wider text-fg-muted">{f.label}</dt>
           <dd className="mt-0.5 text-sm text-fg">{f.value}</dd>
         </div>

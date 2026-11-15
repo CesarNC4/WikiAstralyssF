@@ -2,6 +2,7 @@ import { rolesDe, textosFecha } from "@/lib/fechas";
 import { getCalendario, leerFechasDe } from "@/lib/queries/fechas";
 import { ConmutadorFechas, EdadLectura, FechaTexto } from "./Lectura";
 import { MARCA_OCULTO } from "@/lib/visibilidad";
+import { columnasSm, estirarUltima } from "@/lib/rejilla";
 
 /**
  * Bloque "Fechas" de una ficha pública (spec §13): las fechas de sus roles en la
@@ -57,9 +58,9 @@ export async function FechasDeFicha({
         <h2 className="text-[11px] uppercase tracking-wider text-fg-muted">Fechas</h2>
         {conFechas && <ConmutadorFechas />}
       </div>
-      <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border-base bg-border-base sm:grid-cols-3">
-        {filas.map((f) => (
-          <div key={f.label} className="bg-surface px-4 py-3">
+      <dl className={`grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border-base bg-border-base ${columnasSm(filas.length)}`}>
+        {filas.map((f, i) => (
+          <div key={f.label} className={`bg-surface px-4 py-3 ${estirarUltima(i, filas.length, 1)}`}>
             <dt className="text-[11px] uppercase tracking-wider text-fg-muted">{f.label}</dt>
             <dd className="mt-0.5 text-sm text-fg">{f.valor}</dd>
           </div>
