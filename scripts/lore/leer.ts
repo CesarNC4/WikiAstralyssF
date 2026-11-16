@@ -23,6 +23,7 @@ import { bloquesDe } from "@/lib/relaciones/registro";
 import { ENTIDAD_INFO, infoDe } from "@/lib/relaciones/tablas";
 import { getCalendario, leerFechasDe } from "@/lib/queries/fechas";
 import { camposOcultos } from "@/lib/queries/visibilidad";
+import { estadisticasSinRellenar } from "@/lib/poderCombate";
 import { leerFoto } from "./revision/foto";
 import { ordenRevisar, ordenTextos } from "./revision/orden";
 
@@ -262,7 +263,8 @@ async function ficha(entidad: string, arg: string | undefined) {
 
   if (entidad === "personajes") {
     const [st] = await db.select().from(s.estadisticas).where(eq(s.estadisticas.personajeId, id));
-    const lineas = st ? ESTADISTICAS.filter((e) => (st as Fila)[e.name] != null).map((e) => `- ${e.label}: ${(st as Fila)[e.name]}`) : [];
+    // Todo al mínimo es el relleno del formulario: no se cuenta como estadísticas.
+    const lineas = st && !estadisticasSinRellenar(st as Record<string, number | string | null>) ? ESTADISTICAS.filter((e) => (st as Fila)[e.name] != null).map((e) => `- ${e.label}: ${(st as Fila)[e.name]}`) : [];
     if (lineas.length) console.log(`\n### ${TITULO_ESTADISTICAS}${ocultos.has("estadisticas") ? " 🔒" : ""}\n${lineas.join("\n")}`);
   }
 

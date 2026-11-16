@@ -8,7 +8,7 @@ import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
 import { avisarCambio, eleccionDe, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
 import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje";
-import { calcularPoderDeCombate } from "@/lib/poderCombate";
+import { calcularPoderDeCombate, estadisticasSinRellenar } from "@/lib/poderCombate";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 import { escribirFecha } from "@/lib/queries/fechas";
 import { guardarRelaciones } from "@/lib/relaciones/guardarParejas";
@@ -101,7 +101,8 @@ async function guardarHijos(
 ) {
   // Estrategia delete + re-insert (single-admin, bajo volumen).
   await tx.delete(s.estadisticas).where(eq(s.estadisticas.personajeId, personajeId));
-  if (data.estadisticas) {
+  // Todo al mínimo es el relleno del formulario: no se guarda (y así se borra el de antes).
+  if (data.estadisticas && !estadisticasSinRellenar(data.estadisticas)) {
     const poderDeCombate = calcularPoderDeCombate(data.estadisticas).total;
     await tx.insert(s.estadisticas).values({ ...data.estadisticas, poderDeCombate, personajeId });
   }

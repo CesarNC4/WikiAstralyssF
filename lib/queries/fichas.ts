@@ -6,6 +6,7 @@ import { etiquetaInversa } from "@/lib/catalogos";
 import { aplicarVisibilidad, camposOcultos, filaOculta, ocultarCampos, ocultarEnLista, ocultarFilas, ocultarPorReferencia } from "@/lib/queries/visibilidad";
 import { getRelacion, terminoInverso } from "@/lib/relaciones/registro";
 import { MARCA_OCULTO, censurar } from "@/lib/visibilidad";
+import { estadisticasSinRellenar } from "@/lib/poderCombate";
 import type { FichaJerarquia } from "@/lib/queries/adminComplejas";
 
 const COLS_RELACIONADO = { id: true, nombre: true, surname: true, imagenUrl: true, titulo: true, estadoPublicacion: true, eliminadoEn: true } as const;
@@ -95,7 +96,8 @@ async function enmascararPersonaje(fila: FilaPersonaje): Promise<FilaPersonaje> 
   const marcaLugar = { id: 0, nombre: MARCA_OCULTO, subtitulo: null, imagenUrl: null, estadoPublicacion: "publicado" as const, eliminadoEn: null };
   return {
     ...p,
-    estadisticas: ocultos.has("estadisticas") ? [] : p.estadisticas,
+    // Todo al mínimo es el relleno del formulario, no unas estadísticas: no sale.
+    estadisticas: ocultos.has("estadisticas") || estadisticasSinRellenar(p.estadisticas[0]) ? [] : p.estadisticas,
     habilidades: p.habilidades.map((h) =>
       h.oculto ? { ...h, categoria: MARCA_OCULTO, nombre: MARCA_OCULTO, descripcion: null, tipo: null, magiaFundamentoId: null, fundamento: null } : h,
     ),

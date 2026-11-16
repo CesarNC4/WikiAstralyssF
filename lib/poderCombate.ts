@@ -66,6 +66,20 @@ function numero(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Unas estadísticas sin rellenar: todo vacío o en el mínimo de su escala. Es lo que
+ * guardaba el formulario cuando nadie las tocaba, así que no cuentan como estadísticas:
+ * no se guardan ni salen en la web (decisión del autor, 2026-11-16).
+ */
+export function estadisticasSinRellenar(stats: StatsLike | null | undefined): boolean {
+  if (!stats) return true;
+  return (
+    PRIMARY_KEYS.every((k) => (numero(stats[k]) ?? PRIMARY_MIN) <= PRIMARY_MIN) &&
+    COMBAT_KEYS.every((k) => (numero(stats[k]) ?? COMBAT_MIN) <= COMBAT_MIN) &&
+    RATING_KEYS.every((k) => !esRango(stats[k]) || stats[k] === RANGO_DEFAULT)
+  );
+}
+
 export interface PoderDeCombate {
   /** % de cada sección sobre 100. */
   primarios: number;

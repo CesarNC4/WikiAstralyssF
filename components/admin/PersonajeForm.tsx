@@ -39,6 +39,7 @@ import {
   COMBAT_MAX,
   RANGOS,
   RANGO_DEFAULT,
+  estadisticasSinRellenar,
   esRango,
   calcularPoderDeCombate,
 } from "@/lib/poderCombate";
@@ -390,7 +391,8 @@ export function PersonajeForm({
       ...f,
       imagenAssetId: imagen.assetId, imagenUrl: imagen.url,
       bannerAssetId: banner.assetId, bannerUrl: banner.url,
-      estadisticas: stats,
+      // Sin tocar (todo al mínimo) no son estadísticas: no se guardan.
+      estadisticas: estadisticasSinRellenar(stats) ? null : stats,
       habilidades: habilidadesPayload,
       eventos: eventosPayload,
       objetos: objetosPayload,

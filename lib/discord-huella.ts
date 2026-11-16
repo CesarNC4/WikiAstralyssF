@@ -10,6 +10,7 @@ import { ESTADISTICAS, TITULO_ESTADISTICAS, listasDe } from "@/lib/propuestas/li
 import { leerLista } from "@/lib/propuestas/listasDb";
 import { moldeDe, rotuloDe } from "@/lib/propuestas/moldes";
 import { leerFechasDe } from "@/lib/queries/fechas";
+import { estadisticasSinRellenar } from "@/lib/poderCombate";
 import { getGaleriaPublica } from "@/lib/queries/galeria";
 import { camposOcultos, ocultarEnLista } from "@/lib/queries/visibilidad";
 import { leerFilas } from "@/lib/relaciones/consultas";
@@ -113,7 +114,9 @@ export async function leerHuella(tipo: string, id: number): Promise<LecturaHuell
     const [st] = ocultos.has("estadisticas")
       ? []
       : ((await db.select().from(estadisticas).where(eq(estadisticas.personajeId, id)).limit(1)) as Record<string, unknown>[]);
-    poner("estadisticas", TITULO_ESTADISTICAS, st ? ESTADISTICAS.map((e) => st[e.name] ?? null) : null);
+    // El relleno del formulario (todo al mínimo) cuenta como sin estadísticas, igual que en la web.
+    const reales = st && !estadisticasSinRellenar(st as Record<string, number | string | null>);
+    poner("estadisticas", TITULO_ESTADISTICAS, reales ? ESTADISTICAS.map((e) => st[e.name] ?? null) : null);
   }
 
   const galeria = await getGaleriaPublica(tipo, id);
