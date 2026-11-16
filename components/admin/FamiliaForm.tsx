@@ -13,6 +13,7 @@ import { Field, TextInput, MarkdownField, Select, type MapaCatalogos } from "@/c
 import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
+import { useGrupoConocido } from "@/components/admin/blocks/useGrupoConocido";
 import type { Opcion } from "@/components/admin/blocks/shared";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 import { CandadosFicha } from "@/components/admin/candados";
@@ -82,12 +83,18 @@ export function FamiliaForm({
   const [jerarquia, setJerarquia] = useState<JerarquiaRow[]>(inicial?.jerarquia ?? []);
   const [arbol, setArbol] = useState<ArbolRow[]>(inicial?.arbol ?? []);
   const wrap = <T,>(fn: (x: T) => void) => (x: T) => { fn(x); mark(); };
+  const grupo = useGrupoConocido({ rangos, facciones, jerarquia });
 
   const [state, formAction, pending] = useActionState<ComplejaFormState | undefined, FormData>(guardarFamilia, undefined);
   const aviso = useAviso();
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); aviso.reiniciar(); queueMicrotask(() => setDirty(false)); }
+    if (state.ok) {
+      if (state.ids) grupo.alGuardar(state.ids);
+      toast("Cambios guardados.", "success");
+      aviso.reiniciar();
+      queueMicrotask(() => setDirty(false));
+    }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -105,7 +112,9 @@ export function FamiliaForm({
       imagenUrl: imagen.url,
       bannerUrl: banner.url,
       estadoPublicacion: estado,
-      rangos, facciones, jerarquia, arbol,
+      arbol,
+      // Rangos, facciones y miembros, con lo que el formulario conoce.
+      ...grupo.preparar({ rangos, facciones, jerarquia }),
     };
     const fd = new FormData();
     if (id) fd.set("id", String(id));

@@ -2,12 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
 import { avisarCambio, eleccionDe, eleccionValida, notificarNuevaPublicacion } from "@/lib/discord";
-import type { OrgPayload, FamiliaPayload, GremioPayload, Estado } from "@/lib/admin/complejas";
+import type { OrgPayload, FamiliaPayload, GremioPayload, Estado, IdsNuevos } from "@/lib/admin/complejas";
+import { guardarGrupo } from "@/lib/admin/guardarGrupo";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 import { revalidarMiembros } from "@/lib/admin/revalidarFicha";
 
@@ -16,6 +17,8 @@ export interface ComplejaFormState {
   id?: number;
   error?: string;
   fieldErrors?: Record<string, string>;
+  /** Los ids de las filas nuevas, para que el formulario abierto los conozca. */
+  ids?: IdsNuevos;
 }
 
 const str = (v: unknown): string => (v == null ? "" : String(v));
@@ -27,13 +30,6 @@ const nivel = (v: unknown): number | null => {
   const n = parseInt(s, 10);
   return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
 };
-
-/**
- * Con qué se reconoce a un miembro entre el borrado y la reinserción: su candado
- * está en el panel de conexiones, no en este formulario, y tiene que sobrevivir.
- */
-const claveMiembro = (m: { personajeId: number | null; nombre: string | null }) =>
-  m.personajeId != null ? `p:${m.personajeId}` : `n:${(m.nombre ?? "").trim()}`;
 
 function parsePayload<T>(formData: FormData): T | null {
   try {
@@ -82,6 +78,7 @@ export async function guardarOrganizacion(
 
   let savedId: number;
   let notificar = false;
+  let ids: IdsNuevos | undefined;
   try {
     savedId = await db.transaction(async (tx) => {
       let oid: number;
@@ -98,49 +95,9 @@ export async function guardarOrganizacion(
         oid = row.id;
       }
 
-      // Rangos: peso por posición (arriba = mayor). Mapear key → id nuevo.
-      await tx.delete(s.orgRangos).where(eq(s.orgRangos.organizacionId, oid));
-      const rangoMap = new Map<string, number>();
-      const rangos = data.rangos.filter((r) => r.nombre.trim());
-      for (let i = 0; i < rangos.length; i++) {
-        const [ins] = await tx.insert(s.orgRangos).values({ organizacionId: oid, nombre: rangos[i].nombre.trim(), peso: rangos.length - i }).returning({ id: s.orgRangos.id });
-        rangoMap.set(rangos[i].key, ins.id);
-      }
-
-      // Facciones: mapear key → id nuevo.
-      await tx.delete(s.orgFacciones).where(eq(s.orgFacciones.organizacionId, oid));
-      const faccionMap = new Map<string, number>();
-      const facciones = data.facciones.filter((f) => f.nombre.trim());
-      for (const f of facciones) {
-        const [ins] = await tx.insert(s.orgFacciones).values({ organizacionId: oid, nombre: f.nombre.trim(), color: nz(f.color) }).returning({ id: s.orgFacciones.id });
-        faccionMap.set(f.key, ins.id);
-      }
-
-      // Jerarquía (referencia rango/facción por key).
-      const ocultos = new Set(
-        (
-          await tx
-            .select({ personajeId: s.orgJerarquia.personajeId, nombre: s.orgJerarquia.nombre })
-            .from(s.orgJerarquia)
-            .where(and(eq(s.orgJerarquia.organizacionId, oid), eq(s.orgJerarquia.oculto, true)))
-        ).map(claveMiembro),
-      );
-      await tx.delete(s.orgJerarquia).where(eq(s.orgJerarquia.organizacionId, oid));
-      const jer = data.jerarquia.filter((j) => j.personajeId != null || j.nombre.trim());
-      if (jer.length) {
-        await tx.insert(s.orgJerarquia).values(
-          jer.map((j, i) => ({
-            organizacionId: oid,
-            personajeId: j.personajeId,
-            nombre: j.personajeId == null ? nz(j.nombre) : null,
-            rangoId: j.rangoKey ? rangoMap.get(j.rangoKey) ?? null : null,
-            faccionId: j.faccionKey ? faccionMap.get(j.faccionKey) ?? null : null,
-            tituloApodo: nz(j.tituloApodo),
-            orden: i,
-            oculto: ocultos.has(claveMiembro(j)),
-          })),
-        );
-      }
+      // Rangos, facciones y miembros, por diferencias: el rol, el tipo y la descripción
+      // de cada miembro no están en este formulario y se conservan.
+      ids = await guardarGrupo(tx, "organizaciones", oid, data, (j) => ({ tituloApodo: nz(j.tituloApodo) }));
 
       // Historial.
       await tx.delete(s.orgHistorial).where(eq(s.orgHistorial.organizacionId, oid));
@@ -176,7 +133,7 @@ export async function guardarOrganizacion(
   if (notificar) await notificarNuevaPublicacion("organizaciones", savedId, aviso);
   else if (data.estadoPublicacion === "publicado") await avisarCambio("organizaciones", savedId, aviso);
   if (created) redirect(`/admin/organizaciones/${savedId}/editar`);
-  return { ok: true, id: savedId };
+  return { ok: true, id: savedId, ids };
 }
 
 function revalidarOrg(id: number) {
@@ -227,6 +184,7 @@ export async function guardarFamilia(
 
   let savedId: number;
   let notificar = false;
+  let ids: IdsNuevos | undefined;
   try {
     savedId = await db.transaction(async (tx) => {
       let fid: number;
@@ -243,49 +201,11 @@ export async function guardarFamilia(
         fid = row.id;
       }
 
-      // Rangos: peso por posición (arriba = mayor). Mapear key → id nuevo.
-      await tx.delete(s.familiaRangos).where(eq(s.familiaRangos.familiaId, fid));
-      const rangoMap = new Map<string, number>();
-      const rangos = data.rangos.filter((r) => r.nombre.trim());
-      for (let i = 0; i < rangos.length; i++) {
-        const [ins] = await tx.insert(s.familiaRangos).values({ familiaId: fid, nombre: rangos[i].nombre.trim(), peso: rangos.length - i }).returning({ id: s.familiaRangos.id });
-        rangoMap.set(rangos[i].key, ins.id);
-      }
-
-      // Facciones.
-      await tx.delete(s.familiaFacciones).where(eq(s.familiaFacciones.familiaId, fid));
-      const faccionMap = new Map<string, number>();
-      for (const f of data.facciones.filter((f) => f.nombre.trim())) {
-        const [ins] = await tx.insert(s.familiaFacciones).values({ familiaId: fid, nombre: f.nombre.trim(), color: nz(f.color) }).returning({ id: s.familiaFacciones.id });
-        faccionMap.set(f.key, ins.id);
-      }
-
-      // Jerarquía (rango + títulos nobiliario/familia).
-      const ocultos = new Set(
-        (
-          await tx
-            .select({ personajeId: s.familiaJerarquia.personajeId, nombre: s.familiaJerarquia.nombre })
-            .from(s.familiaJerarquia)
-            .where(and(eq(s.familiaJerarquia.familiaId, fid), eq(s.familiaJerarquia.oculto, true)))
-        ).map(claveMiembro),
-      );
-      await tx.delete(s.familiaJerarquia).where(eq(s.familiaJerarquia.familiaId, fid));
-      const jer = data.jerarquia.filter((j) => j.personajeId != null || j.nombre.trim());
-      if (jer.length) {
-        await tx.insert(s.familiaJerarquia).values(
-          jer.map((j, i) => ({
-            familiaId: fid,
-            personajeId: j.personajeId,
-            nombre: j.personajeId == null ? nz(j.nombre) : null,
-            rangoId: j.rangoKey ? rangoMap.get(j.rangoKey) ?? null : null,
-            tituloNobiliario: nz(j.tituloNobiliario),
-            tituloFamilia: nz(j.tituloFamilia),
-            faccionId: j.faccionKey ? faccionMap.get(j.faccionKey) ?? null : null,
-            orden: i,
-            oculto: ocultos.has(claveMiembro(j)),
-          })),
-        );
-      }
+      // Rangos, facciones y miembros, por diferencias.
+      ids = await guardarGrupo(tx, "familias", fid, data, (j) => ({
+        tituloNobiliario: nz(j.tituloNobiliario),
+        tituloFamilia: nz(j.tituloFamilia),
+      }));
 
       // Árbol: dos pasadas (insertar nodos → mapear key→id → fijar padre/madre).
       await tx.delete(s.familiaArbol).where(eq(s.familiaArbol.familiaId, fid));
@@ -329,7 +249,7 @@ export async function guardarFamilia(
   if (notificar) await notificarNuevaPublicacion("familias", savedId, aviso);
   else if (data.estadoPublicacion === "publicado") await avisarCambio("familias", savedId, aviso);
   if (created) redirect(`/admin/familias/${savedId}/editar`);
-  return { ok: true, id: savedId };
+  return { ok: true, id: savedId, ids };
 }
 
 function revalidarFamilia(id: number) {
@@ -375,49 +295,13 @@ export async function guardarGremio(
     bannerUrl: data.bannerUrl,
   };
 
+  let ids: IdsNuevos | undefined;
   try {
     await db.transaction(async (tx) => {
       await tx.update(s.gremio).set(base).where(eq(s.gremio.id, gid));
 
-      await tx.delete(s.gremioRangos).where(eq(s.gremioRangos.gremioId, gid));
-      const rangoMap = new Map<string, number>();
-      const rangos = data.rangos.filter((r) => r.nombre.trim());
-      for (let i = 0; i < rangos.length; i++) {
-        const [ins] = await tx.insert(s.gremioRangos).values({ gremioId: gid, nombre: rangos[i].nombre.trim(), peso: rangos.length - i }).returning({ id: s.gremioRangos.id });
-        rangoMap.set(rangos[i].key, ins.id);
-      }
-
-      await tx.delete(s.gremioFacciones).where(eq(s.gremioFacciones.gremioId, gid));
-      const faccionMap = new Map<string, number>();
-      for (const f of data.facciones.filter((f) => f.nombre.trim())) {
-        const [ins] = await tx.insert(s.gremioFacciones).values({ gremioId: gid, nombre: f.nombre.trim(), color: nz(f.color) }).returning({ id: s.gremioFacciones.id });
-        faccionMap.set(f.key, ins.id);
-      }
-
-      const ocultos = new Set(
-        (
-          await tx
-            .select({ personajeId: s.gremioJerarquia.personajeId, nombre: s.gremioJerarquia.nombre })
-            .from(s.gremioJerarquia)
-            .where(and(eq(s.gremioJerarquia.gremioId, gid), eq(s.gremioJerarquia.oculto, true)))
-        ).map(claveMiembro),
-      );
-      await tx.delete(s.gremioJerarquia).where(eq(s.gremioJerarquia.gremioId, gid));
-      const jer = data.jerarquia.filter((j) => j.personajeId != null || j.nombre.trim());
-      if (jer.length) {
-        await tx.insert(s.gremioJerarquia).values(
-          jer.map((j, i) => ({
-            gremioId: gid,
-            personajeId: j.personajeId,
-            nombre: j.personajeId == null ? nz(j.nombre) : null,
-            rangoId: j.rangoKey ? rangoMap.get(j.rangoKey) ?? null : null,
-            faccionId: j.faccionKey ? faccionMap.get(j.faccionKey) ?? null : null,
-            tituloApodo: nz(j.tituloApodo),
-            orden: i,
-            oculto: ocultos.has(claveMiembro(j)),
-          })),
-        );
-      }
+      // Rangos, facciones y miembros, por diferencias.
+      ids = await guardarGrupo(tx, "gremio", gid, data, (j) => ({ tituloApodo: nz(j.tituloApodo) }));
 
       await tx.delete(s.gremioHistorial).where(eq(s.gremioHistorial.gremioId, gid));
       const hist = data.historial.filter((h) => h.nombre.trim() || h.personajeId != null);
@@ -451,7 +335,7 @@ export async function guardarGremio(
   revalidarMiembros("gremio");
   // Siempre está publicado: solo hay aviso de cambios, si se marcó al guardar.
   await avisarCambio("gremio", gid, eleccionDe(formData));
-  return { ok: true, id: gid };
+  return { ok: true, id: gid, ids };
 }
 
 // ── Estado / papelera (org y familia) ───────────────────────────────────────

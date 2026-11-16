@@ -12,6 +12,7 @@ import { RangosEditor } from "@/components/admin/blocks/RangosEditor";
 import { FaccionesEditor } from "@/components/admin/blocks/FaccionesEditor";
 import { JerarquiaEditor } from "@/components/admin/blocks/JerarquiaEditor";
 import { HistorialEditor } from "@/components/admin/blocks/HistorialEditor";
+import { useGrupoConocido } from "@/components/admin/blocks/useGrupoConocido";
 import type { Opcion } from "@/components/admin/blocks/shared";
 import { PanelConexiones } from "@/components/admin/vinculos/PanelConexiones";
 import { CandadosFicha } from "@/components/admin/candados";
@@ -69,12 +70,17 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
   const [jerarquia, setJerarquia] = useState<JerarquiaRow[]>(inicial.jerarquia);
   const [historial, setHistorial] = useState<HistorialRow[]>(inicial.historial);
   const wrap = <T,>(fn: (x: T) => void) => (x: T) => { fn(x); mark(); };
+  const grupo = useGrupoConocido({ rangos, facciones, jerarquia });
 
   const [state, formAction, pending] = useActionState<ComplejaFormState | undefined, FormData>(guardarGremio, undefined);
   const aviso = useAviso();
   useEffect(() => {
     if (!state) return;
-    if (state.ok) { toast("Cambios guardados.", "success"); aviso.reiniciar(); }
+    if (state.ok) {
+      if (state.ids) grupo.alGuardar(state.ids);
+      toast("Cambios guardados.", "success");
+      aviso.reiniciar();
+    }
     else if (state.error) toast(state.error, "error");
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -86,7 +92,11 @@ export function GremioForm({ inicial, personajes }: { inicial: GremioInicial; pe
   const id = g.id as number;
 
   const submit = () => {
-    const payload = { campos, imagenUrl: imagen.url, bannerUrl: banner.url, rangos, facciones, jerarquia, historial };
+    const payload = {
+      campos, imagenUrl: imagen.url, bannerUrl: banner.url, historial,
+      // Rangos, facciones y miembros, con lo que el formulario conoce.
+      ...grupo.preparar({ rangos, facciones, jerarquia }),
+    };
     const fd = new FormData();
     fd.set("id", String(id));
     fd.set("payload", JSON.stringify(payload));

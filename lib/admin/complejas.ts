@@ -3,10 +3,29 @@
  * organizaciones, familias y gremio. Cada sub-fila lleva una `key` estable de
  * cliente para poder referenciarse entre tablas ANTES de tener id en la BD
  * (p. ej. la jerarquía apunta a un rango/facción aún sin guardar). Al guardar,
- * el servidor reescribe todo el bloque y resuelve key → id real.
+ * el servidor resuelve key → id real. Rangos, facciones y miembros se guardan por
+ * diferencias (`lib/admin/guardarGrupo.ts`); el historial y el árbol, enteros.
  */
 
 export type Estado = "borrador" | "publicado" | "oculto";
+
+/**
+ * Los ids de rangos, facciones y miembros que el formulario conocía. Al guardar solo
+ * se borra lo que está aquí y ya no se manda: lo añadido desde otra ficha mientras el
+ * formulario estaba abierto se queda.
+ */
+export interface SubfilasConocidas {
+  rangos: number[];
+  facciones: number[];
+  jerarquia: number[];
+}
+
+/** El id que recibió cada fila nueva al guardar, por su `key` de cliente. */
+export interface IdsNuevos {
+  rangos: Record<string, number>;
+  facciones: Record<string, number>;
+  jerarquia: Record<string, number>;
+}
 
 export interface RangoRow {
   key: string;
@@ -78,6 +97,7 @@ export interface OrgPayload {
   facciones: FaccionRow[];
   jerarquia: JerarquiaRow[];
   historial: HistorialRow[];
+  conocidos?: SubfilasConocidas;
 }
 
 /** Payload de familia (con rangos y árbol; sin historial). */
@@ -90,6 +110,7 @@ export interface FamiliaPayload {
   facciones: FaccionRow[];
   jerarquia: JerarquiaRow[];
   arbol: ArbolRow[];
+  conocidos?: SubfilasConocidas;
 }
 
 /** Payload de gremio (singleton, sin estado de publicación ni papelera). */
@@ -101,6 +122,7 @@ export interface GremioPayload {
   facciones: FaccionRow[];
   jerarquia: JerarquiaRow[];
   historial: HistorialRow[];
+  conocidos?: SubfilasConocidas;
 }
 
 let _k = 0;

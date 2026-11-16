@@ -58,6 +58,15 @@ extremo puede estar editándose a la vez, y el modelo anterior —borrar todo lo
 dueño y reinsertar— habría hecho que guardar una ficha borrase en silencio los
 vínculos creados desde la otra.
 
+Los formularios de organización, familia y gremio, que tienen su propio editor de
+miembros, siguen la misma regla desde el 2026-11-15 (`lib/admin/guardarGrupo.ts`). Antes
+borraban y reinsertaban rangos, facciones y miembros, y guardar una organización vaciaba
+el rol, el tipo y la descripción de todos sus miembros, porque esas columnas las escribe
+la ficha del personaje y el formulario no las enseña. Ahora cada fila con id se actualiza
+solo en lo que el formulario edita, la nueva se inserta y se borra solo lo que el
+formulario conocía al abrirse (`SubfilasConocidas`). El historial y el árbol se siguen
+guardando enteros: todas sus columnas están en el formulario y nadie más los escribe.
+
 **Las operaciones van por id de fila.** Los vínculos duplicados están permitidos
 a propósito (un personaje puede pertenecer dos veces a la misma organización, en
 épocas distintas), así que la pareja origen-destino no identifica una fila.
@@ -152,6 +161,7 @@ el editor del acto.
 | `lib/relaciones/consultas.ts` | Lectura y escritura genéricas, reflejo recíproco, clonado y purga. |
 | `lib/relaciones/parejas.ts` | Dar la vuelta a una relación entre personajes y emparejar sus dos mitades. Client-safe. |
 | `lib/relaciones/guardarParejas.ts` | El guardado de las relaciones desde el formulario del personaje, con las dos mitades. |
+| `lib/admin/guardarGrupo.ts` | El guardado por diferencias de rangos, facciones y miembros desde los formularios de organización, familia y gremio. |
 | `lib/relaciones/omisiones.ts` | Bloques que una ficha pública ya pinta a mano, para no duplicarlos. |
 | `lib/actions/vinculos.ts` | Endpoints del admin. Todos con `assertAdmin`. |
 | `components/admin/vinculos/` | Panel lateral, editor de bloque y buscador de fichas. |

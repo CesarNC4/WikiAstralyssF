@@ -123,6 +123,8 @@ Cómo está hecho:
   la cronología, las canciones de una ficha) no dejan marca: lo oculto no sale.
 - Los formularios que borran y reinsertan filas conservan el candado: habilidades,
   historial y árbol lo llevan en la fila; el resto lo recuerdan por el otro extremo.
+  Los miembros de organizaciones, familias y gremio ya no se reinsertan: se guardan por
+  diferencias (`lib/admin/guardarGrupo.ts`) y el candado no se toca.
 - `pnpm --silent verificar-ocultos [url]` pide las páginas como un lector sin
   sesión y comprueba el HTML en bruto. **Pásalo si tocas una consulta pública.**
 
