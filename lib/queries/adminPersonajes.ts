@@ -88,15 +88,16 @@ export async function getPersonajeParaEditar(id: number) {
       habilidades: { with: { fundamento: { columns: { id: true, nombre: true } } } },
       eventos: { with: { evento: { columns: { id: true, titulo: true } } } },
       objetos: { with: { objeto: { columns: { id: true, nombre: true, tipo: true } } } },
+      // Las dos mitades de cada relación: el formulario las junta (`relacionesIniciales`).
+      // El género hace falta para dar la vuelta a un parentesco (Padre → Hijo o Hija).
       relaciones: {
         with: {
-          relacionado: { columns: { id: true, nombre: true, surname: true } },
+          relacionado: { columns: { id: true, nombre: true, surname: true, genero: true } },
         },
       },
-      // Relaciones donde este PJ es el destino (lectura: "relacionado por…").
       relacionesInversas: {
         with: {
-          personaje: { columns: { id: true, nombre: true, surname: true } },
+          personaje: { columns: { id: true, nombre: true, surname: true, genero: true } },
         },
       },
       naciones: { with: { nacion: { columns: { id: true, nombre: true } } } },

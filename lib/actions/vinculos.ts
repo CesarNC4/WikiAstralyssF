@@ -7,6 +7,7 @@ import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
 import { infoDe } from "@/lib/relaciones/tablas";
+import { revalidarFicha, revalidarFichasDe } from "@/lib/admin/revalidarFicha";
 import { CUALQUIERA, getRelacion } from "@/lib/relaciones/registro";
 import {
   leerFilas,
@@ -125,7 +126,16 @@ async function revalidarLados(relId: string, lado: "a" | "b", ownerId: number, e
     [mia, ownerId],
     [suya, objetivoId],
   ] as const) {
-    if (!id || tipo === CUALQUIERA) continue;
+    if (tipo === CUALQUIERA) continue;
+    // Al cambiar o borrar una fila no se sabe con qué ficha del otro lado era: se
+    // regeneran todas las de su tipo. Antes no se regeneraba ninguna, y la otra ficha
+    // seguía enseñando la conexión quitada hasta una hora.
+    if (!id) {
+      revalidarFichasDe(tipo);
+      continue;
+    }
+    // Un personaje sale en casi todas las fichas: `revalidarFicha` regenera la web entera.
+    if (tipo === "personajes") revalidarFicha(tipo, id);
     const info = infoDe(tipo);
     if (info?.ruta) revalidatePath(`${info.ruta}/${id}`);
   }

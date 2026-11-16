@@ -4,6 +4,7 @@ import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { getRelacion, bloquesDe, CUALQUIERA, terminoInverso } from "./registro";
+import { subtipoInverso } from "./parejas";
 import type { RelacionDef, FilaVinculo } from "./tipos";
 import { infoDe, tablaDe } from "./tablas";
 import { camposOcultosDe, escribirCampoOculto } from "@/lib/queries/visibilidad";
@@ -364,9 +365,8 @@ async function crearReflejo(
   oculto: boolean,
 ): Promise<void> {
   if (!rel.reciproca) return;
-  const inverso = terminoInverso(rel, campos[rel.reciproca.campo]);
-  const camposReflejo: Campos = { ...campos };
-  if (inverso) camposReflejo[rel.reciproca.campo] = inverso;
+  // La fila original va del lado A al B; su reflejo describe a quien está en el A.
+  const camposReflejo = await camposDelReflejo(rel, campos, lado === "a" ? ownerId : destino.id);
 
   if (rel.medio === "tabla") {
     const def = tablaDe(rel.id);
@@ -399,11 +399,41 @@ async function crearReflejo(
 }
 
 /**
+ * Los campos de la fila inversa: el término opuesto y, en las relaciones entre personajes,
+ * el matiz dado la vuelta (Padre → Hijo o Hija, según el género de `descritoId`, que es
+ * el dueño de la fila original y en el reflejo pasa a ser el otro).
+ */
+async function camposDelReflejo(rel: RelacionDef, campos: Campos, descritoId: number): Promise<Campos> {
+  const reflejo: Campos = { ...campos };
+  if (!rel.reciproca) return reflejo;
+  const inverso = terminoInverso(rel, campos[rel.reciproca.campo]);
+  if (inverso) reflejo[rel.reciproca.campo] = inverso;
+  const matiz = rel.id === "relaciones" ? (campos.subtipoRelacion ?? "").trim() : "";
+  if (matiz) {
+    const [p] = await db.select({ genero: s.personajes.genero }).from(s.personajes).where(eq(s.personajes.id, descritoId)).limit(1);
+    reflejo.subtipoRelacion = subtipoInverso(matiz, p?.genero);
+  }
+  return reflejo;
+}
+
+/**
  * Localiza la fila inversa de una recíproca. Con duplicados permitidos la
  * pareja no es única, así que se coge la primera coincidencia: es la que se
  * creó junto a esta y la que el usuario espera ver desaparecer o cambiar.
+ * Si ninguna lleva el término inverso (una vuelta que se escribió mal), vale
+ * cualquiera entre las dos fichas: sigue siendo la misma relación.
  */
 async function idDelReflejo(
+  rel: RelacionDef,
+  ownerId: number,
+  destinoId: number,
+  termino: string | null,
+): Promise<number | null> {
+  const id = await buscarReflejo(rel, ownerId, destinoId, termino);
+  return id ?? (termino ? buscarReflejo(rel, ownerId, destinoId, null) : null);
+}
+
+async function buscarReflejo(
   rel: RelacionDef,
   ownerId: number,
   destinoId: number,
@@ -481,9 +511,7 @@ export async function actualizarVinculo(relId: string, filaId: number, campos: C
   if (!rel.reciproca || !antes) return;
   const reflejoId = await idDelReflejo(rel, antes.ownerId, antes.destinoId, terminoInverso(rel, antes.termino));
   if (!reflejoId) return;
-  const inverso = terminoInverso(rel, campos[rel.reciproca.campo]);
-  const camposReflejo: Campos = { ...campos };
-  if (inverso) camposReflejo[rel.reciproca.campo] = inverso;
+  const camposReflejo = await camposDelReflejo(rel, campos, antes.ownerId);
   if (rel.medio === "tabla") {
     const def = tablaDe(rel.id)!;
     const c = cols(def.tabla);

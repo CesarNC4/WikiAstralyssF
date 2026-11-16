@@ -187,7 +187,8 @@ export const CATALOGOS_AGRUPADOS = {
   subtipo_relacion: {
     Amigo: ["Cercano", "Mejor amigo", "Confidente", "De la infancia", "Distante"],
     Enemigo: ["Jurado", "Ocasional", "Por encargo", "Heredado"],
-    Familiar: ["Padre", "Madre", "Hijo", "Hija", "Hermano", "Hermana", "Abuelo", "Abuela", "Tío", "Tía", "Primo", "Prima", "Adoptivo", "Político"],
+    // Cada parentesco con su inverso: la otra ficha recibe el contrario (lib/relaciones/parejas.ts).
+    Familiar: ["Padre", "Madre", "Hijo", "Hija", "Hermano", "Hermana", "Abuelo", "Abuela", "Nieto", "Nieta", "Tío", "Tía", "Sobrino", "Sobrina", "Primo", "Prima", "Adoptivo", "Político"],
     Aliado: ["De conveniencia", "Juramentado", "Circunstancial", "Secreto"],
     Rival: ["Deportivo", "Profesional", "Amistoso", "A muerte"],
     Compañero: ["De armas", "De viaje", "De gremio", "De celda"],

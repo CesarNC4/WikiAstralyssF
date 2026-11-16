@@ -64,10 +64,31 @@ a propósito (un personaje puede pertenecer dos veces a la misma organización, 
 
 **Recíprocas con término inverso.** Marcar A como "Vasalla" de B deja a B como
 "Soberana" de A. Los tipos simétricos ("Aliada", "Rival") se copian tal cual: lo
-que no aparece en el mapa de inversos se mantiene, que es justo lo correcto. Entre
-personajes, la fila de vuelta es opcional: el formulario no la crea, porque la ficha
-lee también las relaciones donde el personaje es el destino. La bandeja y el mapa de
-relaciones sí la crean, y la ficha no repite la relación.
+que no aparece en el mapa de inversos se mantiene, que es justo lo correcto.
+
+**Entre personajes, las dos mitades siempre (2026-11-15, decisión del autor).** Cada
+relación vive en dos filas de `relaciones`, A→B y B→A, y se edita desde cualquiera de las
+dos fichas: añadir, cambiar o quitar en una escribe también la otra. Antes el formulario
+solo tocaba su mitad, y quitar una relación desde una ficha la dejaba en la otra (y en la
+primera, que lee también las filas donde es el destino).
+
+- Lo hacen las cuatro vías: el formulario del personaje (`lib/relaciones/guardarParejas.ts`),
+  el panel de conexiones, la bandeja y el mapa de relaciones (`crearReflejo` y compañía en
+  `consultas.ts`).
+- La vuelta lleva el término del catálogo al revés (`RELACION_INVERSA`: Salvador ↔ Salvado,
+  Captor ↔ Cautivo), el matiz de parentesco al revés según el género de quien queda descrito
+  (Padre → Hijo o Hija; sin género masculino ni femenino, el matiz se deja vacío) y los
+  afectos cruzados. La descripción es la misma. Todo eso, en `lib/relaciones/parejas.ts`.
+- El formulario enseña todas las relaciones del personaje: las suyas y, si solo existe la
+  mitad del otro, esa dada la vuelta. Guardar va por diferencias: lo que no cambia no se
+  toca, y solo se borra lo que el formulario conocía (`relacionesConocidas`), para no tirar
+  una relación creada desde la otra ficha mientras estaba abierto.
+- Una vuelta que no cuadra de antes de esto se queda como está hasta que se edite esa
+  relación en cualquiera de las dos fichas. `lore revisar` las señala.
+- Guardar un personaje regenera toda la web pública (`revalidatePath("/", "layout")`): sale
+  en las fichas de sus relaciones, grupos, naciones, objetos… Al borrar o cambiar una
+  conexión desde el panel o la bandeja se regeneran todas las fichas del tipo del otro lado,
+  porque no se sabe cuál era.
 
 **Editar el reverso escribe en la otra ficha.** En las referencias simples, añadir
 una sub-raza desde la ficha madre escribe `raza_padre_id` en la ficha hija.
@@ -129,6 +150,8 @@ el editor del acto.
 | `lib/relaciones/registro.ts` | **Las 55 declaraciones.** Client-safe: aquí se añade una relación nueva. |
 | `lib/relaciones/tablas.ts` | Mapeo a tablas y columnas de Drizzle. Server-only. |
 | `lib/relaciones/consultas.ts` | Lectura y escritura genéricas, reflejo recíproco, clonado y purga. |
+| `lib/relaciones/parejas.ts` | Dar la vuelta a una relación entre personajes y emparejar sus dos mitades. Client-safe. |
+| `lib/relaciones/guardarParejas.ts` | El guardado de las relaciones desde el formulario del personaje, con las dos mitades. |
 | `lib/relaciones/omisiones.ts` | Bloques que una ficha pública ya pinta a mano, para no duplicarlos. |
 | `lib/actions/vinculos.ts` | Endpoints del admin. Todos con `assertAdmin`. |
 | `components/admin/vinculos/` | Panel lateral, editor de bloque y buscador de fichas. |

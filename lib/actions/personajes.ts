@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import * as s from "@/db/schema";
 import { assertAdmin } from "@/lib/actions/auth";
@@ -11,6 +11,7 @@ import { personajeSchema, type PersonajeInput } from "@/lib/validation/personaje
 import { calcularPoderDeCombate } from "@/lib/poderCombate";
 import { purgarEnSegundoPlano } from "@/lib/media/purga";
 import { escribirFecha } from "@/lib/queries/fechas";
+import { guardarRelaciones } from "@/lib/relaciones/guardarParejas";
 
 export interface PersonajeFormState {
   ok: boolean;
@@ -27,15 +28,12 @@ function revalidarPersonaje(id: number) {
   revalidateTag(`personaje:${id}`, "max");
   revalidateTag("personajes:list", "max");
   revalidateTag("home", "max");
-  revalidatePath("/personajes");
-  revalidatePath(`/personajes/${id}`);
-  revalidatePath("/");
-  // Pueden haberse creado entradas globales al vuelo desde la ficha.
-  revalidatePath("/magia");
-  revalidatePath("/timeline", "layout");
-  revalidatePath("/atlas");
-  revalidatePath("/alturas");
-  revalidatePath("/artefactos");
+  // Toda la web pública, no solo su ficha: un personaje sale en las fichas de quienes
+  // tienen relación con él (y guardar escribe también su mitad), en las de sus
+  // organizaciones, naciones y razas, en las de sus objetos, en el Atlas… Antes solo se
+  // regeneraba la suya y las demás seguían enseñando lo de antes hasta una hora. No se
+  // regenera de golpe: cada página, en su próxima visita.
+  revalidatePath("/", "layout");
 }
 
 /** Compone "Tipo (Variante)" para el texto de display/enlace de la ficha pública. */
@@ -156,15 +154,6 @@ async function guardarHijos(
   const razOcultas = await claves(
     tx.select({ k: s.personajeRaza.razaId }).from(s.personajeRaza).where(and(eq(s.personajeRaza.personajeId, personajeId), eq(s.personajeRaza.oculto, true))),
   );
-  const claveRel = (id: number | null | undefined, externo: string | null | undefined) => (id != null ? `p:${id}` : `n:${(externo ?? "").trim()}`);
-  const relOcultas = new Set(
-    (
-      await tx
-        .select({ id: s.relaciones.personajeRelacionadoId, externo: s.relaciones.nombreExterno })
-        .from(s.relaciones)
-        .where(and(eq(s.relaciones.personajeId, personajeId), eq(s.relaciones.oculto, true)))
-    ).map((r) => claveRel(r.id, r.externo)),
-  );
 
   // Eventos clave: vínculo a la cronología global (o creación de un evento nuevo).
   await tx.delete(s.personajeEvento).where(eq(s.personajeEvento.personajeId, personajeId));
@@ -235,22 +224,8 @@ async function guardarHijos(
       .where(and(eq(s.armasArtefactos.id, artId), isNull(s.armasArtefactos.propietarioId)));
   }
 
-  await tx.delete(s.relaciones).where(eq(s.relaciones.personajeId, personajeId));
-  if (data.relaciones.length) {
-    await tx.insert(s.relaciones).values(
-      data.relaciones.map((r) => ({
-        personajeId,
-        personajeRelacionadoId: r.personajeRelacionadoId,
-        nombreExterno: r.nombreExterno,
-        tipoRelacion: r.tipoRelacion,
-        subtipoRelacion: r.subtipoRelacion,
-        afecto: r.afecto,
-        afectoReciproco: r.afectoReciproco,
-        descripcion: r.descripcion,
-        oculto: relOcultas.has(claveRel(r.personajeRelacionadoId, r.nombreExterno)),
-      })),
-    );
-  }
+  // Cada relación vive en las dos fichas: esto escribe también la mitad del otro.
+  await guardarRelaciones(tx, personajeId, data.relaciones, data.relacionesConocidas);
 
   await tx.delete(s.personajeNacion).where(eq(s.personajeNacion.personajeId, personajeId));
   if (data.naciones.length) {
@@ -430,7 +405,8 @@ export async function eliminarDefinitivo(id: number): Promise<void> {
     await tx.delete(s.habilidades).where(eq(s.habilidades.personajeId, id));
     await tx.delete(s.personajeEvento).where(eq(s.personajeEvento.personajeId, id));
     await tx.delete(s.personajeObjeto).where(eq(s.personajeObjeto.personajeId, id));
-    await tx.delete(s.relaciones).where(eq(s.relaciones.personajeId, id));
+    // Las dos mitades: la de los demás hacia él se quedaría como «Desconocido».
+    await tx.delete(s.relaciones).where(or(eq(s.relaciones.personajeId, id), eq(s.relaciones.personajeRelacionadoId, id)));
     await tx.delete(s.personajeNacion).where(eq(s.personajeNacion.personajeId, id));
     await tx.delete(s.personajeRaza).where(eq(s.personajeRaza.personajeId, id));
     await tx.delete(s.orgJerarquia).where(eq(s.orgJerarquia.personajeId, id));

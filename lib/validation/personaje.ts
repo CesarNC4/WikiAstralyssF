@@ -155,13 +155,12 @@ export const objetoSchema = z.object({
 });
 
 export const relacionSchema = z.object({
-  idRr: idField.optional(),
   personajeRelacionadoId: idField,
   nombreExterno: str,
   tipoRelacion: str,
   subtipoRelacion: str,
-  // El afecto NO se refleja: A puede sentir amor y B odio, así que cada lado
-  // tiene su columna y ninguna se deriva de la otra.
+  // El afecto no se deduce: A puede sentir amor y B odio, así que cada uno tiene su
+  // columna. En la ficha del otro van cruzadas (lo que uno siente es lo que el otro recibe).
   afecto: str,
   afectoReciproco: str,
   descripcion: str,
@@ -247,6 +246,12 @@ export const personajeSchema = z.object({
   eventos: z.array(eventoSchema).default([]),
   objetos: z.array(objetoSchema).default([]),
   relaciones: z.array(relacionSchema).default([]),
+  /**
+   * Los personajes con los que el formulario sabía que había relación (al abrirse o al
+   * guardar por última vez). Solo se borra lo de estos: una relación que se creó desde la
+   * otra ficha mientras este formulario estaba abierto no se pierde al guardarlo.
+   */
+  relacionesConocidas: z.array(z.number().int().positive()).default([]),
   naciones: z.array(personajeNacionSchema).default([]),
   razas: z.array(personajeRazaSchema).default([]),
   organizaciones: z.array(personajeOrganizacionSchema).default([]),

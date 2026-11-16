@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, startTransition, type ReactNode } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, startTransition, type ReactNode } from "react";
 import { guardarPersonaje, type PersonajeFormState } from "@/lib/actions/personajes";
 import { AvisoDiscord, useAviso } from "@/components/admin/AvisoDiscord";
 import type { PersonajeParaEditar, Opcion, OpcionRegion, OpcionLocacion } from "@/lib/queries/adminPersonajes";
 import type { CatalogosPersonaje } from "@/lib/queries/catalogos";
 import type { BannerHeredado } from "@/lib/queries/bannerHeredado";
 import type { EstadoPublicacion } from "@/db/schema/enums";
-import { CATALOGOS, MAGIA_FAMILIA_ELEMENTAL, etiquetaInversa } from "@/lib/catalogos";
+import { CATALOGOS, MAGIA_FAMILIA_ELEMENTAL } from "@/lib/catalogos";
+import { emparejar, vistaDe, type FilaRelacion } from "@/lib/relaciones/parejas";
 import { crearOpcion } from "@/lib/actions/catalogos";
 import { useToast } from "@/components/admin/Toast";
 import { AccordionSection, Repeater, MultiPicker } from "@/components/admin/ui";
@@ -75,7 +76,6 @@ interface Ob {
   nota: string;
 }
 interface Rel {
-  idRr?: number;
   personajeRelacionadoId: number | null;
   relLabel: string;
   nombreExterno: string;
@@ -83,10 +83,60 @@ interface Rel {
   subtipoRelacion: string;
   /** Lo que siente ESTE personaje por el otro. */
   afecto: string;
-  /** Lo que siente el otro por este. No se refleja del anterior: son independientes. */
+  /** Lo que siente el otro por este. No se deduce del anterior: son independientes. */
   afectoReciproco: string;
   descripcion: string;
 }
+
+/**
+ * Todas las relaciones del personaje con otros, vengan de su ficha o de la del otro:
+ * cada una se guarda en las dos, y si solo existe la mitad del otro (se creó antes de
+ * que el guardado escribiera las dos) se enseña dada la vuelta. Así se puede editar
+ * o quitar desde cualquiera de las dos fichas.
+ */
+function relacionesIniciales(inicial: PersonajeParaEditar | null): Rel[] {
+  if (!inicial) return [];
+  const propias = new Map<number, PersonajeParaEditar["relaciones"]>();
+  const vueltas = new Map<number, PersonajeParaEditar["relacionesInversas"]>();
+  const orden: number[] = [];
+  const sueltas: Rel[] = [];
+  for (const r of inicial.relaciones) {
+    const otro = r.personajeRelacionadoId;
+    if (otro == null) {
+      sueltas.push({
+        personajeRelacionadoId: null, relLabel: "", nombreExterno: s(r.nombreExterno),
+        tipoRelacion: s(r.tipoRelacion), subtipoRelacion: s(r.subtipoRelacion),
+        afecto: s(r.afecto), afectoReciproco: s(r.afectoReciproco), descripcion: s(r.descripcion),
+      });
+      continue;
+    }
+    if (otro === inicial.id) continue;
+    if (!orden.includes(otro)) orden.push(otro);
+    propias.set(otro, [...(propias.get(otro) ?? []), r]);
+  }
+  for (const r of inicial.relacionesInversas) {
+    const otro = r.personajeId;
+    if (otro == null || otro === inicial.id || !r.personaje) continue;
+    if (!orden.includes(otro)) orden.push(otro);
+    vueltas.set(otro, [...(vueltas.get(otro) ?? []), r]);
+  }
+  const conFicha = orden.flatMap((otroId) => {
+    const otro = propias.get(otroId)?.find((r) => r.relacionado)?.relacionado ?? vueltas.get(otroId)?.[0]?.personaje ?? null;
+    const relLabel = otro ? [otro.nombre, otro.surname].filter(Boolean).join(" ") : "";
+    return emparejar<FilaRelacion>(propias.get(otroId) ?? [], vueltas.get(otroId) ?? []).map((p) => ({
+      personajeRelacionadoId: otroId,
+      relLabel,
+      nombreExterno: "",
+      ...vistaDe(p, otro?.genero),
+    }));
+  });
+  return [...conFicha, ...sueltas];
+}
+
+/** Los personajes con los que hay alguna relación en la lista. */
+const otrosDe = (rels: { personajeRelacionadoId: number | null }[]) => [
+  ...new Set(rels.map((r) => r.personajeRelacionadoId).filter((id): id is number => id != null)),
+];
 interface NacSel { nacionId: number; label: string; tipo: string; descripcion: string }
 interface RazSel { razaId: number; label: string; esMixta: boolean; nota: string }
 interface OrgSel { organizacionId: number; label: string; rol: string; tipo: string; descripcion: string }
@@ -215,14 +265,12 @@ export function PersonajeForm({
       nota: s(o.nota),
     })),
   );
-  const [relaciones, setRelaciones] = useState<Rel[]>(
-    (inicial?.relaciones ?? []).map((r) => ({
-      idRr: r.idRr, personajeRelacionadoId: r.personajeRelacionadoId ?? null,
-      relLabel: r.relacionado ? [r.relacionado.nombre, r.relacionado.surname].filter(Boolean).join(" ") : "",
-      nombreExterno: s(r.nombreExterno), tipoRelacion: s(r.tipoRelacion), subtipoRelacion: s(r.subtipoRelacion),
-      afecto: s(r.afecto), afectoReciproco: s(r.afectoReciproco), descripcion: s(r.descripcion),
-    })),
-  );
+  const [relaciones, setRelaciones] = useState<Rel[]>(() => relacionesIniciales(inicial));
+  // Con quién sabe este formulario que hay relación: al abrirse, y tras cada guardado lo
+  // que se envió. El servidor solo quita relaciones con estos (ver `relacionesConocidas`).
+  const [conocidasAlAbrir] = useState(() => otrosDe(relacionesIniciales(inicial)));
+  const conocidas = useRef<number[] | null>(null);
+  const enviadas = useRef<number[]>([]);
   const [naciones, setNaciones] = useState<NacSel[]>(
     (inicial?.naciones ?? []).filter((n) => n.nacion).map((n) => ({ nacionId: n.nacion!.id, label: n.nacion!.nombre, tipo: s(n.tipo), descripcion: s(n.descripcion) })),
   );
@@ -248,6 +296,7 @@ export function PersonajeForm({
     if (state.ok) {
       toast("Cambios guardados.", "success");
       aviso.reiniciar();
+      conocidas.current = enviadas.current;
     } else if (state.error) {
       toast(state.error, "error");
     }
@@ -323,6 +372,20 @@ export function PersonajeForm({
           : { armaArtefactoId: o.armaArtefactoId, nuevoObjeto: null, nota: o.nota },
       );
 
+    // Descarta filas vacías: una relación necesita un PJ vinculado o un nombre externo.
+    const relacionesPayload = relaciones
+      .filter((r) => r.personajeRelacionadoId || r.nombreExterno.trim())
+      .map((r) => ({
+        personajeRelacionadoId: r.personajeRelacionadoId,
+        nombreExterno: r.nombreExterno,
+        tipoRelacion: r.tipoRelacion,
+        subtipoRelacion: r.subtipoRelacion,
+        afecto: r.afecto,
+        afectoReciproco: r.afectoReciproco,
+        descripcion: r.descripcion,
+      }));
+    enviadas.current = otrosDe(relacionesPayload);
+
     const payload = {
       ...f,
       imagenAssetId: imagen.assetId, imagenUrl: imagen.url,
@@ -331,19 +394,8 @@ export function PersonajeForm({
       habilidades: habilidadesPayload,
       eventos: eventosPayload,
       objetos: objetosPayload,
-      relaciones: relaciones
-        // Descarta filas vacías: una relación necesita un PJ vinculado o un nombre externo.
-        .filter((r) => r.personajeRelacionadoId || r.nombreExterno.trim())
-        .map((r) => ({
-          idRr: r.idRr,
-          personajeRelacionadoId: r.personajeRelacionadoId,
-          nombreExterno: r.nombreExterno,
-          tipoRelacion: r.tipoRelacion,
-          subtipoRelacion: r.subtipoRelacion,
-          afecto: r.afecto,
-          afectoReciproco: r.afectoReciproco,
-          descripcion: r.descripcion,
-        })),
+      relaciones: relacionesPayload,
+      relacionesConocidas: conocidas.current ?? conocidasAlAbrir,
       naciones: naciones.map((n) => ({ nacionId: n.nacionId, tipo: n.tipo, descripcion: n.descripcion })),
       razas: razas.map((r) => ({ razaId: r.razaId, esMixta: r.esMixta, nota: r.nota })),
       organizaciones: organizaciones.map((o) => ({ organizacionId: o.organizacionId, rol: o.rol, tipo: o.tipo, descripcion: o.descripcion })),
@@ -415,7 +467,7 @@ export function PersonajeForm({
     { id: "stats", label: "Estadísticas", content: poder.total > 0 },
     { id: "habilidades", label: "Habilidades", content: habilidades.length > 0 },
     { id: "eventos", label: "Eventos clave", content: eventos.length > 0 },
-    { id: "relaciones", label: "Relaciones", content: relaciones.length > 0 || (inicial?.relacionesInversas?.length ?? 0) > 0 },
+    { id: "relaciones", label: "Relaciones", content: relaciones.length > 0 },
     { id: "pertenencias", label: "Pertenencias", content: naciones.length > 0 || razas.length > 0 || organizaciones.length > 0 },
     { id: "objetos", label: "Objetos", content: objetos.length > 0 },
     { id: "imagenes", label: "Imágenes", content: !!(imagen.url || imagen.assetId || banner.url || banner.assetId) },
@@ -677,20 +729,10 @@ export function PersonajeForm({
 
       {/* Relaciones PJ↔PJ */}
       <AccordionSection {...sec("relaciones")} title="Relaciones" subtitle={`${relaciones.length}`}>
-        {(inicial?.relacionesInversas ?? []).filter((r) => r.personaje).length > 0 && (
-          <div className="mb-3 rounded-xl border border-dashed border-border-base bg-deep/30 p-3">
-            <p className="mb-2 text-xs uppercase tracking-wide text-fg-muted">Relacionado por otros (automático)</p>
-            <div className="space-y-1">
-              {(inicial?.relacionesInversas ?? []).filter((r) => r.personaje).map((r) => (
-                <div key={r.idRr} className="flex items-center gap-2 text-sm">
-                  <span className="text-fg">{[r.personaje!.nombre, r.personaje!.surname].filter(Boolean).join(" ")}</span>
-                  <span className="text-xs text-primary-glow">{etiquetaInversa(r.tipoRelacion) ?? r.subtipoRelacion}</span>
-                </div>
-              ))}
-            </div>
-            <p className="mt-1.5 text-[11px] text-fg-muted">Estas se definen en la ficha del otro personaje; aparecen aquí automáticamente.</p>
-          </div>
-        )}
+        <p className="mb-3 text-xs text-fg-muted">
+          Cada relación sale en las dos fichas. Lo que añadas, cambies o quites aquí se guarda también en la del otro
+          personaje, con el término al revés (Salvador ↔ Salvado, Padre ↔ Hijo o Hija) y los afectos cruzados.
+        </p>
         <Repeater
           items={relaciones}
           onChange={wrapSetter(setRelaciones)}

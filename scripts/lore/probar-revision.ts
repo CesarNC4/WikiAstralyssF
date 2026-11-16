@@ -194,19 +194,35 @@ igual(
   claveDe(foto({ fichas: [ana, beto], aristas: [arista("relaciones", 1, ["personajes", 1], ["personajes", 2], { campos: { tipoRelacion: "Rival" } })] }), "conexiones"),
   [],
 );
+// Los términos inversos son los del catálogo (`RELACION_INVERSA`); el parentesco va en el
+// matiz, que esta regla no compara.
 igual(
-  "relación con otro género en la vuelta: casa",
+  "relación con el término inverso del catálogo en la vuelta: casa",
   claveDe(
     foto({
       fichas: [ana, beto],
       aristas: [
-        arista("relaciones", 1, ["personajes", 1], ["personajes", 2], { campos: { tipoRelacion: "Madre" } }),
-        arista("relaciones", 2, ["personajes", 2], ["personajes", 1], { campos: { tipoRelacion: "Hija" } }),
+        arista("relaciones", 1, ["personajes", 1], ["personajes", 2], { campos: { tipoRelacion: "Salvador" } }),
+        arista("relaciones", 2, ["personajes", 2], ["personajes", 1], { campos: { tipoRelacion: "Salvado" } }),
       ],
     }),
     "conexiones",
   ),
   [],
+);
+igual(
+  "el mismo término asimétrico en los dos lados se contradice",
+  claveDe(
+    foto({
+      fichas: [ana, beto],
+      aristas: [
+        arista("relaciones", 1, ["personajes", 1], ["personajes", 2], { campos: { tipoRelacion: "Captor" } }),
+        arista("relaciones", 2, ["personajes", 2], ["personajes", 1], { campos: { tipoRelacion: "Captor" } }),
+      ],
+    }),
+    "conexiones",
+  ),
+  ["se-contradicen:relaciones:1:2"],
 );
 const razas = [ficha("razas", 1, "ALFA"), ficha("razas", 2, "BETA")];
 igual(

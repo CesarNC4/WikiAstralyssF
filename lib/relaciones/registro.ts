@@ -12,6 +12,7 @@
  * Client-safe: sólo datos.
  */
 import type { RelacionDef, BloqueRelacion } from "./tipos";
+import { RELACION_INVERSA } from "@/lib/catalogos";
 
 const NOTA = { name: "nota", label: "Nota", tipo: "text" } as const;
 
@@ -103,15 +104,11 @@ export const RELACIONES: RelacionDef[] = [
       { name: "subtipoRelacion", label: "Matiz", tipo: "text" },
       { name: "descripcion", label: "Descripción", tipo: "text" },
     ],
-    reciproca: {
-      campo: "tipoRelacion",
-      inverso: {
-        Padre: "Hijo", Madre: "Hijo", Hijo: "Padre", Hija: "Padre",
-        Maestro: "Discípulo", Discípulo: "Maestro",
-        Mentor: "Protegido", Protegido: "Mentor",
-        Señor: "Vasallo", Vasallo: "Señor",
-      },
-    },
+    // El mismo mapa que usan el formulario del personaje y su ficha pública. Antes había
+    // uno propio, con términos que no están en el catálogo, y la vuelta de «Captor» o
+    // «Salvador» se escribía igual en las dos fichas. El matiz (Padre → Hijo o Hija) se
+    // invierte aparte, en `lib/relaciones/parejas.ts`, porque depende del género.
+    reciproca: { campo: "tipoRelacion", inverso: RELACION_INVERSA },
   },
   // ── Mundo ↔ mundo ─────────────────────────────────────────────────────────
   {

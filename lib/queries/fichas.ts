@@ -12,10 +12,11 @@ const COLS_RELACIONADO = { id: true, nombre: true, surname: true, imagenUrl: tru
 const COLS_LUGAR = { id: true, nombre: true, subtitulo: true, imagenUrl: true, estadoPublicacion: true, eliminadoEn: true } as const;
 
 /**
- * La bandeja y el mapa de relaciones guardan también la fila de vuelta; el formulario
- * del personaje, no. La fila de vuelta de una relación que ya es propia no se repite:
- * si no, la ficha enseñaría la relación dos veces. Va aquí, antes de enmascarar, porque
- * después una relación oculta ya no dice con quién es.
+ * Cada relación entre personajes se guarda en las dos fichas (docs/relaciones.md), así que
+ * la fila de vuelta de una relación que ya es propia no se repite: si no, la ficha la
+ * enseñaría dos veces. Las vueltas sin pareja (de antes de guardar las dos mitades) sí
+ * salen. Va aquí, antes de enmascarar, porque después una relación oculta ya no dice con
+ * quién es.
  */
 function sinReflejos<I extends { personajeId: number | null; tipoRelacion: string | null }>(
   propias: { personajeRelacionadoId: number | null; tipoRelacion: string | null }[],

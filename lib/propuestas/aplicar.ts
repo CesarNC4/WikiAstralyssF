@@ -15,7 +15,7 @@ import { crearActo, crearCapitulo, crearFragmento, guardarActo, guardarCapitulo,
 import { crearBorradorRapido } from "@/lib/actions/vinculos";
 import { avisarCambio, eleccionValida, type EleccionAviso } from "@/lib/discord";
 import { getEntidadConfig } from "@/lib/admin/fields";
-import { revalidarFicha } from "@/lib/admin/revalidarFicha";
+import { revalidarFicha, revalidarFichasDe } from "@/lib/admin/revalidarFicha";
 import { leerFecha } from "@/lib/fechas/leer";
 import { rolesDe } from "@/lib/fechas/roles";
 import { getCalendario } from "@/lib/queries/fechas";
@@ -284,6 +284,8 @@ async function aplicarConexion(entidad: string, id: number, d: DatoAnalizado, di
 
   if (d.clase === "quitar") {
     if (d.filaId) await borrarVinculo(relId, d.filaId);
+    // La ficha del otro lado también la enseñaba; no se sabe cuál es, así que todas las de su tipo.
+    if (b.objetivo !== CUALQUIERA) revalidarFichasDe(b.objetivo);
     return;
   }
 
