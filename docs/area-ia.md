@@ -3,8 +3,9 @@
 > **Estado (2026-11-04): las seis fases hechas, guía de estilo respondida, web
 > fuera de los buscadores y datos de prueba limpios.** `/lore`, `/lore-fichas`,
 > `/lore-entrevista` y `/lore-revisar` funcionan, y el autor aplica las propuestas
-> desde `/admin/propuestas`. Este documento sirve para retomar el trabajo desde
-> cualquier chat sin más contexto.
+> desde `/admin/propuestas`. Desde el 2026-11-19, `/lore-relato` escribe con él las
+> piezas de la historia para Discord. Este documento sirve para retomar el trabajo
+> desde cualquier chat sin más contexto.
 
 ## Qué es
 
@@ -32,12 +33,12 @@ mundo.
 |---|---|---|
 | Contexto fijo | `CLAUDE.md` | Lo lee cualquier chat al arrancar: reglas y dónde está cada cosa |
 | Contexto personal | `CLAUDE.local.md` (fuera de git) | El equipo del autor: rutas de Node, cómo probar en local |
-| Carpeta de trabajo | `lore/` (fuera de git) | `propuestas/`, `entrevistas/`, `revisiones/`, `guia-de-estilo.md` |
+| Carpeta de trabajo | `lore/` (fuera de git) | `propuestas/`, `entrevistas/`, `revisiones/`, `relatos/`, `guia-de-estilo.md` |
 | Lectura | `scripts/lore/leer.ts` (`pnpm --silent lore …`) | Lee fichas, conexiones, fechas, catálogos y moldes. Solo lectura |
 | Moldes | `lib/propuestas/moldes.ts` | Los campos de cada ficha con los rótulos del panel. Lo usan la lectura y la bandeja |
 | Formato | [propuestas-formato.md](./propuestas-formato.md) | Cómo se escribe una propuesta |
 | Verificador | `scripts/lore/verificar-ocultos.ts` (`pnpm --silent verificar-ocultos`) | Comprueba que nada oculto llega a un lector |
-| Skills | `.claude/skills/` | `/lore`, `/lore-fichas`, `/lore-entrevista`, `/lore-revisar` |
+| Skills | `.claude/skills/` | `/lore`, `/lore-fichas`, `/lore-entrevista`, `/lore-revisar`, `/lore-relato` |
 | Bandeja | `/admin/propuestas` | El autor abre sus propuestas y las aplica dato a dato |
 | Revisión | `scripts/lore/revision/` (`pnpm --silent lore revisar`) | Audita la coherencia de la wiki. Solo lee; deja el informe en `lore/revisiones/` |
 | Pruebas | `scripts/lore/probar-propuestas.ts` y `probar-revision.ts` (`pnpm --silent probar-…`) | Comprueban lo puro de la bandeja y las reglas de la revisión, sin tocar la base |
@@ -231,6 +232,28 @@ Cómo está hecho:
 - Un secreto solo se busca entero, y si tiene hasta 80 caracteres: un párrafo oculto no se
   compara con los textos públicos. Eso, y lo que un texto insinúa sin nombrarlo, queda para la
   lectura.
+
+### Relatos — `/lore-relato` ✔ hecho (2026-11-19)
+
+El autor narra la historia en Discord, y Claude la escribe con él: escenas, combates,
+descripciones, capítulos, interludios sin los protagonistas, cuentos del pasado y capítulos
+dedicados a un personaje. Decisiones del autor (2026-11-19):
+
+- **Fase por fase y escena a escena**, con el máximo detalle: planteamiento, guion, cada escena
+  (preparación, texto y correcciones), repaso, versión para Discord y cierre. Nada se escribe
+  entero de una vez, y no se avanza sin su visto bueno.
+- **El reparto:** la wiki es el mapa (capítulos y actos sin prosa, fragmentos con su enlace de
+  Discord, arcos, hojas e hilos; docs/taller-del-autor.md) y `lore/relatos/` es la obra: la
+  prosa, los guiones, la preparación de cada escena, la voz del autor y lo ya contado.
+- **No se copia lore a `lore/relatos/`:** los hechos se leen de la wiki cada vez, como manda la
+  regla 2. Ahí solo va lo que la wiki no guarda: el texto, qué sabe el lector, qué sabe cada
+  personaje y las semillas sembradas.
+- **Al publicar una pieza**, lo que el autor dé por canon pasa a la wiki con `/lore-fichas`: el
+  acto con sus fragmentos, los hilos y los datos nuevos.
+- **Discord:** Claude entrega la pieza entera con su formato, y el autor la corta en mensajes al
+  publicarla.
+- **La voz** se construye poco a poco y puede ser experimental: `lore/relatos/voz.md` parte de
+  los cuentos ya publicados y recoge cada corrección.
 
 ## Decisiones
 

@@ -120,6 +120,9 @@ scripts/          utilidades vivas + migrations/ (histórico ya aplicado)
 - Revisión del lore: `/lore-revisar` audita secretos en riesgo, fechas imposibles, conexiones,
   referencias, el taller y fichas a medias, y deja el informe en `lore/revisiones/`, fuera de
   git (docs/area-ia.md, Fase 6).
+- Relatos: `/lore-relato` escribe con el autor las piezas de la historia para Discord, fase
+  por fase y escena a escena. La prosa queda en `lore/relatos/`, fuera de git, y lo que se
+  vuelve canon pasa a la wiki por la bandeja (docs/area-ia.md, Relatos).
 - Mapa con Leaflet + Geoman, grafo global en `/atlas` y mini-grafo por ficha,
   ambos alimentados por el registro de relaciones.
 - Acciones en lote y duplicado de fichas en el panel. Duplicar arrastra también
